@@ -1175,6 +1175,15 @@
     color: var(--ink);
   }
 
+  /* Niveaux élevés de "Compose le mot" : une fois le mot invalidé, montre
+     précisément quelles cases n'ont pas la bonne lettre. */
+  .spell-slot.is-wrong {
+    border-style: solid;
+    border-color: var(--wrong);
+    background: rgba(255, 77, 94, 0.16);
+    color: var(--wrong);
+  }
+
   .spell-tiles {
     display: flex;
     gap: clamp(0.4rem, 2vw, 0.6rem);
@@ -3478,6 +3487,12 @@
         "dauphin", "chateau", "taureau", "poisson", "elephant", "papillon", "tournesol", "dinosaure"]
     ];
     var COMPOSE_DISTRACTOR_COUNT = [3, 3, 4, 4, 5];
+    // À partir de ce niveau, "Compose le mot" accepte n'importe quelle
+    // lettre dans la prochaine case libre (même une mauvaise) et ne
+    // valide/invalide qu'une fois toutes les cases remplies -- comme un
+    // vrai test d'orthographe. En dessous, chaque lettre hors-ordre est
+    // refusée au fur et à mesure (voir onSpellTileTap).
+    var COMPOSE_FREE_FILL_MIN_LEVEL = 4;
 
     // Lecture Malin — "Trouve le mot" : une grille de mots entiers (pas de
     // lettres à assembler) -- les jours de la semaine, en MAJUSCULES. Le
@@ -4508,6 +4523,7 @@
       spellUnits: [],
       spellTilePool: null,
       spellFillIndex: 0,
+      spellFilled: [],
       spellEmoji: "",
       lastMotKey: "",
       lastSyllordreKey: "",
@@ -7363,7 +7379,11 @@
     // syllabes selon le mode) qu'il faut toucher dans le bon ordre pour
     // reconstituer le mot. "Compose le mot" (Lecture Malin) partage le même
     // écran, mais mélange aussi des lettres intrus (state.spellTilePool) au
-    // lot de tuiles -- voir startSpellProblem.
+    // lot de tuiles -- voir startSpellProblem. À partir de
+    // COMPOSE_FREE_FILL_MIN_LEVEL, "Compose le mot" change aussi de
+    // mécanique : toute lettre est acceptée dans la prochaine case libre,
+    // et la validation n'a lieu qu'une fois le mot entier rempli -- voir
+    // onSpellTileTap / onSpellLose.
     function currentSpellPool(levelIdx) {
       if (state.mode === "syllordre") return SYLLORDRE_LEVEL_POOL[levelIdx];
       if (state.mode === "compose") return COMPOSE_LEVEL_POOL[levelIdx];
@@ -7435,6 +7455,7 @@
       state.spellKey = key;
       state.spellUnits = isSyll ? def.syllables.slice() : def.word.toUpperCase().split("");
       state.spellFillIndex = 0;
+      state.spellFilled = [];
       state.spellEmoji = def.emoji;
       state.spellTilePool = isCompose
         ? shuffle(state.spellUnits.concat(pickComposeDistractors(def.word, COMPOSE_DISTRACTOR_COUNT[levelIdx])))
@@ -7445,6 +7466,24 @@
 
     function onSpellTileTap(unit, btn) {
       if (btn.disabled) return;
+      var freeFill = state.mode === "compose" && state.level >= COMPOSE_FREE_FILL_MIN_LEVEL;
+
+      if (freeFill) {
+        // Accepte n'importe quelle lettre dans la prochaine case libre, y
+        // compris une mauvaise -- la validation n'a lieu qu'une fois le
+        // mot entièrement rempli (voir onSpellLose).
+        btn.disabled = true;
+        var freeSlot = els.spellSlots.children[state.spellFillIndex];
+        if (freeSlot) freeSlot.textContent = unit;
+        state.spellFilled.push(unit);
+        state.spellFillIndex++;
+        if (state.spellFillIndex === state.spellUnits.length) {
+          if (state.spellFilled.join("") === state.spellUnits.join("")) onSpellWin();
+          else onSpellLose();
+        }
+        return;
+      }
+
       var expected = state.spellUnits[state.spellFillIndex];
       if (unit === expected) {
         btn.disabled = true;
@@ -7483,6 +7522,33 @@
       } else {
         window.setTimeout(startSpellProblem, 1200);
       }
+    }
+
+    // Niveaux élevés de "Compose le mot" (voir COMPOSE_FREE_FILL_MIN_LEVEL) :
+    // le mot est complet mais faux -- on montre quelles cases ne sont pas
+    // les bonnes lettres, comme une vraie réponse invalidée, puis on
+    // repart sur un nouveau mot.
+    function onSpellLose() {
+      for (var i = 0; i < state.spellFilled.length; i++) {
+        if (state.spellFilled[i] !== state.spellUnits[i]) {
+          var slot = els.spellSlots.children[i];
+          if (slot) slot.classList.add("is-wrong");
+        }
+      }
+      els.spellSlots.classList.add("shake");
+      window.setTimeout(function () { els.spellSlots.classList.remove("shake"); }, 400);
+
+      state.correctStreak = 0;
+      state.wrongStreak++;
+      var leveledDown = false;
+      if (state.wrongStreak >= MISTAKES_TO_LEVEL_DOWN) {
+        if (state.level > MIN_LEVEL) { state.level--; leveledDown = true; }
+        state.wrongStreak = 0;
+      }
+      setGameFeedback(leveledDown ? "Ce n'était pas le bon mot. On continue, tu vas y arriver ! 🙂" : "Ce n'était pas le bon mot, réessaie ! 💪", "wrong");
+      renderLevel();
+      saveProgress();
+      window.setTimeout(startSpellProblem, 1600);
     }
 
     // "Trace la lettre" (Écriture Malin) : une grande lettre en pointillés
