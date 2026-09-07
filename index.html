@@ -7442,6 +7442,7 @@
     }
 
     function startSpellProblem() {
+      setGameFeedback("");
       var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
       var pool = currentSpellPool(levelIdx);
       var isSyll = state.mode === "syllordre";
