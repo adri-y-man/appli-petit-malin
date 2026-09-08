@@ -1953,7 +1953,18 @@
     gap: 0.5rem;
     padding: max(0.8rem, env(safe-area-inset-top)) 1rem 0.8rem max(0.9rem, env(safe-area-inset-left));
     background: var(--sky-top);
+    /* .menu-brand est maintenant un <button> (le renard parle si on le
+       touche) : on efface le style natif du bouton pour qu'il continue à
+       se comporter visuellement comme le bandeau fixe d'avant. */
+    appearance: none;
+    border: none;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
   }
+
+  .menu-brand:active .menu-logo { transform: scale(0.94) rotate(-4deg); }
+  .menu-logo { transition: transform 0.15s ease; }
 
   .menu-brand-text {
     font-family: "Comic Sans MS", "Comic Sans", "Segoe Print", "Chalkboard SE", "Bradley Hand", cursive;
@@ -2637,7 +2648,7 @@
   </section>
 
   <div class="menu-overlay" id="menuOverlay">
-    <div class="menu-brand">
+    <button type="button" class="menu-brand" id="foxBrandBtn" aria-label="Écouter le renard malin">
       <svg class="menu-logo" viewBox="0 0 200 200" aria-hidden="true">
         <rect x="8" y="8" width="184" height="184" rx="44" fill="#FFF6EC"/>
         <path d="M57.7 76.2 L74.6 29.6 L95.8 80.4 Z" fill="#E8743B"/>
@@ -2652,7 +2663,7 @@
         <path d="M104.2 126.9 Q112.7 135.4 121.2 126.9" stroke="#3A2418" stroke-width="5" fill="none" stroke-linecap="round"/>
       </svg>
       <span class="menu-brand-text">Petit Malin</span>
-    </div>
+    </button>
     <div class="menu-panel" id="menuHome">
       <div class="category-grid">
         <button class="category-card category-card-app" type="button" data-category="calc">
@@ -5481,6 +5492,7 @@
 
     var els = {
       menuBtn: document.getElementById("menuBtn"),
+      foxBrandBtn: document.getElementById("foxBrandBtn"),
       menuOverlay: document.getElementById("menuOverlay"),
       menuHome: document.getElementById("menuHome"),
       menuCalc: document.getElementById("menuCalc"),
@@ -5671,6 +5683,20 @@
       var utter = new SpeechSynthesisUtterance(word);
       utter.lang = lang || "en-US";
       utter.rate = 0.85;
+      window.speechSynthesis.speak(utter);
+    }
+
+    // Le renard du logo (bandeau du menu) se présente quand on le touche.
+    // Fonction dédiée plutôt que speakWord() : la voix, plus aiguë (pitch),
+    // fait exprès de sonner enfantine pour ce petit personnage, sans
+    // changer le ton de tous les autres boutons "écouter" de l'appli.
+    function speakFoxGreeting() {
+      if (!("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      var utter = new SpeechSynthesisUtterance("Coucou, je suis le renard malin !");
+      utter.lang = "fr-FR";
+      utter.rate = 0.95;
+      utter.pitch = 1.6;
       window.speechSynthesis.speak(utter);
     }
 
@@ -8479,6 +8505,7 @@
     }
 
     els.menuBtn.addEventListener("click", openMenu);
+    els.foxBrandBtn.addEventListener("click", speakFoxGreeting);
     els.modeCards.forEach(function (card) {
       card.addEventListener("click", function () { selectMode(card.getAttribute("data-mode")); });
     });
