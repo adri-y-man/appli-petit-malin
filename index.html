@@ -2000,11 +2000,11 @@
     cursor: pointer;
   }
 
-  .fox-walker:focus-visible {
-    outline: 3px solid var(--ink);
-    outline-offset: 3px;
-    border-radius: 50%;
-  }
+  /* Pas d'anneau de focus ici : sur une <svg role="button"> (pas un vrai
+     <button>), les navigateurs déclenchent souvent :focus-visible au
+     simple toucher/clic (pas juste au clavier), ce qui donnait un carré
+     disgracieux autour du renard à chaque tapotement. */
+  .fox-walker:focus { outline: none; }
 
   @media (prefers-reduced-motion: no-preference) {
     .fox-walker { animation: fox-walk-across 9s linear infinite, fox-bob 0.4s ease-in-out infinite; }
