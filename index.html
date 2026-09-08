@@ -1953,18 +1953,7 @@
     gap: 0.5rem;
     padding: max(0.8rem, env(safe-area-inset-top)) 1rem 0.8rem max(0.9rem, env(safe-area-inset-left));
     background: var(--sky-top);
-    /* .menu-brand est maintenant un <button> (le renard parle si on le
-       touche) : on efface le style natif du bouton pour qu'il continue à
-       se comporter visuellement comme le bandeau fixe d'avant. */
-    appearance: none;
-    border: none;
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
   }
-
-  .menu-brand:active .menu-logo { transform: scale(0.94) rotate(-4deg); }
-  .menu-logo { transition: transform 0.15s ease; }
 
   .menu-brand-text {
     font-family: "Comic Sans MS", "Comic Sans", "Segoe Print", "Chalkboard SE", "Bradley Hand", cursive;
@@ -2004,6 +1993,17 @@
     left: -110px;
     width: clamp(70px, 12vw, 100px);
     height: auto;
+    /* .fox-walk-lane (le parent) ignore le toucher sur toute sa largeur
+       pour ne pas gêner les cartes du menu -- seul le renard lui-même,
+       qui se déplace dedans, doit rester touchable pour se présenter. */
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  .fox-walker:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 3px;
+    border-radius: 50%;
   }
 
   @media (prefers-reduced-motion: no-preference) {
@@ -2648,7 +2648,7 @@
   </section>
 
   <div class="menu-overlay" id="menuOverlay">
-    <button type="button" class="menu-brand" id="foxBrandBtn" aria-label="Écouter le renard malin">
+    <div class="menu-brand">
       <svg class="menu-logo" viewBox="0 0 200 200" aria-hidden="true">
         <rect x="8" y="8" width="184" height="184" rx="44" fill="#FFF6EC"/>
         <path d="M57.7 76.2 L74.6 29.6 L95.8 80.4 Z" fill="#E8743B"/>
@@ -2663,7 +2663,7 @@
         <path d="M104.2 126.9 Q112.7 135.4 121.2 126.9" stroke="#3A2418" stroke-width="5" fill="none" stroke-linecap="round"/>
       </svg>
       <span class="menu-brand-text">Petit Malin</span>
-    </button>
+    </div>
     <div class="menu-panel" id="menuHome">
       <div class="category-grid">
         <button class="category-card category-card-app" type="button" data-category="calc">
@@ -2830,8 +2830,8 @@
           <span class="app-icon-label">Jeux de société</span>
         </button>
       </div>
-      <div class="fox-walk-lane" aria-hidden="true">
-        <svg class="fox-walker" viewBox="0 0 100 70">
+      <div class="fox-walk-lane">
+        <svg class="fox-walker" id="foxWalker" viewBox="0 0 100 70" role="button" tabindex="0" aria-label="Écouter le renard">
           <ellipse cx="50" cy="60" rx="32" ry="4" fill="#000" opacity="0.08" />
           <g class="fox-tail">
             <path d="M20 42 Q -2 32 4 14 Q 10 28 24 36 Z" fill="#E8743B" />
@@ -5492,7 +5492,7 @@
 
     var els = {
       menuBtn: document.getElementById("menuBtn"),
-      foxBrandBtn: document.getElementById("foxBrandBtn"),
+      foxWalker: document.getElementById("foxWalker"),
       menuOverlay: document.getElementById("menuOverlay"),
       menuHome: document.getElementById("menuHome"),
       menuCalc: document.getElementById("menuCalc"),
@@ -8505,7 +8505,10 @@
     }
 
     els.menuBtn.addEventListener("click", openMenu);
-    els.foxBrandBtn.addEventListener("click", speakFoxGreeting);
+    els.foxWalker.addEventListener("click", speakFoxGreeting);
+    els.foxWalker.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); speakFoxGreeting(); }
+    });
     els.modeCards.forEach(function (card) {
       card.addEventListener("click", function () { selectMode(card.getAttribute("data-mode")); });
     });
