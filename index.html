@@ -5687,16 +5687,16 @@
     }
 
     // Le petit renard animé de l'accueil se présente quand on le touche.
-    // Fonction dédiée plutôt que speakWord() : le pitch est poussé au
-    // maximum (2) pour sonner nettement enfantine, sans changer le ton de
-    // tous les autres boutons "écouter" de l'appli.
+    // Fonction dédiée plutôt que speakWord() : le pitch est relevé (mais
+    // pas au maximum) pour sonner enfantine sans devenir criard, sans
+    // changer le ton de tous les autres boutons "écouter" de l'appli.
     function speakFoxGreeting() {
       if (!("speechSynthesis" in window)) return;
       window.speechSynthesis.cancel();
       var utter = new SpeechSynthesisUtterance("Coucou, je suis le renard malin !");
       utter.lang = "fr-FR";
       utter.rate = 0.9;
-      utter.pitch = 2;
+      utter.pitch = 1.8;
       window.speechSynthesis.speak(utter);
     }
 
