@@ -2619,8 +2619,8 @@
   <section class="spell-screen" id="spellScreen" hidden>
     <span class="spell-pic emoji" id="spellPic"></span>
     <div class="spell-slots" id="spellSlots"></div>
-    <button type="button" class="spell-erase-btn" id="spellEraseBtn" disabled>⌫ Effacer</button>
     <div class="spell-tiles" id="spellTiles"></div>
+    <button type="button" class="spell-erase-btn" id="spellEraseBtn" disabled>⌫ Effacer</button>
   </section>
 
   <section class="trace-screen" id="traceScreen" hidden>
@@ -7438,8 +7438,10 @@
     // - "composelibre" : toute lettre est acceptée dans la prochaine case
     //   libre, et la validation n'a lieu qu'une fois le mot entier rempli
     //   -- voir onSpellTileTap / onSpellLose.
-    // Dans les deux cas, spellEraseBtn (onSpellErase) permet de rattraper
-    // une lettre posée par erreur sans tout recommencer.
+    // En mode "libre", spellEraseBtn (onSpellErase) permet de rattraper
+    // une lettre posée par erreur sans tout recommencer -- masqué en mode
+    // "simple" (comme pour "Reforme le mot"/"Remets les syllabes"), où
+    // aucune mauvaise lettre ne se pose jamais dans une case.
     function currentSpellPool(levelIdx) {
       if (state.mode === "syllordre") return SYLLORDRE_LEVEL_POOL[levelIdx];
       if (state.mode === "composesimple" || state.mode === "composelibre") return COMPOSE_LEVEL_POOL[levelIdx];
@@ -7473,6 +7475,11 @@
         tile.addEventListener("click", function () { onSpellTileTap(unit, tile); });
         els.spellTiles.appendChild(tile);
       });
+      // "Compose le mot (simple)" (comme "Reforme le mot"/"Remets les
+      // syllabes") refuse déjà toute mauvaise lettre avant qu'elle ne se
+      // pose -- il n'y a donc jamais de faute de frappe à rattraper là,
+      // contrairement à "Compose le mot (libre)".
+      els.spellEraseBtn.hidden = state.mode === "composesimple";
       els.spellEraseBtn.disabled = true;
     }
 
