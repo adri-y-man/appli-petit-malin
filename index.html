@@ -1175,13 +1175,34 @@
     color: var(--ink);
   }
 
-  /* Niveaux élevés de "Compose le mot" : une fois le mot invalidé, montre
+  /* "Compose le mot (libre)" : une fois le mot invalidé, montre
      précisément quelles cases n'ont pas la bonne lettre. */
   .spell-slot.is-wrong {
     border-style: solid;
     border-color: var(--wrong);
     background: rgba(255, 77, 94, 0.16);
     color: var(--wrong);
+  }
+
+  /* Permet de rattraper une lettre posée par erreur (surtout utile en mode
+     "libre", où toute lettre est acceptée) sans devoir tout recommencer. */
+  .spell-erase-btn {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: clamp(0.85rem, 3.4vw, 1rem);
+    color: var(--ink);
+    background: rgba(255, 255, 255, 0.75);
+    border-radius: 999px;
+    padding: 0.45rem 1.1rem;
+    box-shadow: 0 4px 10px -6px rgba(31, 42, 60, 0.4);
+  }
+
+  .spell-erase-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
   }
 
   .spell-tiles {
@@ -2231,7 +2252,8 @@
   .category-card-syllables { background: linear-gradient(135deg, #598ce6, #3454d1); }
   .category-card-rhymes { background: linear-gradient(135deg, #ef5da8, #d9418c); }
   .category-card-wordgrid { background: linear-gradient(135deg, #43b98a, #598ce6); }
-  .category-card-compose { background: linear-gradient(135deg, #ffb703, #fb8500); }
+  .category-card-composesimple { background: linear-gradient(135deg, #ffb703, #fb8500); }
+  .category-card-composelibre { background: linear-gradient(135deg, #fb8500, #d1495b); }
   .category-card-coloriage { background: linear-gradient(135deg, #ff8c3d, #e63946); }
   .category-card-modele { background: linear-gradient(135deg, #8e5ce6, #3454d1); }
   .category-card-dessine { background: linear-gradient(135deg, #43b98a, #2a9d6f); }
@@ -2597,6 +2619,7 @@
   <section class="spell-screen" id="spellScreen" hidden>
     <span class="spell-pic emoji" id="spellPic"></span>
     <div class="spell-slots" id="spellSlots"></div>
+    <button type="button" class="spell-erase-btn" id="spellEraseBtn" disabled>⌫ Effacer</button>
     <div class="spell-tiles" id="spellTiles"></div>
   </section>
 
@@ -3145,10 +3168,15 @@
           <span>Reforme le mot</span>
           <span class="level-badge">MS-CP</span>
         </button>
-        <button class="category-card category-card-compose" type="button" id="composeCard">
+        <button class="category-card category-card-composesimple" type="button" id="composeSimpleCard">
           <span class="icon emoji">🔡</span>
-          <span>Compose le mot</span>
+          <span>Compose le mot (simple)</span>
           <span class="level-badge">CP-CE1</span>
+        </button>
+        <button class="category-card category-card-composelibre" type="button" id="composeLibreCard">
+          <span class="icon emoji">🔡</span>
+          <span>Compose le mot (libre)</span>
+          <span class="level-badge">CE1-CE2</span>
         </button>
         <button class="category-card category-card-lettreman" type="button" id="lettremanCard">
           <span class="icon emoji">🧩</span>
@@ -3459,12 +3487,13 @@
 
     var ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-    // Lecture Malin — "Compose le mot" : façon Scrabble, l'enfant pioche les
-    // bonnes lettres dans un lot plus grand que le mot lui-même (des lettres
-    // "intrus" qui n'en font pas partie sont mélangées avec les vraies).
-    // Contrairement à "Reforme le mot" (Écriture Malin), qui ne mélange que
-    // les lettres du mot, ici il faut d'abord repérer les bonnes lettres
-    // parmi des leurres. Mots plus longs + plus de leurres à mesure que le
+    // Écriture Malin — "Compose le mot (simple)" / "Compose le mot
+    // (libre)" : façon Scrabble, l'enfant pioche les bonnes lettres dans
+    // un lot plus grand que le mot lui-même (des lettres "intrus" qui
+    // n'en font pas partie sont mélangées avec les vraies). Contrairement
+    // à "Reforme le mot", qui ne mélange que les lettres du mot, ici il
+    // faut d'abord repérer les bonnes lettres parmi des leurres. Mots
+    // plus longs + plus de leurres à mesure que le
     // niveau monte.
     var COMPOSE_WORDS = {
       chat: { word: "chat", emoji: "🐱" },
@@ -3498,12 +3527,6 @@
         "dauphin", "chateau", "taureau", "poisson", "elephant", "papillon", "tournesol", "dinosaure"]
     ];
     var COMPOSE_DISTRACTOR_COUNT = [3, 3, 4, 4, 5];
-    // À partir de ce niveau, "Compose le mot" accepte n'importe quelle
-    // lettre dans la prochaine case libre (même une mauvaise) et ne
-    // valide/invalide qu'une fois toutes les cases remplies -- comme un
-    // vrai test d'orthographe. En dessous, chaque lettre hors-ordre est
-    // refusée au fur et à mesure (voir onSpellTileTap).
-    var COMPOSE_FREE_FILL_MIN_LEVEL = 4;
 
     // Lecture Malin — "Trouve le mot" : une grille de mots entiers (pas de
     // lettres à assembler) -- les jours de la semaine, en MAJUSCULES. Le
@@ -4535,17 +4558,21 @@
       spellTilePool: null,
       spellFillIndex: 0,
       spellFilled: [],
+      spellFilledBtns: [],
       spellEmoji: "",
       lastMotKey: "",
       lastSyllordreKey: "",
-      lastComposeKey: "",
+      lastComposeSimpleKey: "",
+      lastComposeLibreKey: "",
       lastInstrumentKey: "",
       motBag: [],
       motBagPool: null,
       syllordreBag: [],
       syllordreBagPool: null,
-      composeBag: [],
-      composeBagPool: null,
+      composeSimpleBag: [],
+      composeSimpleBagPool: null,
+      composeLibreBag: [],
+      composeLibreBagPool: null,
       instrumentsBag: [],
       instrumentsBagPool: null,
       traceLetter: "",
@@ -5572,7 +5599,8 @@
       changeCard: document.getElementById("changeCard"),
       suitelumCard: document.getElementById("suitelumCard"),
       motCard: document.getElementById("motCard"),
-      composeCard: document.getElementById("composeCard"),
+      composeSimpleCard: document.getElementById("composeSimpleCard"),
+      composeLibreCard: document.getElementById("composeLibreCard"),
       lettremanCard: document.getElementById("lettremanCard"),
       traceCard: document.getElementById("traceCard"),
       syllordreCard: document.getElementById("syllordreCard"),
@@ -5616,6 +5644,7 @@
       spellPic: document.getElementById("spellPic"),
       spellSlots: document.getElementById("spellSlots"),
       spellTiles: document.getElementById("spellTiles"),
+      spellEraseBtn: document.getElementById("spellEraseBtn"),
       traceScreen: document.getElementById("traceScreen"),
       traceStage: document.getElementById("traceStage"),
       traceGuidePath: document.getElementById("traceGuidePath"),
@@ -6638,7 +6667,7 @@
     }
 
     function isSpellMode(mode) {
-      return mode === "mot" || mode === "syllordre" || mode === "compose";
+      return mode === "mot" || mode === "syllordre" || mode === "composesimple" || mode === "composelibre";
     }
 
     // "Trace la lettre" et "Trace la forme" partagent le même écran/canevas
@@ -7398,21 +7427,27 @@
     // "Reforme le mot" / "Remets les syllabes" (Écriture Malin) : une image
     // s'affiche avec des cases vides, et des tuiles mélangées (lettres ou
     // syllabes selon le mode) qu'il faut toucher dans le bon ordre pour
-    // reconstituer le mot. "Compose le mot" (Lecture Malin) partage le même
-    // écran, mais mélange aussi des lettres intrus (state.spellTilePool) au
-    // lot de tuiles -- voir startSpellProblem. À partir de
-    // COMPOSE_FREE_FILL_MIN_LEVEL, "Compose le mot" change aussi de
-    // mécanique : toute lettre est acceptée dans la prochaine case libre,
-    // et la validation n'a lieu qu'une fois le mot entier rempli -- voir
-    // onSpellTileTap / onSpellLose.
+    // reconstituer le mot. "Compose le mot (simple)" et "Compose le mot
+    // (libre)" (Écriture Malin aussi) partagent le même écran, mais
+    // mélangent aussi des lettres intrus (state.spellTilePool) au lot de
+    // tuiles -- voir startSpellProblem. Les deux jeux ne diffèrent que par
+    // leur mécanique de validation, sur les 5 niveaux :
+    // - "composesimple" : comme "Reforme le mot", seule la prochaine
+    //   lettre attendue est acceptée, une mauvaise tuile est refusée
+    //   immédiatement (elle secoue, sans pénalité) -- voir onSpellTileTap.
+    // - "composelibre" : toute lettre est acceptée dans la prochaine case
+    //   libre, et la validation n'a lieu qu'une fois le mot entier rempli
+    //   -- voir onSpellTileTap / onSpellLose.
+    // Dans les deux cas, spellEraseBtn (onSpellErase) permet de rattraper
+    // une lettre posée par erreur sans tout recommencer.
     function currentSpellPool(levelIdx) {
       if (state.mode === "syllordre") return SYLLORDRE_LEVEL_POOL[levelIdx];
-      if (state.mode === "compose") return COMPOSE_LEVEL_POOL[levelIdx];
+      if (state.mode === "composesimple" || state.mode === "composelibre") return COMPOSE_LEVEL_POOL[levelIdx];
       return WORD_LEVEL_POOL[levelIdx];
     }
 
     // Tire des lettres qui ne font pas partie du mot cible, pour servir de
-    // leurres dans "Compose le mot" (voir startSpellProblem).
+    // leurres dans "Compose le mot (simple/libre)" (voir startSpellProblem).
     function pickComposeDistractors(word, count) {
       var used = {};
       word.toUpperCase().split("").forEach(function (ch) { used[ch] = true; });
@@ -7438,6 +7473,7 @@
         tile.addEventListener("click", function () { onSpellTileTap(unit, tile); });
         els.spellTiles.appendChild(tile);
       });
+      els.spellEraseBtn.disabled = true;
     }
 
     // Pioche dans une "pile mélangée" (comme un jeu de cartes qu'on
@@ -7467,10 +7503,11 @@
       var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
       var pool = currentSpellPool(levelIdx);
       var isSyll = state.mode === "syllordre";
-      var isCompose = state.mode === "compose";
-      var lastKeyField = isSyll ? "lastSyllordreKey" : isCompose ? "lastComposeKey" : "lastMotKey";
-      var bagField = isSyll ? "syllordreBag" : isCompose ? "composeBag" : "motBag";
-      var bagPoolField = isSyll ? "syllordreBagPool" : isCompose ? "composeBagPool" : "motBagPool";
+      var isCompose = state.mode === "composesimple" || state.mode === "composelibre";
+      var isComposeLibre = state.mode === "composelibre";
+      var lastKeyField = isSyll ? "lastSyllordreKey" : isComposeLibre ? "lastComposeLibreKey" : isCompose ? "lastComposeSimpleKey" : "lastMotKey";
+      var bagField = isSyll ? "syllordreBag" : isComposeLibre ? "composeLibreBag" : isCompose ? "composeSimpleBag" : "motBag";
+      var bagPoolField = isSyll ? "syllordreBagPool" : isComposeLibre ? "composeLibreBagPool" : isCompose ? "composeSimpleBagPool" : "motBagPool";
       var key = drawFromBag(pool, bagField, bagPoolField, lastKeyField);
       state[lastKeyField] = key;
       var def = isSyll ? SYLLORDRE_WORDS[key] : isCompose ? COMPOSE_WORDS[key] : WORD_DEFS[key];
@@ -7478,6 +7515,7 @@
       state.spellUnits = isSyll ? def.syllables.slice() : def.word.toUpperCase().split("");
       state.spellFillIndex = 0;
       state.spellFilled = [];
+      state.spellFilledBtns = [];
       state.spellEmoji = def.emoji;
       state.spellTilePool = isCompose
         ? shuffle(state.spellUnits.concat(pickComposeDistractors(def.word, COMPOSE_DISTRACTOR_COUNT[levelIdx])))
@@ -7488,7 +7526,7 @@
 
     function onSpellTileTap(unit, btn) {
       if (btn.disabled) return;
-      var freeFill = state.mode === "compose" && state.level >= COMPOSE_FREE_FILL_MIN_LEVEL;
+      var freeFill = state.mode === "composelibre";
 
       if (freeFill) {
         // Accepte n'importe quelle lettre dans la prochaine case libre, y
@@ -7498,7 +7536,9 @@
         var freeSlot = els.spellSlots.children[state.spellFillIndex];
         if (freeSlot) freeSlot.textContent = unit;
         state.spellFilled.push(unit);
+        state.spellFilledBtns.push(btn);
         state.spellFillIndex++;
+        els.spellEraseBtn.disabled = false;
         if (state.spellFillIndex === state.spellUnits.length) {
           if (state.spellFilled.join("") === state.spellUnits.join("")) onSpellWin();
           else onSpellLose();
@@ -7511,7 +7551,9 @@
         btn.disabled = true;
         var slot = els.spellSlots.children[state.spellFillIndex];
         if (slot) slot.textContent = unit;
+        state.spellFilledBtns.push(btn);
         state.spellFillIndex++;
+        els.spellEraseBtn.disabled = false;
         if (state.spellFillIndex === state.spellUnits.length) onSpellWin();
         return;
       }
@@ -7519,6 +7561,23 @@
       // remplies restent acquises.
       btn.classList.add("shake");
       window.setTimeout(function () { btn.classList.remove("shake"); }, 400);
+    }
+
+    // Retire la dernière lettre posée (les deux jeux "Compose le mot") pour
+    // rattraper une erreur de frappe sans devoir tout recommencer -- rend
+    // sa tuile utilisable à nouveau et libère la case correspondante.
+    function onSpellErase() {
+      if (state.spellFillIndex === 0) return;
+      state.spellFillIndex--;
+      var slot = els.spellSlots.children[state.spellFillIndex];
+      if (slot) {
+        slot.textContent = "";
+        slot.classList.remove("is-wrong");
+      }
+      var btn = state.spellFilledBtns.pop();
+      if (btn) btn.disabled = false;
+      if (state.spellFilled.length) state.spellFilled.pop();
+      els.spellEraseBtn.disabled = state.spellFillIndex === 0;
     }
 
     function onSpellWin() {
@@ -7546,10 +7605,9 @@
       }
     }
 
-    // Niveaux élevés de "Compose le mot" (voir COMPOSE_FREE_FILL_MIN_LEVEL) :
-    // le mot est complet mais faux -- on montre quelles cases ne sont pas
-    // les bonnes lettres, comme une vraie réponse invalidée, puis on
-    // repart sur un nouveau mot.
+    // "Compose le mot (libre)" : le mot est complet mais faux -- on
+    // montre quelles cases ne sont pas les bonnes lettres, comme une
+    // vraie réponse invalidée, puis on repart sur un nouveau mot.
     function onSpellLose() {
       for (var i = 0; i < state.spellFilled.length; i++) {
         if (state.spellFilled[i] !== state.spellUnits[i]) {
@@ -8310,7 +8368,7 @@
       if (mode === "musiquelibre" || mode === "instruments" || mode === "pitch" || mode === "rythme") return "musique";
       if (mode === "animalname" || mode === "babies" || mode === "habitat" || mode === "diet" || mode === "animalsound") return "animaux";
       if (isMemoryMode(mode) || mode === "disparu" || mode === "ordre" || mode === "change" || mode === "suitelum") return "memoire";
-      if (mode === "mot" || mode === "compose" || mode === "lettreman" || mode === "trace" || mode === "syllordre") return "ecriture";
+      if (mode === "mot" || mode === "composesimple" || mode === "composelibre" || mode === "lettreman" || mode === "trace" || mode === "syllordre") return "ecriture";
       if (mode === "traceforme" || mode === "shapes" || mode === "fillforme" || mode === "intrus" || mode === "puzzle") return "formes";
       if (mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale") return "jeux";
       return null;
@@ -8540,7 +8598,9 @@
     els.changeCard.addEventListener("click", function () { selectMode("change"); });
     els.suitelumCard.addEventListener("click", function () { selectMode("suitelum"); });
     els.motCard.addEventListener("click", function () { selectMode("mot"); });
-    els.composeCard.addEventListener("click", function () { selectMode("compose"); });
+    els.composeSimpleCard.addEventListener("click", function () { selectMode("composesimple"); });
+    els.composeLibreCard.addEventListener("click", function () { selectMode("composelibre"); });
+    els.spellEraseBtn.addEventListener("click", onSpellErase);
     els.lettremanCard.addEventListener("click", function () { selectMode("lettreman"); });
     els.traceCard.addEventListener("click", function () { selectMode("trace"); });
     els.syllordreCard.addEventListener("click", function () { selectMode("syllordre"); });
