@@ -1518,6 +1518,24 @@
   .dames-piece.piece-b { background: #2a2a2a; color: #ffd400; }
   .dames-piece.piece-w { background: #fff8ee; color: #6a4c93; border: 2px solid #d8c9a8; }
 
+  /* Dames sur tablette : le plafond de 26rem pensé pour téléphone laissait
+     le plateau minuscule au milieu de tout l'espace disponible. En
+     portrait la largeur ne manque pas -- on dimensionne sur elle ; en
+     paysage c'est la hauteur qui est abondante -- on dimensionne sur
+     elle (comme les réponses de "Trouve l'intrus" plus haut). */
+  @media (min-width: 640px) and (orientation: portrait) {
+    .dames-board { width: min(82vw, 40rem); }
+  }
+
+  @media (min-width: 640px) and (orientation: landscape) {
+    /* "100vh - 14.5rem" plutôt qu'un simple "% de vh" : l'écran de jeu
+       réserve toujours à peu près la même hauteur fixe (barre du haut,
+       statut, bouton rejouer, espacements) quelle que soit la tablette --
+       un pourcentage de vh grandit plus vite que l'espace réellement
+       disponible et écrasait le plateau (largeur > hauteur restante). */
+    .dames-board { width: min(calc(100vh - 14.5rem), 40rem); }
+  }
+
   .bn-screen {
     flex: 1 1 0;
     display: flex;
