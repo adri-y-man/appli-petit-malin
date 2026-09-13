@@ -1,5 +1,9 @@
 # Petit Malin
 
+> **Dépôt actif du projet.** Tout le développement se fait ici, sur
+> `adri-y-man/appli-petit-malin`. Les dépôts `appli-calcul` et
+> `appli-calcul-kids` sont d'anciennes versions obsolètes.
+
 Jeu web pour apprendre à calculer, à reconnaître les couleurs en anglais et
 à lire ses premiers mots, pensé pour un enfant qui découvre tout ça.
 
@@ -27,4 +31,4 @@ Ce dépôt ne contient qu'un seul fichier HTML autonome. Pour que ton enfant y
 accède depuis une adresse web (sans passer par un fichier local), tu peux
 activer **GitHub Pages** sur ce dépôt (Settings → Pages → Deploy from
 branch → `main`) : la page sera alors servie à une URL du type
-`https://<utilisateur>.github.io/appli-calcul-kids/`.
+`https://<utilisateur>.github.io/appli-petit-malin/`.
