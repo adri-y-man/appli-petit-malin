@@ -1,9 +1,5 @@
 # Petit Malin
 
-> **Dépôt actif du projet.** Tout le développement se fait ici, sur
-> `adri-y-man/appli-petit-malin`. Les dépôts `appli-calcul` et
-> `appli-calcul-kids` sont d'anciennes versions obsolètes.
-
 Jeu web pour apprendre à calculer, à reconnaître les couleurs en anglais et
 à lire ses premiers mots, pensé pour un enfant qui découvre tout ça.
 
