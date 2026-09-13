@@ -8651,12 +8651,17 @@
       renderDominoScreen();
     }
 
-    function onDominoTileTap(idx) {
+    function onDominoTileTap(idx, btn) {
       if (state.domWinner) return;
-      if (domPlayableIndices().indexOf(idx) === -1) return;
       var ends = domChainEnds();
       if (ends.left === null) {
         domPlaceTile(idx, "right");
+        return;
+      }
+      var avail = domPlayableEndsForTile(idx);
+      if (!avail.left && !avail.right) {
+        btn.classList.add("shake");
+        window.setTimeout(function () { btn.classList.remove("shake"); }, 400);
         return;
       }
       state.domSelectedIdx = state.domSelectedIdx === idx ? null : idx;
@@ -8726,15 +8731,18 @@
       els.dominoRightMarker.hidden = !avail.right;
 
       var hand = state.domHands[state.domTurn - 1];
+      // Volontairement pas de tuile grisée/désactivée selon sa jouabilité
+      // ici : ce serait choisir à la place du joueur. Toutes les tuiles
+      // restent tapables ; une tuile qui ne colle nulle part secoue
+      // seulement au moment où on la touche (voir onDominoTileTap).
       var playable = domPlayableIndices();
       els.dominoHand.innerHTML = "";
       hand.forEach(function (t, i) {
         var tileEl = domBuildTileEl(t.a, t.b, true);
         tileEl.classList.add("domino-hand-tile");
-        var isPlayable = playable.indexOf(i) !== -1;
-        tileEl.disabled = !!state.domWinner || !isPlayable;
+        tileEl.disabled = !!state.domWinner;
         if (i === state.domSelectedIdx) tileEl.classList.add("selected");
-        tileEl.addEventListener("click", function () { onDominoTileTap(i); });
+        tileEl.addEventListener("click", function () { onDominoTileTap(i, tileEl); });
         els.dominoHand.appendChild(tileEl);
       });
 
