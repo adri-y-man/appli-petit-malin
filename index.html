@@ -1592,6 +1592,142 @@
   .bn-cell.shot-hit { background: #e63946; }
   .bn-cell:disabled { cursor: default; }
 
+  /* Jeux de société — "Domino" : jeu classique double-six (28 tuiles),
+     2 joueurs en local qui posent chacun leur tour une tuile dont une
+     valeur correspond à un bout de la chaîne. Comme au vrai jeu, chaque
+     joueur garde sa main cachée -- l'écran n'affiche que la main du
+     joueur dont c'est le tour ; l'autre n'est indiqué que par son
+     nombre de tuiles restantes. */
+  .domino-screen {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.6rem, 2.4vh, 1rem);
+    min-height: 0;
+    width: 100%;
+  }
+
+  .domino-screen[hidden] { display: none; }
+
+  .domino-meta {
+    margin: 0;
+    text-align: center;
+    font-weight: 700;
+    font-size: clamp(0.85rem, 3.4vw, 1.05rem);
+    color: var(--white);
+    text-shadow: 0 2px 0 rgba(31, 42, 60, 0.2);
+  }
+
+  .domino-chain-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.4rem, 1.6vw, 0.7rem);
+    width: 100%;
+  }
+
+  .domino-chain {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: center;
+    justify-content: center;
+    gap: clamp(0.2rem, 1vw, 0.4rem);
+    min-height: clamp(2.6rem, 10vw, 3.4rem);
+    max-height: 27vh;
+    min-width: 60%;
+    overflow-y: auto;
+    padding: 0.4rem;
+    border-radius: clamp(0.6rem, 2vw, 1rem);
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .domino-chain-hint {
+    margin: 0;
+    text-align: center;
+    font-weight: 700;
+    font-size: clamp(0.8rem, 3.2vw, 0.95rem);
+    color: var(--white);
+    opacity: 0.85;
+  }
+
+  /* Boutons ronds "+" qui n'apparaissent qu'une fois une tuile de la
+     main sélectionnée (voir onDominoTileTap) -- ils indiquent le ou les
+     bouts de la chaîne où cette tuile précise peut se poser. */
+  .domino-end-marker {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    flex: 0 0 auto;
+    width: clamp(2.2rem, 8vw, 2.8rem);
+    height: clamp(2.2rem, 8vw, 2.8rem);
+    border-radius: 50%;
+    background: #ffd400;
+    color: var(--ink);
+    font-size: clamp(1.1rem, 4vw, 1.4rem);
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 12px -6px rgba(31, 42, 60, 0.5);
+    transition: transform 0.1s ease;
+  }
+
+  .domino-end-marker[hidden] { display: none; }
+  .domino-end-marker:active { transform: scale(0.92); }
+
+  .domino-hand {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(0.3rem, 1.4vw, 0.5rem);
+    max-height: 24vh;
+    overflow-y: auto;
+    width: 100%;
+    padding: 0.2rem;
+  }
+
+  .domino-tile {
+    appearance: none;
+    border: none;
+    display: flex;
+    flex-direction: row;
+    flex: 0 0 auto;
+    width: clamp(2.6rem, 10vw, 3.4rem);
+    height: clamp(1.3rem, 5vw, 1.7rem);
+    background: var(--white);
+    border-radius: clamp(0.3rem, 1vw, 0.45rem);
+    overflow: hidden;
+    box-shadow: 0 4px 8px -4px rgba(31, 42, 60, 0.4);
+  }
+
+  button.domino-tile { cursor: pointer; transition: transform 0.1s ease; }
+  button.domino-tile:disabled { opacity: 0.35; cursor: default; }
+  button.domino-tile.selected { box-shadow: 0 0 0 3px #ffd400, 0 4px 8px -4px rgba(31, 42, 60, 0.4); }
+  button.domino-tile:active:not(:disabled) { transform: translateY(1px); }
+
+  .domino-half {
+    flex: 1 1 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 1px;
+    padding: 2px;
+  }
+
+  .domino-divider { flex: 0 0 1px; background: rgba(31, 42, 60, 0.25); }
+
+  .domino-pip { border-radius: 50%; }
+  .domino-pip.on { background: var(--ink); }
+
+  .domino-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(0.5rem, 2vw, 0.8rem);
+  }
+
   /* mobile portrait : on pousse encore les tailles pour profiter de l'écran étroit et haut */
   @media (max-width: 640px) and (orientation: portrait) {
     :root {
@@ -2309,6 +2445,7 @@
   .category-card-puissance4 { background: linear-gradient(135deg, #3d7fe0, #1f2a3c); }
   .category-card-dames { background: linear-gradient(135deg, #2a2a2a, #598ce6); }
   .category-card-bataille { background: linear-gradient(135deg, #3d7fe0, #33c2c2); }
+  .category-card-domino { background: linear-gradient(135deg, #1f2a3c, #ffd400); }
 
   /* 3 colonnes fixes (plutôt qu'un auto-fill dont le nombre de colonnes
      dépend de la largeur) : garantit que les 12 icônes (4 rangées de 3)
@@ -2686,6 +2823,22 @@
     <div class="bn-board" id="bnBoard"></div>
     <button type="button" class="boardgame-replay-btn" id="bnReadyBtn" hidden>Je suis prêt ✓</button>
     <button type="button" class="boardgame-replay-btn" id="bnReplayBtn">Rejouer ↻</button>
+  </section>
+
+  <section class="domino-screen" id="dominoScreen" hidden>
+    <p class="boardgame-status" id="dominoStatus"></p>
+    <p class="domino-meta" id="dominoMeta"></p>
+    <div class="domino-chain-wrap">
+      <button type="button" class="domino-end-marker" id="dominoLeftMarker" hidden aria-label="Poser à ce bout">◀</button>
+      <div class="domino-chain" id="dominoChain"></div>
+      <button type="button" class="domino-end-marker" id="dominoRightMarker" hidden aria-label="Poser à ce bout">▶</button>
+    </div>
+    <div class="domino-hand" id="dominoHand"></div>
+    <div class="domino-actions">
+      <button type="button" class="boardgame-replay-btn" id="dominoDrawBtn" hidden>Piocher 🁠</button>
+      <button type="button" class="boardgame-replay-btn" id="dominoPassBtn" hidden>Passer →</button>
+      <button type="button" class="boardgame-replay-btn" id="dominoReplayBtn">Rejouer ↻</button>
+    </div>
   </section>
 
   <div class="menu-overlay" id="menuOverlay">
@@ -3280,6 +3433,11 @@
         <button class="category-card category-card-bataille" type="button" id="bataillenavaleCard">
           <span class="icon emoji">🚢</span>
           <span>Bataille navale</span>
+          <span class="level-badge">2 joueurs</span>
+        </button>
+        <button class="category-card category-card-domino" type="button" id="dominoCard">
+          <span class="icon emoji">🁫</span>
+          <span>Domino</span>
           <span class="level-badge">2 joueurs</span>
         </button>
       </div>
@@ -4629,7 +4787,14 @@
       bnShots2: [],
       bnTurn: "1",
       bnPhase: "handoff",
-      bnWinner: null
+      bnWinner: null,
+      domHands: [[], []],
+      domBoneyard: [],
+      domChain: [],
+      domTurn: 1,
+      domSelectedIdx: null,
+      domPasses: 0,
+      domWinner: null
     };
 
     var PROGRESS_KEY = "calculMalinProgress";
@@ -5570,6 +5735,16 @@
       bnBoard: document.getElementById("bnBoard"),
       bnReadyBtn: document.getElementById("bnReadyBtn"),
       bnReplayBtn: document.getElementById("bnReplayBtn"),
+      dominoScreen: document.getElementById("dominoScreen"),
+      dominoStatus: document.getElementById("dominoStatus"),
+      dominoMeta: document.getElementById("dominoMeta"),
+      dominoChain: document.getElementById("dominoChain"),
+      dominoLeftMarker: document.getElementById("dominoLeftMarker"),
+      dominoRightMarker: document.getElementById("dominoRightMarker"),
+      dominoHand: document.getElementById("dominoHand"),
+      dominoDrawBtn: document.getElementById("dominoDrawBtn"),
+      dominoPassBtn: document.getElementById("dominoPassBtn"),
+      dominoReplayBtn: document.getElementById("dominoReplayBtn"),
       categoryCards: document.querySelectorAll(".category-card"),
       calcBackBtn: document.getElementById("calcBackBtn"),
       terms2BackBtn: document.getElementById("terms2BackBtn"),
@@ -5587,6 +5762,7 @@
       puissance4Card: document.getElementById("puissance4Card"),
       damesCard: document.getElementById("damesCard"),
       bataillenavaleCard: document.getElementById("bataillenavaleCard"),
+      dominoCard: document.getElementById("dominoCard"),
       colorsCard: document.getElementById("colorsCard"),
       animalsCard: document.getElementById("animalsCard"),
       bodyCard: document.getElementById("bodyCard"),
@@ -6696,7 +6872,7 @@
 
     // Jeux de société : parties à 2 joueurs en local (pas de niveaux/étoiles).
     function isBoardGameMode(mode) {
-      return mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale";
+      return mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino";
     }
 
     // "Paires cachées" et "Paires cachées (drapeaux)" partagent le même
@@ -8361,6 +8537,218 @@
       }
     }
 
+    // Jeux de société — "Domino" : double-six classique (28 tuiles, valeurs
+    // 0 à 6), 2 joueurs en local. Comme au vrai jeu, seule la main du
+    // joueur dont c'est le tour est affichée -- l'autre n'est indiqué que
+    // par son nombre de tuiles restantes (state.domHands garde les deux
+    // mains en mémoire, mais renderDominoScreen n'en affiche qu'une).
+    // Poser une tuile se fait en 2 temps dès que la chaîne n'est plus
+    // vide : on touche la tuile (elle se sélectionne, voir
+    // domPlayableEndsForTile), puis le bout de chaîne où elle peut aller
+    // s'allume -- ce qui laisse le choix quand une tuile correspond aux
+    // deux bouts à la fois. Sur la toute première tuile de la partie, il
+    // n'y a pas encore de "bout" : toucher une tuile la pose aussitôt.
+    var DOMINO_PIP_CELLS = {
+      0: [],
+      1: [4],
+      2: [0, 8],
+      3: [0, 4, 8],
+      4: [0, 2, 6, 8],
+      5: [0, 2, 4, 6, 8],
+      6: [0, 2, 3, 5, 6, 8]
+    };
+
+    var DOMINO_SET = (function () {
+      var tiles = [];
+      for (var a = 0; a <= 6; a++) {
+        for (var b = a; b <= 6; b++) tiles.push({ a: a, b: b });
+      }
+      return tiles;
+    }());
+
+    function domBuildHalf(value) {
+      var half = document.createElement("span");
+      half.className = "domino-half";
+      for (var i = 0; i < 9; i++) {
+        var dot = document.createElement("span");
+        dot.className = "domino-pip" + (DOMINO_PIP_CELLS[value].indexOf(i) !== -1 ? " on" : "");
+        half.appendChild(dot);
+      }
+      return half;
+    }
+
+    function domBuildTileEl(a, b, interactive) {
+      var el = document.createElement(interactive ? "button" : "div");
+      if (interactive) el.type = "button";
+      el.className = "domino-tile";
+      el.setAttribute("aria-label", "Domino " + a + "-" + b);
+      el.appendChild(domBuildHalf(a));
+      var divider = document.createElement("span");
+      divider.className = "domino-divider";
+      el.appendChild(divider);
+      el.appendChild(domBuildHalf(b));
+      return el;
+    }
+
+    function domChainEnds() {
+      if (!state.domChain.length) return { left: null, right: null };
+      return { left: state.domChain[0].a, right: state.domChain[state.domChain.length - 1].b };
+    }
+
+    function domPlayableIndices() {
+      var hand = state.domHands[state.domTurn - 1];
+      var ends = domChainEnds();
+      if (ends.left === null) return hand.map(function (_, i) { return i; });
+      var out = [];
+      hand.forEach(function (t, i) {
+        if (t.a === ends.left || t.b === ends.left || t.a === ends.right || t.b === ends.right) out.push(i);
+      });
+      return out;
+    }
+
+    function domPlayableEndsForTile(idx) {
+      var t = state.domHands[state.domTurn - 1][idx];
+      var ends = domChainEnds();
+      if (ends.left === null) return { left: true, right: true };
+      return {
+        left: t.a === ends.left || t.b === ends.left,
+        right: t.a === ends.right || t.b === ends.right
+      };
+    }
+
+    function domPlaceTile(idx, side) {
+      var hand = state.domHands[state.domTurn - 1];
+      var t = hand[idx];
+      hand.splice(idx, 1);
+      var ends = domChainEnds();
+      if (ends.left === null) {
+        state.domChain.push({ a: t.a, b: t.b });
+      } else if (side === "left") {
+        var otherL = t.a === ends.left ? t.b : t.a;
+        state.domChain.unshift({ a: otherL, b: ends.left });
+      } else {
+        var otherR = t.a === ends.right ? t.b : t.a;
+        state.domChain.push({ a: ends.right, b: otherR });
+      }
+      state.domSelectedIdx = null;
+      state.domPasses = 0;
+      if (hand.length === 0) {
+        state.domWinner = state.domTurn;
+        renderDominoScreen();
+        return;
+      }
+      state.domTurn = state.domTurn === 1 ? 2 : 1;
+      renderDominoScreen();
+    }
+
+    function onDominoTileTap(idx) {
+      if (state.domWinner) return;
+      if (domPlayableIndices().indexOf(idx) === -1) return;
+      var ends = domChainEnds();
+      if (ends.left === null) {
+        domPlaceTile(idx, "right");
+        return;
+      }
+      state.domSelectedIdx = state.domSelectedIdx === idx ? null : idx;
+      renderDominoScreen();
+    }
+
+    function onDominoEndTap(side) {
+      if (state.domWinner || state.domSelectedIdx === null) return;
+      var avail = domPlayableEndsForTile(state.domSelectedIdx);
+      if (!avail[side]) return;
+      domPlaceTile(state.domSelectedIdx, side);
+    }
+
+    function onDominoDraw() {
+      if (state.domWinner || !state.domBoneyard.length) return;
+      state.domHands[state.domTurn - 1].push(state.domBoneyard.pop());
+      renderDominoScreen();
+    }
+
+    function domEndBlocked() {
+      var pips1 = state.domHands[0].reduce(function (s, t) { return s + t.a + t.b; }, 0);
+      var pips2 = state.domHands[1].reduce(function (s, t) { return s + t.a + t.b; }, 0);
+      state.domWinner = pips1 === pips2 ? "draw" : (pips1 < pips2 ? 1 : 2);
+      renderDominoScreen();
+    }
+
+    function onDominoPass() {
+      if (state.domWinner) return;
+      state.domPasses++;
+      if (state.domPasses >= 2) {
+        domEndBlocked();
+        return;
+      }
+      state.domSelectedIdx = null;
+      state.domTurn = state.domTurn === 1 ? 2 : 1;
+      renderDominoScreen();
+    }
+
+    function startDomino() {
+      var deck = shuffle(DOMINO_SET.slice());
+      state.domHands = [deck.slice(0, 7), deck.slice(7, 14)];
+      state.domBoneyard = deck.slice(14);
+      state.domChain = [];
+      state.domTurn = 1;
+      state.domSelectedIdx = null;
+      state.domPasses = 0;
+      state.domWinner = null;
+      renderDominoScreen();
+    }
+
+    function renderDominoScreen() {
+      els.dominoChain.innerHTML = "";
+      if (state.domChain.length === 0) {
+        var hint = document.createElement("p");
+        hint.className = "domino-chain-hint";
+        hint.textContent = "Touche une tuile pour poser la première !";
+        els.dominoChain.appendChild(hint);
+      }
+      state.domChain.forEach(function (t) {
+        els.dominoChain.appendChild(domBuildTileEl(t.a, t.b, false));
+      });
+
+      var ends = domChainEnds();
+      var showMarkers = !state.domWinner && state.domSelectedIdx !== null && ends.left !== null;
+      var avail = showMarkers ? domPlayableEndsForTile(state.domSelectedIdx) : { left: false, right: false };
+      els.dominoLeftMarker.hidden = !avail.left;
+      els.dominoRightMarker.hidden = !avail.right;
+
+      var hand = state.domHands[state.domTurn - 1];
+      var playable = domPlayableIndices();
+      els.dominoHand.innerHTML = "";
+      hand.forEach(function (t, i) {
+        var tileEl = domBuildTileEl(t.a, t.b, true);
+        tileEl.classList.add("domino-hand-tile");
+        var isPlayable = playable.indexOf(i) !== -1;
+        tileEl.disabled = !!state.domWinner || !isPlayable;
+        if (i === state.domSelectedIdx) tileEl.classList.add("selected");
+        tileEl.addEventListener("click", function () { onDominoTileTap(i); });
+        els.dominoHand.appendChild(tileEl);
+      });
+
+      var otherIdx = state.domTurn === 1 ? 1 : 0;
+      var otherCount = state.domHands[otherIdx].length;
+      els.dominoMeta.textContent = "Joueur " + (otherIdx + 1) + " : " + otherCount + " tuile" + (otherCount > 1 ? "s" : "") + " — Pioche : " + state.domBoneyard.length;
+
+      var noPlayable = !state.domWinner && playable.length === 0;
+      els.dominoDrawBtn.hidden = !(noPlayable && state.domBoneyard.length > 0);
+      els.dominoPassBtn.hidden = !(noPlayable && state.domBoneyard.length === 0);
+
+      if (state.domWinner === "draw") {
+        els.dominoStatus.textContent = "Match nul ! Personne ne peut plus jouer.";
+      } else if (state.domWinner) {
+        els.dominoStatus.textContent = "🎉 Joueur " + state.domWinner + " a gagné !";
+      } else if (noPlayable && state.domBoneyard.length > 0) {
+        els.dominoStatus.textContent = "Joueur " + state.domTurn + " : aucun coup, pioche une tuile";
+      } else if (noPlayable) {
+        els.dominoStatus.textContent = "Joueur " + state.domTurn + " : aucun coup possible, tour passé";
+      } else {
+        els.dominoStatus.textContent = "Au tour de Joueur " + state.domTurn;
+      }
+    }
+
     var THEME_COLOR_DEFAULT = "#4fb3e8";
     var THEME_COLOR_BAR = "#e5f4fc";
     var THEME_COLOR_CELEBRATE = "#ffd166";
@@ -8395,7 +8783,7 @@
       if (isMemoryMode(mode) || mode === "disparu" || mode === "ordre" || mode === "change" || mode === "suitelum") return "memoire";
       if (mode === "mot" || mode === "composesimple" || mode === "composelibre" || mode === "lettreman" || mode === "trace" || mode === "syllordre") return "ecriture";
       if (mode === "traceforme" || mode === "shapes" || mode === "fillforme" || mode === "intrus" || mode === "puzzle") return "formes";
-      if (mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale") return "jeux";
+      if (mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino") return "jeux";
       return null;
     }
 
@@ -8486,8 +8874,9 @@
       var puissance4 = mode === "puissance4";
       var dames = mode === "dames";
       var bataillenavale = mode === "bataillenavale";
-      els.problemZone.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || morpion || puissance4 || dames || bataillenavale;
-      els.answers.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || morpion || puissance4 || dames || bataillenavale;
+      var domino = mode === "domino";
+      els.problemZone.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || morpion || puissance4 || dames || bataillenavale || domino;
+      els.answers.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || morpion || puissance4 || dames || bataillenavale || domino;
       els.paintScreen.hidden = !paint;
       els.musicScreen.hidden = !music;
       els.rhythmScreen.hidden = !rhythm;
@@ -8501,6 +8890,7 @@
       els.puissance4Screen.hidden = !puissance4;
       els.damesScreen.hidden = !dames;
       els.bnScreen.hidden = !bataillenavale;
+      els.dominoScreen.hidden = !domino;
       els.levelPill.hidden = mode === "dessine" || music || isBoardGameMode(mode);
       if (morpion) {
         state.problem = null;
@@ -8520,6 +8910,11 @@
       if (bataillenavale) {
         state.problem = null;
         startBatailleNavale();
+        return;
+      }
+      if (domino) {
+        state.problem = null;
+        startDomino();
         return;
       }
       if (paint) {
@@ -8638,11 +9033,17 @@
     els.puissance4Card.addEventListener("click", function () { selectMode("puissance4"); });
     els.damesCard.addEventListener("click", function () { selectMode("dames"); });
     els.bataillenavaleCard.addEventListener("click", function () { selectMode("bataillenavale"); });
+    els.dominoCard.addEventListener("click", function () { selectMode("domino"); });
     els.morpionReplayBtn.addEventListener("click", startMorpion);
     els.p4ReplayBtn.addEventListener("click", startPuissance4);
     els.damesReplayBtn.addEventListener("click", startDames);
     els.bnReadyBtn.addEventListener("click", bnReady);
     els.bnReplayBtn.addEventListener("click", startBatailleNavale);
+    els.dominoLeftMarker.addEventListener("click", function () { onDominoEndTap("left"); });
+    els.dominoRightMarker.addEventListener("click", function () { onDominoEndTap("right"); });
+    els.dominoDrawBtn.addEventListener("click", onDominoDraw);
+    els.dominoPassBtn.addEventListener("click", onDominoPass);
+    els.dominoReplayBtn.addEventListener("click", startDomino);
     els.fillFormeCanvas.addEventListener("pointerdown", onFillFormeStrokeStart);
     els.fillFormeCanvas.addEventListener("pointermove", onFillFormeStrokeMove);
     els.fillFormeCanvas.addEventListener("pointerup", onFillFormeStrokeEnd);
