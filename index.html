@@ -1716,6 +1716,17 @@
     box-shadow: 0 4px 8px -4px rgba(31, 42, 60, 0.4);
   }
 
+  /* Tablette en portrait : le plafond de 4.8rem pensé pour téléphone
+     laissait les tuiles minuscules au milieu de tout l'espace disponible
+     (.domino-hand/.domino-chain font toute la largeur de l'écran, comme
+     pour le plateau de dames plus haut). */
+  @media (min-width: 640px) and (orientation: portrait) {
+    .domino-tile {
+      width: clamp(5.2rem, 11vw, 6.8rem);
+      height: clamp(2.6rem, 5.5vw, 3.4rem);
+    }
+  }
+
   button.domino-tile { cursor: pointer; transition: transform 0.1s ease; }
   button.domino-tile:disabled { opacity: 0.35; cursor: default; }
   button.domino-tile.selected { box-shadow: 0 0 0 3px #ffd400, 0 4px 8px -4px rgba(31, 42, 60, 0.4); }
