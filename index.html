@@ -1466,25 +1466,36 @@
   }
 
   .p4-cell {
+    position: relative;
     appearance: none;
     border: none;
     cursor: pointer;
     border-radius: 50%;
     background: rgba(255, 248, 238, 0.9);
     box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.2);
-    transition: transform 0.1s ease;
   }
 
   .p4-cell:disabled { cursor: default; }
-  .p4-cell.mark-r { background: #e63946; box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.2); }
-  .p4-cell.mark-y { background: #ffd400; box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.2); }
   .p4-cell.win { outline: clamp(3px, 1vw, 5px) solid #43b98a; outline-offset: -3px; }
 
-  /* Le jeton fraîchement posé tombe depuis le haut de la grille --
-     "--fall-rows" (posé en JS = numéro de ligne + 1) donne la distance à
-     parcourir en hauteurs de case, pour un jeton qui tombe plus ou moins
-     loin selon la ligne où il atterrit, comme au vrai Puissance 4. */
-  .p4-cell.drop-in { animation: p4-drop 0.6s ease-in; }
+  #p4Status { font-size: clamp(1.25rem, 5.2vw, 1.7rem); }
+
+  /* Le jeton est un rond séparé posé par-dessus le trou (plutôt que le
+     trou lui-même qui changerait de couleur) : le trou reste visiblement
+     vide tant que le jeton, en train de tomber, ne l'a pas encore
+     recouvert. "--fall-rows" (posé en JS = numéro de ligne + 1) donne la
+     distance à parcourir en hauteurs de case, pour un jeton qui tombe
+     plus ou moins loin selon la ligne où il atterrit, comme au vrai
+     Puissance 4. */
+  .p4-disc {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+  }
+
+  .p4-disc.mark-r { background: #e63946; box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.2); }
+  .p4-disc.mark-y { background: #ffd400; box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.2); }
+  .p4-disc.drop-in { animation: p4-drop 0.6s ease-in; }
   @keyframes p4-drop {
     0% { transform: translateY(calc(var(--fall-rows, 1) * -100%)); }
     100% { transform: translateY(0); }
@@ -8302,13 +8313,18 @@
           var cell = document.createElement("button");
           cell.type = "button";
           var v = state.p4Board[r][c];
-          cell.className = "p4-cell" + (v ? " filled " + (v === "R" ? "mark-r" : "mark-y") : "");
+          cell.className = "p4-cell";
           if (state.p4WinCells && state.p4WinCells.some(function (wc) { return wc[0] === r && wc[1] === c; })) {
             cell.className += " win";
           }
-          if (state.p4LastDrop && state.p4LastDrop.row === r && state.p4LastDrop.col === c) {
-            cell.className += " drop-in";
-            cell.style.setProperty("--fall-rows", r + 1);
+          if (v) {
+            var disc = document.createElement("span");
+            disc.className = "p4-disc " + (v === "R" ? "mark-r" : "mark-y");
+            if (state.p4LastDrop && state.p4LastDrop.row === r && state.p4LastDrop.col === c) {
+              disc.className += " drop-in";
+              disc.style.setProperty("--fall-rows", r + 1);
+            }
+            cell.appendChild(disc);
           }
           cell.setAttribute("aria-label", v
             ? "Ligne " + (r + 1) + " colonne " + (c + 1) + " : " + (v === "R" ? "rouge" : "jaune")
