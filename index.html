@@ -184,6 +184,39 @@
     box-shadow: 0 6px 0 rgba(31, 42, 60, 0.1);
   }
 
+  .topbar[hidden] { display: none; }
+
+  /* Écrans sans étoiles (jeux de société, Dessin libre, Musique libre) :
+     pas de .level-pill à afficher, donc la grande barre blanche pleine
+     largeur de .topbar n'aurait plus servi qu'à porter le bouton retour
+     -- remplacée par une simple bulle flottante, comme .menu-back dans
+     les sous-menus. */
+  .game-back-bubble {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 3;
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    width: clamp(2.4rem, 8vw, 2.9rem);
+    height: clamp(2.4rem, 8vw, 2.9rem);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+    display: grid;
+    place-items: center;
+    box-shadow: 0 5px 0 rgba(31, 42, 60, 0.15);
+  }
+
+  .game-back-bubble[hidden] { display: none; }
+  .game-back-bubble svg { width: 42%; height: 42%; }
+  .game-back-bubble svg path { stroke: var(--ink); }
+
+  .game-back-bubble:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 2px;
+  }
+
   .level-pill {
     display: flex;
     align-items: center;
@@ -2442,6 +2475,7 @@
     width: 100%;
     display: flex;
     align-items: center;
+    text-align: left;
     gap: 0.9rem;
     padding: clamp(1.1rem, 4.5vw, 1.6rem) clamp(3.4rem, 10vw, 4.2rem) clamp(1.1rem, 4.5vw, 1.6rem) clamp(1.2rem, 4.5vw, 1.6rem);
     border-radius: clamp(1.3rem, 4vw, 1.8rem);
@@ -2774,7 +2808,7 @@
     <div class="ground"></div>
   </div>
 
-  <header class="topbar">
+  <header class="topbar" id="topbar">
     <button class="menu-btn" id="menuBtn" type="button" aria-label="Retour à l'accueil">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M15 4 L7 12 L15 20" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -2786,6 +2820,11 @@
       <div class="stars" id="stars" aria-hidden="true"></div>
     </div>
   </header>
+  <button class="game-back-bubble" id="gameBackBtn" type="button" aria-label="Retour à l'accueil" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M15 4 L7 12 L15 20" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+    </svg>
+  </button>
   <p class="max-badge" id="maxBadge" hidden><span class="emoji">🌟</span> Niveau maximum atteint</p>
   <p class="game-feedback" id="gameFeedback" aria-live="polite"></p>
 
@@ -5767,6 +5806,8 @@
 
     var els = {
       menuBtn: document.getElementById("menuBtn"),
+      topbar: document.getElementById("topbar"),
+      gameBackBtn: document.getElementById("gameBackBtn"),
       foxWalker: document.getElementById("foxWalker"),
       menuOverlay: document.getElementById("menuOverlay"),
       menuHome: document.getElementById("menuHome"),
@@ -8998,7 +9039,13 @@
       els.damesScreen.hidden = !dames;
       els.bnScreen.hidden = !bataillenavale;
       els.dominoScreen.hidden = !domino;
-      els.levelPill.hidden = mode === "dessine" || music || isBoardGameMode(mode);
+      var noStars = mode === "dessine" || music || isBoardGameMode(mode);
+      els.levelPill.hidden = noStars;
+      // Pas d'étoiles à afficher ici : la grande barre blanche de .topbar
+      // ne porterait plus que le bouton retour -- une simple bulle
+      // flottante suffit et libère l'écran (voir .game-back-bubble).
+      els.topbar.hidden = noStars;
+      els.gameBackBtn.hidden = !noStars;
       if (morpion) {
         state.problem = null;
         startMorpion();
@@ -9085,6 +9132,7 @@
     }
 
     els.menuBtn.addEventListener("click", openMenu);
+    els.gameBackBtn.addEventListener("click", openMenu);
     els.foxWalker.addEventListener("click", speakFoxGreeting);
     els.foxWalker.addEventListener("keydown", function (e) {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); speakFoxGreeting(); }
