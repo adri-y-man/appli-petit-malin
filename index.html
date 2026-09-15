@@ -193,8 +193,12 @@
      les sous-menus. */
   .game-back-bubble {
     position: absolute;
-    top: 0;
-    left: 0;
+    /* position:absolute se mesure depuis le bord externe de .scene (pas
+       depuis l'intérieur de son padding) -- on reproduit donc ce même
+       padding pour retomber au même endroit que le contenu normal, plus
+       un petit supplément pour ne pas coller pile au bord. */
+    top: calc(max(0.75rem, env(safe-area-inset-top)) + 0.3rem);
+    left: calc(max(0.9rem, env(safe-area-inset-left)) + 0.2rem);
     z-index: 3;
     appearance: none;
     border: none;
