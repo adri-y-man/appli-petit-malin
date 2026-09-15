@@ -732,6 +732,26 @@
     padding: 0.4rem 0.3rem;
   }
 
+  /* Mobile portrait : avec "grid-auto-rows: 1fr", chaque bouton s'étire
+     sur toute la hauteur de sa rangée -- sur un écran haut et étroit ça
+     donnait des boutons démesurément hauts. max-height les rend un peu
+     moins hauts (le "1fr" laisse alors un peu de vide sous eux dans leur
+     rangée, sans casser la grille) ; le texte grandit un peu en échange. */
+  @media (max-width: 640px) and (orientation: portrait) {
+    .answer-btn.wordgrid-answer-btn {
+      max-height: 6rem;
+      font-size: clamp(0.95rem, 4.6vw, 1.4rem);
+    }
+  }
+
+  /* Mobile paysage (écran court) : à l'inverse, la rangée est très fine
+     -- un peu plus de hauteur ("1fr" a un minimum implicite de "auto",
+     donc la rangée grandit avec le bouton ; .answers-grid-3 défile déjà
+     verticalement si jamais ça ne tient plus). */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .answer-btn.wordgrid-answer-btn { min-height: 3.4rem; }
+  }
+
   .shape-icon-btn {
     width: min(34vw, 10rem);
     height: min(34vw, 10rem);
