@@ -9058,7 +9058,6 @@
       state.wrongStreak = 0;
       state.locked = false;
       closeMenu();
-      setThemeColor(THEME_COLOR_BAR);
       renderLevel();
       setGameFeedback("");
 
@@ -9094,6 +9093,11 @@
       els.dominoScreen.hidden = !domino;
       var noStars = mode === "dessine" || music || isBoardGameMode(mode);
       els.levelPill.hidden = noStars;
+      // Pas de .topbar blanche visible sur ces écrans (juste la bulle
+      // flottante) : la couleur de la barre de statut du PWA doit alors
+      // matcher le fond ciel, pas la couleur pensée pour .topbar -- sinon
+      // elle jure juste au-dessus de la bulle retour.
+      setThemeColor(noStars ? THEME_COLOR_DEFAULT : THEME_COLOR_BAR);
       // Pas d'étoiles à afficher ici : la grande barre blanche de .topbar
       // ne porterait plus que le bouton retour -- une simple bulle
       // flottante suffit et libère l'écran (voir .game-back-bubble).
