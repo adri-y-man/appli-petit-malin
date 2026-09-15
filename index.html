@@ -834,7 +834,13 @@
      la résolution du canvas à ce même ratio pour ne pas étirer le trait). */
   .paint-stage.paint-stage-free {
     width: 100%;
-    height: 100%;
+    /* Décalée sous la bulle retour flottante (.game-back-bubble, posée
+       par-dessus l'écran) pour ne plus être en collision avec elle --
+       il reste de la place en bas (palette/outils ne remplissent pas
+       tout .paint-stage-wrap), donc la zone raccourcit d'autant plutôt
+       que de déborder. */
+    margin-top: 4rem;
+    height: calc(100% - 4rem);
     aspect-ratio: auto;
   }
 
