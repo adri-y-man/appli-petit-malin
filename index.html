@@ -416,6 +416,12 @@
     font-size: var(--fs-op);
     line-height: 1;
     text-transform: uppercase;
+    /* Grandstander réserve, sous la ligne de base, un vide bien plus
+       grand qu'au-dessus des lettres (majuscules, donc jamais de
+       jambage) -- avec line-height: 1, ce vide reste entièrement dans
+       la boîte de la ligne et le centrage vertical du flex parent
+       centre cette boîte, pas l'encre visible, qui remonte trop haut. */
+    transform: translateY(0.11em);
   }
 
   .color-word-icon { font-size: 1.15rem; }
