@@ -752,6 +752,14 @@
     padding: 0.4rem 0.3rem;
   }
 
+  /* "Trouve le bon article" : avec seulement 2 réponses, "grid-auto-rows:
+     1fr" (voir .answers-grid-2) les étire sur toute la hauteur de
+     .answers -- max-height les rend un peu moins hauts, comme pour
+     .wordgrid-answer-btn ci-dessus. */
+  .answer-btn.article-answer-btn {
+    max-height: 20rem;
+  }
+
   /* Mobile portrait : avec "grid-auto-rows: 1fr", chaque bouton s'étire
      sur toute la hauteur de sa rangée -- sur un écran haut et étroit ça
      donnait des boutons démesurément hauts. max-height les rend un peu
@@ -7029,7 +7037,7 @@
         state.problem.choices.forEach(function (value, idx) {
           var btn = document.createElement("button");
           btn.type = "button";
-          btn.className = "answer-btn word-btn " + articlePalette[idx % articlePalette.length];
+          btn.className = "answer-btn word-btn article-answer-btn " + articlePalette[idx % articlePalette.length];
           var btnText = document.createElement("span");
           btnText.className = "answer-btn-text";
           btnText.textContent = value.toUpperCase();
