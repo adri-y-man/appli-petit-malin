@@ -2597,6 +2597,7 @@
   .category-card-trace { background: linear-gradient(135deg, #f2994a, #d9724c); }
   .category-card-casse { background: linear-gradient(135deg, #ef5da8, #d9418c); }
   .category-card-syllordre { background: linear-gradient(135deg, #43b98a, #2a9d6f); }
+  .category-card-article { background: linear-gradient(135deg, #3d7fe0, #598ce6); }
   .category-card-traceforme { background: linear-gradient(135deg, #33c2c2, #598ce6); }
   .category-card-shapes { background: linear-gradient(135deg, #f2994a, #e63946); }
   .category-card-fillforme { background: linear-gradient(135deg, #ef5da8, #8e5ce6); }
@@ -3528,6 +3529,11 @@
           <span class="icon emoji">🏰</span>
           <span>Remets les syllabes</span>
           <span class="level-badge">CP-CE1</span>
+        </button>
+        <button class="category-card category-card-article" type="button" id="articleCard">
+          <span class="icon emoji">🔤</span>
+          <span>Trouve le bon article</span>
+          <span class="level-badge">MS-GS</span>
         </button>
       </div>
     </div>
@@ -5568,6 +5574,80 @@
       };
     }
 
+    // "Trouve le bon article" (Écriture Malin) : l'enfant choisit "le" ou
+    // "la" devant un nom commun. Uniquement des noms commençant par une
+    // consonne (jamais une voyelle), pour que "le"/"la" soit toujours la
+    // bonne réponse -- devant une voyelle la forme correcte serait "l'",
+    // que ce jeu n'enseigne pas.
+    var ARTICLE_WORDS = {
+      chat: { word: "chat", emoji: "🐱", gender: "m" },
+      pomme: { word: "pomme", emoji: "🍎", gender: "f" },
+      chien: { word: "chien", emoji: "🐶", gender: "m" },
+      lune: { word: "lune", emoji: "🌙", gender: "f" },
+      velo: { word: "vélo", emoji: "🚲", gender: "m" },
+      fleur: { word: "fleur", emoji: "🌸", gender: "f" },
+      maison: { word: "maison", emoji: "🏠", gender: "f" },
+      ballon: { word: "ballon", emoji: "⚽", gender: "m" },
+      soleil: { word: "soleil", emoji: "☀️", gender: "m" },
+      voiture: { word: "voiture", emoji: "🚗", gender: "f" },
+      canard: { word: "canard", emoji: "🦆", gender: "m" },
+      tortue: { word: "tortue", emoji: "🐢", gender: "f" },
+      cheval: { word: "cheval", emoji: "🐴", gender: "m" },
+      souris: { word: "souris", emoji: "🐭", gender: "f" },
+      lion: { word: "lion", emoji: "🦁", gender: "m" },
+      vache: { word: "vache", emoji: "🐮", gender: "f" },
+      poule: { word: "poule", emoji: "🐔", gender: "f" },
+      singe: { word: "singe", emoji: "🐵", gender: "m" },
+      renard: { word: "renard", emoji: "🦊", gender: "m" },
+      chevre: { word: "chèvre", emoji: "🐐", gender: "f" },
+      loup: { word: "loup", emoji: "🐺", gender: "m" },
+      grenouille: { word: "grenouille", emoji: "🐸", gender: "f" },
+      mouton: { word: "mouton", emoji: "🐑", gender: "m" },
+      fourmi: { word: "fourmi", emoji: "🐜", gender: "f" },
+      poisson: { word: "poisson", emoji: "🐟", gender: "m" },
+      coccinelle: { word: "coccinelle", emoji: "🐞", gender: "f" },
+      serpent: { word: "serpent", emoji: "🐍", gender: "m" },
+      banane: { word: "banane", emoji: "🍌", gender: "f" },
+      dauphin: { word: "dauphin", emoji: "🐬", gender: "m" },
+      fraise: { word: "fraise", emoji: "🍓", gender: "f" },
+      livre: { word: "livre", emoji: "📖", gender: "m" },
+      carotte: { word: "carotte", emoji: "🥕", gender: "f" },
+      train: { word: "train", emoji: "🚂", gender: "m" },
+      tomate: { word: "tomate", emoji: "🍅", gender: "f" },
+      camion: { word: "camion", emoji: "🚚", gender: "m" },
+      guitare: { word: "guitare", emoji: "🎸", gender: "f" },
+      crayon: { word: "crayon", emoji: "✏️", gender: "m" },
+      couronne: { word: "couronne", emoji: "👑", gender: "f" },
+      cochon: { word: "cochon", emoji: "🐷", gender: "m" },
+      licorne: { word: "licorne", emoji: "🦄", gender: "f" }
+    };
+    var ARTICLE_LEVEL_POOL = [
+      ["chat", "pomme", "chien", "lune", "velo", "fleur"],
+      ["chat", "pomme", "chien", "lune", "velo", "fleur", "maison", "ballon", "soleil", "voiture", "canard", "tortue"],
+      ["chat", "pomme", "chien", "lune", "velo", "fleur", "maison", "ballon", "soleil", "voiture", "canard", "tortue",
+        "cheval", "souris", "lion", "vache", "poule", "singe"],
+      ["chat", "pomme", "chien", "lune", "velo", "fleur", "maison", "ballon", "soleil", "voiture", "canard", "tortue",
+        "cheval", "souris", "lion", "vache", "poule", "singe", "renard", "chevre", "loup", "grenouille", "mouton", "fourmi"],
+      ["chat", "pomme", "chien", "lune", "velo", "fleur", "maison", "ballon", "soleil", "voiture", "canard", "tortue",
+        "cheval", "souris", "lion", "vache", "poule", "singe", "renard", "chevre", "loup", "grenouille", "mouton", "fourmi",
+        "poisson", "coccinelle", "serpent", "banane", "dauphin", "fraise", "livre", "carotte", "train", "tomate",
+        "camion", "guitare", "crayon", "couronne", "cochon", "licorne"]
+    ];
+
+    function generateArticleProblem(levelIdx) {
+      var pool = ARTICLE_LEVEL_POOL[levelIdx];
+      var key = pool[randInt(0, pool.length - 1)];
+      var def = ARTICLE_WORDS[key];
+      return {
+        kind: "article",
+        word: def.word,
+        emoji: def.emoji,
+        answer: def.gender === "m" ? "le" : "la",
+        choices: shuffle(["le", "la"]),
+        wordKey: key
+      };
+    }
+
     // "Majuscule ou minuscule ?" (Lecture Malin) : une lettre s'affiche
     // dans une casse (choisie au hasard), il faut retrouver sa jumelle
     // dans l'autre casse. Les 2 mauvaises réponses sont dans la MÊME casse
@@ -5734,6 +5814,9 @@
       if (p1.kind === "lettreman" || p2.kind === "lettreman") {
         return p1.kind === "lettreman" && p2.kind === "lettreman" && p1.wordKey === p2.wordKey;
       }
+      if (p1.kind === "article" || p2.kind === "article") {
+        return p1.kind === "article" && p2.kind === "article" && p1.wordKey === p2.wordKey;
+      }
       if (p1.kind === "casse" || p2.kind === "casse") {
         return p1.kind === "casse" && p2.kind === "casse" && p1.wordKey === p2.wordKey;
       }
@@ -5825,6 +5908,9 @@
       }
       if (state.mode === "lettreman") {
         return generateLettreManProblem(levelIdx);
+      }
+      if (state.mode === "article") {
+        return generateArticleProblem(levelIdx);
       }
       if (state.mode === "casse") {
         return generateCaseProblem(levelIdx);
@@ -5964,6 +6050,7 @@
       composeSimpleCard: document.getElementById("composeSimpleCard"),
       composeLibreCard: document.getElementById("composeLibreCard"),
       lettremanCard: document.getElementById("lettremanCard"),
+      articleCard: document.getElementById("articleCard"),
       traceCard: document.getElementById("traceCard"),
       syllordreCard: document.getElementById("syllordreCard"),
       traceformeCard: document.getElementById("traceformeCard"),
@@ -6310,6 +6397,25 @@
         lmWrap.appendChild(lmPic);
         lmWrap.appendChild(lmWord);
         els.problem.appendChild(lmWrap);
+        els.problem.classList.remove("pop");
+        void els.problem.offsetWidth;
+        els.problem.classList.add("pop");
+        return;
+      }
+
+      if (p.kind === "article") {
+        els.problem.removeAttribute("data-terms");
+        var artWrap = document.createElement("div");
+        artWrap.className = "letterman-prompt";
+        var artPic = document.createElement("span");
+        artPic.className = "picture-prompt emoji letterman-pic";
+        artPic.textContent = p.emoji;
+        var artWord = document.createElement("span");
+        artWord.className = "letterman-word";
+        artWord.textContent = p.word;
+        artWrap.appendChild(artPic);
+        artWrap.appendChild(artWord);
+        els.problem.appendChild(artWrap);
         els.problem.classList.remove("pop");
         void els.problem.offsetWidth;
         els.problem.classList.add("pop");
@@ -6911,6 +7017,25 @@
           btn.setAttribute("data-value", value);
           btn.setAttribute("aria-label", "Répondre " + value);
           if (state.problem.kind === "disparu") btn.disabled = true;
+          btn.addEventListener("click", function () { onAnswer(value, btn); });
+          els.answers.appendChild(btn);
+        });
+        return;
+      }
+
+      if (state.problem.kind === "article") {
+        els.answers.classList.add("answers-grid-2");
+        var articlePalette = shuffle(CANDY_COLORS.slice());
+        state.problem.choices.forEach(function (value, idx) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "answer-btn word-btn " + articlePalette[idx % articlePalette.length];
+          var btnText = document.createElement("span");
+          btnText.className = "answer-btn-text";
+          btnText.textContent = value.toUpperCase();
+          btn.appendChild(btnText);
+          btn.setAttribute("data-value", value);
+          btn.setAttribute("aria-label", "Répondre " + value);
           btn.addEventListener("click", function () { onAnswer(value, btn); });
           els.answers.appendChild(btn);
         });
@@ -9012,7 +9137,7 @@
       if (mode === "musiquelibre" || mode === "instruments" || mode === "pitch" || mode === "rythme") return "musique";
       if (mode === "animalname" || mode === "babies" || mode === "habitat" || mode === "diet" || mode === "animalsound") return "animaux";
       if (isMemoryMode(mode) || mode === "disparu" || mode === "ordre" || mode === "change" || mode === "suitelum") return "memoire";
-      if (mode === "mot" || mode === "composesimple" || mode === "composelibre" || mode === "lettreman" || mode === "trace" || mode === "syllordre") return "ecriture";
+      if (mode === "mot" || mode === "composesimple" || mode === "composelibre" || mode === "lettreman" || mode === "trace" || mode === "syllordre" || mode === "article") return "ecriture";
       if (mode === "traceforme" || mode === "shapes" || mode === "fillforme" || mode === "intrus" || mode === "puzzle") return "formes";
       if (mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino") return "jeux";
       return null;
@@ -9264,6 +9389,7 @@
     els.composeLibreCard.addEventListener("click", function () { selectMode("composelibre"); });
     els.spellEraseBtn.addEventListener("click", onSpellErase);
     els.lettremanCard.addEventListener("click", function () { selectMode("lettreman"); });
+    els.articleCard.addEventListener("click", function () { selectMode("article"); });
     els.traceCard.addEventListener("click", function () { selectMode("trace"); });
     els.syllordreCard.addEventListener("click", function () { selectMode("syllordre"); });
     els.traceformeCard.addEventListener("click", function () { selectMode("traceforme"); });
