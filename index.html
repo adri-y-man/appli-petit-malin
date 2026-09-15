@@ -702,6 +702,20 @@
     overflow-y: auto;
   }
 
+  /* "Trouve le mot" : les 2 rangées de 3 boutons (7 mots) sont plus
+     resserrées verticalement que .answers-grid-3 de base (partagée avec
+     "Trouve l'intrus", qui empile jusqu'à 4 rangées et a besoin de plus
+     de respiration). grid-auto-rows: 1fr étire chaque rangée sur toute
+     la hauteur de .answers -- avec des boutons plafonnés (max-height),
+     ça laissait un grand vide entre les 2 rangées plutôt qu'un simple
+     espacement resserré ; "auto" les fait coller à leur propre contenu,
+     et align-content: start colle le bloc en haut au lieu de l'étaler. */
+  .answers.wordgrid-grid {
+    grid-auto-rows: auto;
+    align-content: start;
+    row-gap: 0.3rem;
+  }
+
   /* ---------- "Aigu ou grave ?" (Musique Malin) : les 3 boutons son
      restent côte à côte même en portrait mobile, avec "Valider" en
      dessous (voir .pitch-confirm-btn) -- align-items: center plutôt que
@@ -728,7 +742,7 @@
      ligne dans une case de grille étroite sans que fitButtonText() ait à
      rattraper un trop grand écart. */
   .answer-btn.wordgrid-answer-btn {
-    font-size: clamp(0.85rem, 4.2vw, 1.3rem);
+    font-size: clamp(0.92rem, 4.4vw, 1.4rem);
     padding: 0.4rem 0.3rem;
   }
 
@@ -740,7 +754,7 @@
   @media (max-width: 640px) and (orientation: portrait) {
     .answer-btn.wordgrid-answer-btn {
       max-height: 6rem;
-      font-size: clamp(0.95rem, 4.6vw, 1.4rem);
+      font-size: clamp(1.02rem, 4.8vw, 1.5rem);
     }
   }
 
@@ -6557,6 +6571,7 @@
       els.answers.classList.remove("answers-grid-2");
       els.answers.classList.remove("answers-grid-3");
       els.answers.classList.remove("answers-row");
+      els.answers.classList.remove("wordgrid-grid");
 
       if (state.problem.kind === "colors") {
         state.problem.choices.forEach(function (key) {
@@ -6732,7 +6747,7 @@
       }
 
       if (state.problem.kind === "wordgrid") {
-        els.answers.classList.add("answers-grid-3");
+        els.answers.classList.add("answers-grid-3", "wordgrid-grid");
         var wordgridPalette = shuffle(CANDY_COLORS.slice());
         var pendingWordgridFits = [];
         state.problem.choices.forEach(function (key, idx) {
