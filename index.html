@@ -1523,7 +1523,6 @@
   }
 
   .p4-cell:disabled { cursor: default; }
-  .p4-cell.win { outline: clamp(3px, 1vw, 5px) solid #43b98a; outline-offset: -3px; }
 
   #p4Status { font-size: clamp(1.25rem, 5.2vw, 1.7rem); }
 
@@ -1546,6 +1545,19 @@
   @keyframes p4-drop {
     0% { transform: translateY(calc(var(--fall-rows, 1) * -100%)); }
     100% { transform: translateY(0); }
+  }
+
+  /* L'anneau de victoire doit être posé sur le jeton (.p4-disc) et non
+     sur le trou (.p4-cell) qui est maintenant en dessous, entièrement
+     recouvert par le jeton -- un outline posé sur .p4-cell ne se voyait
+     donc plus du tout. */
+  .p4-disc.win {
+    box-shadow: 0 0 0 4px #43b98a, 0 0 16px 5px rgba(67, 185, 138, 0.75), inset 0 3px 6px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.2);
+    animation: p4-win-pulse 0.9s ease-in-out infinite;
+  }
+  @keyframes p4-win-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
   }
 
   .dames-screen {
@@ -8391,13 +8403,11 @@
           var cell = document.createElement("button");
           cell.type = "button";
           var v = state.p4Board[r][c];
-          cell.className = "p4-cell";
-          if (state.p4WinCells && state.p4WinCells.some(function (wc) { return wc[0] === r && wc[1] === c; })) {
-            cell.className += " win";
-          }
+          var isWin = !!(state.p4WinCells && state.p4WinCells.some(function (wc) { return wc[0] === r && wc[1] === c; }));
+          cell.className = "p4-cell" + (isWin ? " win" : "");
           if (v) {
             var disc = document.createElement("span");
-            disc.className = "p4-disc " + (v === "R" ? "mark-r" : "mark-y");
+            disc.className = "p4-disc " + (v === "R" ? "mark-r" : "mark-y") + (isWin ? " win" : "");
             if (state.p4LastDrop && state.p4LastDrop.row === r && state.p4LastDrop.col === c) {
               disc.className += " drop-in";
               disc.style.setProperty("--fall-rows", r + 1);
