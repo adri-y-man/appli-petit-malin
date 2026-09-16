@@ -2425,8 +2425,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    text-align: center;
+    padding: 0 1.2rem;
     font-size: clamp(5rem, 28vw, 8.5rem);
     font-weight: 900;
+    line-height: 1.1;
     color: var(--white);
     text-shadow: 0 6px 0 rgba(31, 42, 60, 0.3);
     background: rgba(31, 42, 60, 0.25);
@@ -2434,6 +2437,11 @@
   }
 
   .foxgame-countdown[hidden] { display: none; }
+
+  /* "C'est parti !" est plus long que les chiffres 3/2/1 : une police
+     bien plus petite pour qu'il reste centré sur une ligne au lieu de
+     déborder ou de retomber en 2 lignes mal alignées. */
+  .foxgame-countdown.go { font-size: clamp(2rem, 10vw, 3.2rem); }
 
   /* ---------- menu picto + écran de choix du jeu ---------- */
 
@@ -6737,6 +6745,7 @@
 
     function foxGameCountdownStep(n) {
       els.foxGameCountdown.textContent = n > 0 ? String(n) : "C'est parti !";
+      els.foxGameCountdown.classList.toggle("go", n <= 0);
       els.foxGameCountdown.classList.remove("pop");
       void els.foxGameCountdown.offsetWidth;
       els.foxGameCountdown.classList.add("pop");
