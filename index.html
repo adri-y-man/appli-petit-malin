@@ -1698,6 +1698,70 @@
     .dames-board { width: min(calc(100vh - 14.5rem), 40rem); }
   }
 
+  /* ---------- Jeux de société — "Solitaire" (jeu de solitaire à billes,
+     plateau en croix de 33 trous, 1 joueur) ---------- */
+
+  .sol-screen {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.8rem, 3.5vh, 1.4rem);
+    min-height: 0;
+    width: 100%;
+  }
+
+  .sol-screen[hidden] { display: none; }
+
+  .sol-board {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(7, 1fr);
+    gap: clamp(0.2rem, 1vw, 0.4rem);
+    width: min(88vw, 62vh, 26rem);
+    aspect-ratio: 1;
+    background: #a9714a;
+    padding: clamp(0.4rem, 1.8vw, 0.7rem);
+    border-radius: clamp(0.7rem, 2.5vw, 1.1rem);
+    box-shadow: 0 12px 24px -12px rgba(31, 42, 60, 0.55);
+  }
+
+  .sol-cell {
+    appearance: none;
+    border: none;
+    padding: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* case hors du plateau en croix : invisible mais garde sa place dans
+     la grille 7x7, pour que les trous restent alignés. */
+  .sol-cell.off { background: transparent; visibility: hidden; cursor: default; }
+
+  .sol-cell.hole { background: rgba(0, 0, 0, 0.25); box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.35); cursor: default; }
+  .sol-cell.hole.has-peg { cursor: pointer; }
+  .sol-cell.hole.legal-move { cursor: pointer; background: rgba(67, 185, 138, 0.6); }
+  .sol-cell.hole.selected { box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.35), 0 0 0 3px #ffd400; }
+
+  .sol-peg {
+    width: 76%;
+    height: 76%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffb199, #e63946 65%);
+    box-shadow: inset 0 -5px 8px rgba(0, 0, 0, 0.3), 0 3px 6px rgba(0, 0, 0, 0.35);
+  }
+
+  @media (min-width: 640px) and (orientation: portrait) {
+    .sol-board { width: min(82vw, 40rem); }
+  }
+
+  @media (min-width: 640px) and (orientation: landscape) {
+    .sol-board { width: min(calc(100vh - 14.5rem), 40rem); }
+  }
+
   .bn-screen {
     flex: 1 1 0;
     display: flex;
@@ -2632,6 +2696,7 @@
   .category-card-dames { background: linear-gradient(135deg, #2a2a2a, #598ce6); }
   .category-card-bataille { background: linear-gradient(135deg, #3d7fe0, #33c2c2); }
   .category-card-domino { background: linear-gradient(135deg, #1f2a3c, #ffd400); }
+  .category-card-solitaire { background: linear-gradient(135deg, #a9714a, #6a4c93); }
 
   /* 3 colonnes fixes (plutôt qu'un auto-fill dont le nombre de colonnes
      dépend de la largeur) : garantit que les 12 icônes (4 rangées de 3)
@@ -3029,6 +3094,12 @@
       <button type="button" class="boardgame-replay-btn" id="dominoPassBtn" hidden>Passer →</button>
       <button type="button" class="boardgame-replay-btn" id="dominoReplayBtn">Rejouer ↻</button>
     </div>
+  </section>
+
+  <section class="sol-screen" id="solScreen" hidden>
+    <p class="boardgame-status" id="solStatus"></p>
+    <div class="sol-board" id="solBoard"></div>
+    <button type="button" class="boardgame-replay-btn" id="solReplayBtn">Rejouer ↻</button>
   </section>
 
   <div class="menu-overlay" id="menuOverlay">
@@ -3639,6 +3710,11 @@
           <span class="icon emoji">🁫</span>
           <span>Domino</span>
           <span class="level-badge">2 joueurs</span>
+        </button>
+        <button class="category-card category-card-solitaire" type="button" id="solCard">
+          <span class="icon emoji">🟤</span>
+          <span>Solitaire</span>
+          <span class="level-badge">1 joueur</span>
         </button>
         <button class="category-card category-card-contraire" type="button" id="contraireCard">
           <span class="icon emoji">🔀</span>
@@ -4787,7 +4863,7 @@
       etoile: { fr: "Étoile", type: "polygon", points: "100,20 117.6,75.8 176,75.2 128.6,109.2 147,164.8 100,130 53,164.8 71.4,109.2 24,75.2 82.4,75.8" },
       hexagone: { fr: "Hexagone", type: "polygon", points: "100,20 169.2,60 169.2,140 100,180 30.8,140 30.8,60" },
       pentagone: { fr: "Pentagone", type: "polygon", points: "100,20 176,75.2 147,164.8 53,164.8 24,75.2" },
-      coeur: { fr: "Cœur", type: "path", d: "M100 164 C40 120 16 80 16 52 C16 24 40 8 64 8 C84 8 100 24 100 44 C100 24 116 8 136 8 C160 8 184 24 184 52 C184 80 160 120 100 164 Z" },
+      coeur: { fr: "Cœur", type: "path", d: "M100 178 C40 134 16 94 16 66 C16 38 40 22 64 22 C84 22 100 38 100 58 C100 38 116 22 136 22 C160 22 184 38 184 66 C184 94 160 134 100 178 Z" },
       trapeze: { fr: "Trapèze", type: "polygon", points: "60,32 140,32 172,168 28,168" },
       croix: { fr: "Croix", type: "polygon", points: "70,20 130,20 130,70 180,70 180,130 130,130 130,180 70,180 70,130 20,130 20,70 70,70" },
       fleche: { fr: "Flèche", type: "polygon", points: "20,82 110,82 110,40 180,100 110,160 110,118 20,118" }
@@ -5000,7 +5076,11 @@
       domTurn: 1,
       domSelectedIdx: null,
       domPasses: 0,
-      domWinner: null
+      domWinner: null,
+      solBoard: [],
+      solSelected: null,
+      solPegCount: 32,
+      solStatus: "playing"
     };
 
     var PROGRESS_KEY = "calculMalinProgress";
@@ -6152,6 +6232,10 @@
       dominoDrawBtn: document.getElementById("dominoDrawBtn"),
       dominoPassBtn: document.getElementById("dominoPassBtn"),
       dominoReplayBtn: document.getElementById("dominoReplayBtn"),
+      solScreen: document.getElementById("solScreen"),
+      solStatus: document.getElementById("solStatus"),
+      solBoard: document.getElementById("solBoard"),
+      solReplayBtn: document.getElementById("solReplayBtn"),
       categoryCards: document.querySelectorAll(".category-card"),
       calcBackBtn: document.getElementById("calcBackBtn"),
       terms2BackBtn: document.getElementById("terms2BackBtn"),
@@ -6170,6 +6254,7 @@
       damesCard: document.getElementById("damesCard"),
       bataillenavaleCard: document.getElementById("bataillenavaleCard"),
       dominoCard: document.getElementById("dominoCard"),
+      solCard: document.getElementById("solCard"),
       colorsCard: document.getElementById("colorsCard"),
       animalsCard: document.getElementById("animalsCard"),
       bodyCard: document.getElementById("bodyCard"),
@@ -7485,7 +7570,7 @@
 
     // Jeux de société : parties à 2 joueurs en local (pas de niveaux/étoiles).
     function isBoardGameMode(mode) {
-      return mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino";
+      return mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino" || mode === "solitaire";
     }
 
     // "Paires cachées" et "Paires cachées (drapeaux)" partagent le même
@@ -9061,6 +9146,131 @@
       }
     }
 
+    // Jeux de société — "Solitaire" : plateau en croix de 33 trous, une
+    // seule bille manque au départ (le centre). On saute par-dessus une
+    // bille voisine pour atterrir dans un trou vide juste après (en
+    // ligne droite, jamais en diagonale), ce qui retire la bille
+    // sautée. Le but est d'en garder le moins possible -- idéalement 1
+    // seule, au centre. Le jeu s'arrête dès qu'aucun coup n'est plus
+    // possible, gagné ou non.
+    var SOL_SIZE = 7;
+    var SOL_DIRS = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+
+    function solValidCell(r, c) {
+      return r >= 0 && r < SOL_SIZE && c >= 0 && c < SOL_SIZE && !((r < 2 || r > 4) && (c < 2 || c > 4));
+    }
+
+    function solLegalMovesFor(board, r, c) {
+      var moves = [];
+      if (board[r][c] !== "1") return moves;
+      SOL_DIRS.forEach(function (d) {
+        var mr = r + d[0], mc = c + d[1];
+        var tr = r + d[0] * 2, tc = c + d[1] * 2;
+        if (solValidCell(tr, tc) && board[mr][mc] === "1" && board[tr][tc] === "0") {
+          moves.push({ to: [tr, tc], capture: [mr, mc] });
+        }
+      });
+      return moves;
+    }
+
+    function solAnyLegalMove(board) {
+      for (var r = 0; r < SOL_SIZE; r++) {
+        for (var c = 0; c < SOL_SIZE; c++) {
+          if (board[r][c] === "1" && solLegalMovesFor(board, r, c).length > 0) return true;
+        }
+      }
+      return false;
+    }
+
+    function startSolitaire() {
+      var board = [];
+      for (var r = 0; r < SOL_SIZE; r++) {
+        var row = [];
+        for (var c = 0; c < SOL_SIZE; c++) row.push(solValidCell(r, c) ? "1" : null);
+        board.push(row);
+      }
+      board[3][3] = "0";
+      state.solBoard = board;
+      state.solSelected = null;
+      state.solPegCount = 32;
+      state.solStatus = "playing";
+      renderSolitaireScreen();
+    }
+
+    function onSolCellTap(row, col) {
+      if (state.solStatus !== "playing") return;
+      var cellVal = state.solBoard[row][col];
+      if (state.solSelected) {
+        var sel = state.solSelected;
+        var moves = solLegalMovesFor(state.solBoard, sel[0], sel[1]);
+        var chosen = moves.filter(function (m) { return m.to[0] === row && m.to[1] === col; })[0];
+        if (chosen) {
+          state.solBoard[sel[0]][sel[1]] = "0";
+          state.solBoard[chosen.capture[0]][chosen.capture[1]] = "0";
+          state.solBoard[row][col] = "1";
+          state.solSelected = null;
+          state.solPegCount--;
+          if (state.solPegCount === 1) {
+            state.solStatus = "won";
+          } else if (!solAnyLegalMove(state.solBoard)) {
+            state.solStatus = "stuck";
+          }
+          renderSolitaireScreen();
+          return;
+        }
+        state.solSelected = (cellVal === "1") ? [row, col] : null;
+        renderSolitaireScreen();
+        return;
+      }
+      if (cellVal === "1") {
+        state.solSelected = [row, col];
+        renderSolitaireScreen();
+      }
+    }
+
+    function renderSolitaireScreen() {
+      els.solBoard.innerHTML = "";
+      var legalMoves = state.solSelected
+        ? solLegalMovesFor(state.solBoard, state.solSelected[0], state.solSelected[1])
+        : [];
+      for (var r = 0; r < SOL_SIZE; r++) {
+        for (var c = 0; c < SOL_SIZE; c++) {
+          var val = state.solBoard[r][c];
+          var cell = document.createElement("button");
+          cell.type = "button";
+          if (val === null) {
+            cell.className = "sol-cell off";
+            cell.disabled = true;
+            cell.tabIndex = -1;
+            els.solBoard.appendChild(cell);
+            continue;
+          }
+          var isSelected = !!(state.solSelected && state.solSelected[0] === r && state.solSelected[1] === c);
+          var isLegalTarget = legalMoves.some(function (m) { return m.to[0] === r && m.to[1] === c; });
+          var cls = "sol-cell hole";
+          if (val === "1") cls += " has-peg";
+          if (isSelected) cls += " selected";
+          if (isLegalTarget) cls += " legal-move";
+          cell.className = cls;
+          if (val === "1") {
+            var peg = document.createElement("span");
+            peg.className = "sol-peg";
+            cell.appendChild(peg);
+          }
+          cell.setAttribute("aria-label", val === "1" ? "Case avec une bille" : "Case vide");
+          cell.addEventListener("click", (function (rr, cc) { return function () { onSolCellTap(rr, cc); }; }(r, c)));
+          els.solBoard.appendChild(cell);
+        }
+      }
+      if (state.solStatus === "won") {
+        els.solStatus.textContent = "🎉 Bravo, il ne reste qu'une seule bille !";
+      } else if (state.solStatus === "stuck") {
+        els.solStatus.textContent = "Plus de coup possible -- " + state.solPegCount + " billes restantes.";
+      } else {
+        els.solStatus.textContent = "Billes restantes : " + state.solPegCount;
+      }
+    }
+
     // Jeux de société — "Bataille navale simplifiée" : grille réduite 6x6,
     // 3 bateaux par joueur (tailles 3/2/2) placés au hasard automatiquement
     // (pas de phase de placement manuel, pour rester simple). Les 2 joueurs
@@ -9436,7 +9646,7 @@
       if (isMemoryMode(mode) || mode === "disparu" || mode === "ordre" || mode === "change" || mode === "suitelum") return "memoire";
       if (mode === "mot" || mode === "composesimple" || mode === "composelibre" || mode === "lettreman" || mode === "trace" || mode === "syllordre" || mode === "article") return "ecriture";
       if (mode === "traceforme" || mode === "shapes" || mode === "fillforme" || mode === "intrus" || mode === "puzzle") return "formes";
-      if (mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino" || mode === "contraire") return "jeux";
+      if (mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino" || mode === "solitaire" || mode === "contraire") return "jeux";
       return null;
     }
 
@@ -9528,8 +9738,9 @@
       var dames = mode === "dames";
       var bataillenavale = mode === "bataillenavale";
       var domino = mode === "domino";
-      els.problemZone.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || morpion || puissance4 || dames || bataillenavale || domino;
-      els.answers.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || morpion || puissance4 || dames || bataillenavale || domino;
+      var solitaire = mode === "solitaire";
+      els.problemZone.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || morpion || puissance4 || dames || bataillenavale || domino || solitaire;
+      els.answers.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || morpion || puissance4 || dames || bataillenavale || domino || solitaire;
       els.paintScreen.hidden = !paint;
       els.musicScreen.hidden = !music;
       els.rhythmScreen.hidden = !rhythm;
@@ -9544,6 +9755,7 @@
       els.damesScreen.hidden = !dames;
       els.bnScreen.hidden = !bataillenavale;
       els.dominoScreen.hidden = !domino;
+      els.solScreen.hidden = !solitaire;
       var noStars = mode === "dessine" || music || isBoardGameMode(mode);
       els.levelPill.hidden = noStars;
       // Pas de .topbar blanche visible sur ces écrans (juste la bulle
@@ -9579,6 +9791,11 @@
       if (domino) {
         state.problem = null;
         startDomino();
+        return;
+      }
+      if (solitaire) {
+        state.problem = null;
+        startSolitaire();
         return;
       }
       if (paint) {
@@ -9702,6 +9919,7 @@
     els.damesCard.addEventListener("click", function () { selectMode("dames"); });
     els.bataillenavaleCard.addEventListener("click", function () { selectMode("bataillenavale"); });
     els.dominoCard.addEventListener("click", function () { selectMode("domino"); });
+    els.solCard.addEventListener("click", function () { selectMode("solitaire"); });
     els.morpionReplayBtn.addEventListener("click", startMorpion);
     els.p4ReplayBtn.addEventListener("click", startPuissance4);
     els.damesReplayBtn.addEventListener("click", startDames);
@@ -9712,6 +9930,7 @@
     els.dominoDrawBtn.addEventListener("click", onDominoDraw);
     els.dominoPassBtn.addEventListener("click", onDominoPass);
     els.dominoReplayBtn.addEventListener("click", startDomino);
+    els.solReplayBtn.addEventListener("click", startSolitaire);
     els.fillFormeCanvas.addEventListener("pointerdown", onFillFormeStrokeStart);
     els.fillFormeCanvas.addEventListener("pointermove", onFillFormeStrokeMove);
     els.fillFormeCanvas.addEventListener("pointerup", onFillFormeStrokeEnd);
