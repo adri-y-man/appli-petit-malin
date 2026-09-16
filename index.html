@@ -6120,10 +6120,14 @@
     // (jamais présent "avant", pour qu'il n'y ait qu'une seule bonne
     // réponse possible) ; les réponses sont les symboles de la rangée
     // "après" elle-même, à toucher directement dessus.
+    // "Qu'est-ce qui a changé ?" : l'enfant doit retrouver, parmi les
+    // symboles de la rangée AVANT, celui qui a été remplacé -- pas
+    // deviner le nouveau symbole apparu dans la rangée APRÈS.
     function generateChangeProblem(levelIdx) {
       var n = CHANGE_LEVELS.count[levelIdx];
       var before = shuffle(MEMORY_SYMBOL_POOL.slice()).slice(0, n);
       var changeIdx = randInt(0, n - 1);
+      var oldSymbol = before[changeIdx];
       var remaining = MEMORY_SYMBOL_POOL.filter(function (s) { return before.indexOf(s) === -1; });
       var newSymbol = remaining[randInt(0, remaining.length - 1)];
       var after = before.slice();
@@ -6133,8 +6137,8 @@
         before: before,
         after: after,
         changeIdx: changeIdx,
-        answer: newSymbol,
-        choices: after.slice(),
+        answer: oldSymbol,
+        choices: before.slice(),
         wordKey: before.join("") + ">" + after.join("")
       };
     }
