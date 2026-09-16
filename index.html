@@ -2604,6 +2604,8 @@
   .category-card-lettreman { background: linear-gradient(135deg, #8e5ce6, #6a4c93); }
   .category-card-trace { background: linear-gradient(135deg, #f2994a, #d9724c); }
   .category-card-casse { background: linear-gradient(135deg, #ef5da8, #d9418c); }
+  .category-card-contraire { background: linear-gradient(135deg, #33c2c2, #2a9d6f); }
+  .category-card-sound { background: linear-gradient(135deg, #ffc93c, #f2994a); }
   .category-card-syllordre { background: linear-gradient(135deg, #43b98a, #2a9d6f); }
   .category-card-article { background: linear-gradient(135deg, #3d7fe0, #598ce6); }
   .category-card-traceforme { background: linear-gradient(135deg, #33c2c2, #598ce6); }
@@ -3352,6 +3354,16 @@
           <span class="icon emoji">Aa</span>
           <span>Majuscule ou minuscule ?</span>
           <span class="level-badge">PS-MS</span>
+        </button>
+        <button class="category-card category-card-contraire" type="button" id="contraireCard">
+          <span class="icon emoji">🔀</span>
+          <span>Trouve le contraire</span>
+          <span class="level-badge">MS-GS</span>
+        </button>
+        <button class="category-card category-card-sound" type="button" id="soundCard">
+          <span class="icon emoji">👂</span>
+          <span>Trouve le bon son</span>
+          <span class="level-badge">CP-CE1</span>
         </button>
       </div>
     </div>
@@ -5556,6 +5568,113 @@
       };
     }
 
+    // "Trouve le contraire" (Lecture Malin) : un mot illustré s'affiche
+    // (écoutable au tap), l'enfant choisit son contraire parmi 3 mots
+    // (eux aussi écoutables individuellement).
+    var CONTRAIRE_WORDS = {
+      dur: { word: "dur", emoji: "🪨", opposite: "mou" },
+      mou: { word: "mou", emoji: "🧸", opposite: "dur" },
+      grand: { word: "grand", emoji: "🦒", opposite: "petit" },
+      petit: { word: "petit", emoji: "🐭", opposite: "grand" },
+      chaud: { word: "chaud", emoji: "🔥", opposite: "froid" },
+      froid: { word: "froid", emoji: "❄️", opposite: "chaud" },
+      vide: { word: "vide", emoji: "📭", opposite: "plein" },
+      plein: { word: "plein", emoji: "🎒", opposite: "vide" },
+      noir: { word: "noir", emoji: "⚫", opposite: "blanc" },
+      blanc: { word: "blanc", emoji: "⚪", opposite: "noir" },
+      rapide: { word: "rapide", emoji: "🐆", opposite: "lent" },
+      lent: { word: "lent", emoji: "🐌", opposite: "rapide" },
+      jour: { word: "jour", emoji: "☀️", opposite: "nuit" },
+      nuit: { word: "nuit", emoji: "🌙", opposite: "jour" },
+      haut: { word: "haut", emoji: "⬆️", opposite: "bas" },
+      bas: { word: "bas", emoji: "⬇️", opposite: "haut" },
+      propre: { word: "propre", emoji: "🧼", opposite: "sale" },
+      sale: { word: "sale", emoji: "🐷", opposite: "propre" },
+      ouvert: { word: "ouvert", emoji: "🔓", opposite: "fermé" },
+      ferme: { word: "fermé", emoji: "🔒", opposite: "ouvert" },
+      lourd: { word: "lourd", emoji: "🏋️", opposite: "léger" },
+      leger: { word: "léger", emoji: "🎈", opposite: "lourd" },
+      dedans: { word: "dedans", emoji: "📥", opposite: "dehors" },
+      dehors: { word: "dehors", emoji: "🌳", opposite: "dedans" },
+      gentil: { word: "gentil", emoji: "😊", opposite: "méchant" },
+      mechant: { word: "méchant", emoji: "😠", opposite: "gentil" },
+      vieux: { word: "vieux", emoji: "👴", opposite: "jeune" },
+      jeune: { word: "jeune", emoji: "👶", opposite: "vieux" },
+      long: { word: "long", emoji: "🐍", opposite: "court" },
+      court: { word: "court", emoji: "✂️", opposite: "long" }
+    };
+    var CONTRAIRE_LEVEL_POOL = [
+      ["dur", "mou", "grand", "petit", "chaud", "froid"],
+      ["dur", "mou", "grand", "petit", "chaud", "froid", "vide", "plein", "noir", "blanc", "rapide", "lent"],
+      ["dur", "mou", "grand", "petit", "chaud", "froid", "vide", "plein", "noir", "blanc", "rapide", "lent",
+        "jour", "nuit", "haut", "bas", "propre", "sale"],
+      ["dur", "mou", "grand", "petit", "chaud", "froid", "vide", "plein", "noir", "blanc", "rapide", "lent",
+        "jour", "nuit", "haut", "bas", "propre", "sale", "ouvert", "ferme", "lourd", "leger", "dedans", "dehors"],
+      ["dur", "mou", "grand", "petit", "chaud", "froid", "vide", "plein", "noir", "blanc", "rapide", "lent",
+        "jour", "nuit", "haut", "bas", "propre", "sale", "ouvert", "ferme", "lourd", "leger", "dedans", "dehors",
+        "gentil", "mechant", "vieux", "jeune", "long", "court"]
+    ];
+
+    function generateContraireProblem(levelIdx) {
+      var pool = CONTRAIRE_LEVEL_POOL[levelIdx];
+      var key = pool[randInt(0, pool.length - 1)];
+      var def = CONTRAIRE_WORDS[key];
+      var correctDef = CONTRAIRE_WORDS[def.opposite];
+      var distractorKeys = shuffle(pool.filter(function (k) { return k !== key && k !== def.opposite; })).slice(0, 2);
+      var choices = shuffle(distractorKeys.map(function (k) { return CONTRAIRE_WORDS[k].word; }).concat([correctDef.word]));
+      return {
+        kind: "contraire",
+        word: def.word,
+        emoji: def.emoji,
+        answer: correctDef.word,
+        choices: choices,
+        wordKey: key
+      };
+    }
+
+    // "Trouve le bon son" (Lecture Malin) : un son complexe s'affiche
+    // (ex. "OU"), l'enfant écoute 2 sons prononcés et doit retrouver
+    // celui qui correspond. "group" évite de faire s'affronter 2
+    // graphies d'un même son (an/en, in/ain, eau/au se prononcent pareil
+    // -- impossible à distinguer à l'oreille, donc jamais l'un contre
+    // l'autre).
+    var SOUND_DEFS = {
+      ou: { label: "OU", speak: "ou", group: "ou" },
+      et: { label: "ET", speak: "et", group: "et" },
+      un: { label: "UN", speak: "un", group: "un" },
+      in: { label: "IN", speak: "in", group: "in" },
+      ain: { label: "AIN", speak: "ain", group: "in" },
+      an: { label: "AN", speak: "an", group: "an" },
+      en: { label: "EN", speak: "en", group: "an" },
+      eau: { label: "EAU", speak: "eau", group: "o" },
+      au: { label: "AU", speak: "au", group: "o" }
+    };
+    var SOUND_LEVEL_POOL = [
+      ["ou", "un", "eau"],
+      ["ou", "un", "eau", "an", "in"],
+      ["ou", "un", "eau", "an", "in", "et", "au"],
+      ["ou", "un", "eau", "an", "in", "et", "au", "en", "ain"],
+      ["ou", "un", "eau", "an", "in", "et", "au", "en", "ain"]
+    ];
+
+    function generateSoundProblem(levelIdx) {
+      var pool = SOUND_LEVEL_POOL[levelIdx];
+      var targetKey = pool[randInt(0, pool.length - 1)];
+      var target = SOUND_DEFS[targetKey];
+      var distractorPool = pool.filter(function (k) { return SOUND_DEFS[k].group !== target.group; });
+      var distractorKey = distractorPool[randInt(0, distractorPool.length - 1)];
+      var targetFirst = Math.random() < 0.5;
+      return {
+        kind: "sound",
+        targetKey: targetKey,
+        label: target.label,
+        optionKeys: targetFirst ? [targetKey, distractorKey] : [distractorKey, targetKey],
+        answer: targetFirst ? 0 : 1,
+        choices: [0, 1],
+        wordKey: targetKey + "|" + distractorKey
+      };
+    }
+
     // "La lettre manquante" (Écriture Malin) : réutilise les mêmes mots
     // (et le même dosage par niveau) que "Mes premières lectures", mais il
     // manque une lettre au hasard dans le mot affiché.
@@ -5825,6 +5944,12 @@
       if (p1.kind === "article" || p2.kind === "article") {
         return p1.kind === "article" && p2.kind === "article" && p1.wordKey === p2.wordKey;
       }
+      if (p1.kind === "contraire" || p2.kind === "contraire") {
+        return p1.kind === "contraire" && p2.kind === "contraire" && p1.wordKey === p2.wordKey;
+      }
+      if (p1.kind === "sound" || p2.kind === "sound") {
+        return p1.kind === "sound" && p2.kind === "sound" && p1.wordKey === p2.wordKey;
+      }
       if (p1.kind === "casse" || p2.kind === "casse") {
         return p1.kind === "casse" && p2.kind === "casse" && p1.wordKey === p2.wordKey;
       }
@@ -5913,6 +6038,12 @@
       }
       if (state.mode === "rhymes") {
         return generateRhymesProblem(levelIdx);
+      }
+      if (state.mode === "contraire") {
+        return generateContraireProblem(levelIdx);
+      }
+      if (state.mode === "sound") {
+        return generateSoundProblem(levelIdx);
       }
       if (state.mode === "lettreman") {
         return generateLettreManProblem(levelIdx);
@@ -6034,6 +6165,8 @@
       lettersCard: document.getElementById("lettersCard"),
       syllablesCard: document.getElementById("syllablesCard"),
       rhymesCard: document.getElementById("rhymesCard"),
+      contraireCard: document.getElementById("contraireCard"),
+      soundCard: document.getElementById("soundCard"),
       wordgridCard: document.getElementById("wordgridCard"),
       casseCard: document.getElementById("casseCard"),
       coloriageCard: document.getElementById("coloriageCard"),
@@ -6430,6 +6563,36 @@
         return;
       }
 
+      if (p.kind === "contraire") {
+        els.problem.removeAttribute("data-terms");
+        var ctWrap = document.createElement("div");
+        ctWrap.className = "letterman-prompt";
+        var ctPic = document.createElement("span");
+        ctPic.className = "picture-prompt emoji letterman-pic";
+        ctPic.textContent = p.emoji;
+        var ctBtn = document.createElement("button");
+        ctBtn.type = "button";
+        ctBtn.className = "color-word";
+        ctBtn.setAttribute("aria-label", "Écouter le mot " + p.word);
+        var ctText = document.createElement("span");
+        ctText.className = "color-word-text";
+        ctText.textContent = p.word;
+        var ctIcon = document.createElement("span");
+        ctIcon.className = "color-word-icon";
+        ctIcon.textContent = "🔊";
+        ctBtn.appendChild(ctText);
+        ctBtn.appendChild(ctIcon);
+        ctBtn.addEventListener("click", function () { speakWord(p.word, "fr-FR"); });
+        ctWrap.appendChild(ctPic);
+        ctWrap.appendChild(ctBtn);
+        els.problem.appendChild(ctWrap);
+        fitWordText(ctBtn, ctText);
+        els.problem.classList.remove("pop");
+        void els.problem.offsetWidth;
+        els.problem.classList.add("pop");
+        return;
+      }
+
       if (p.kind === "disparu") {
         els.problem.removeAttribute("data-terms");
         var dpWrap = document.createElement("span");
@@ -6599,6 +6762,37 @@
         pitchInstr.className = "instruction-prompt";
         pitchInstr.textContent = p.compareMode === "aigu" ? "Quel son est le plus aigu ?" : "Quel son est le plus grave ?";
         els.problem.appendChild(pitchInstr);
+        els.problem.classList.remove("pop");
+        void els.problem.offsetWidth;
+        els.problem.classList.add("pop");
+        pitchSelectedIdx = null;
+        pitchSelectedBtn = null;
+        els.pitchConfirmBtn.hidden = false;
+        els.pitchConfirmBtn.disabled = true;
+        return;
+      }
+
+      if (p.kind === "sound") {
+        els.problem.removeAttribute("data-terms");
+        var soundInstr = document.createElement("span");
+        soundInstr.className = "instruction-prompt";
+        soundInstr.textContent = "Trouve le bon son !";
+        els.problem.appendChild(soundInstr);
+        var soundBtn2 = document.createElement("button");
+        soundBtn2.type = "button";
+        soundBtn2.className = "color-word";
+        soundBtn2.setAttribute("aria-label", "Écouter le son " + p.label);
+        var soundText2 = document.createElement("span");
+        soundText2.className = "color-word-text";
+        soundText2.textContent = p.label;
+        var soundIcon2 = document.createElement("span");
+        soundIcon2.className = "color-word-icon";
+        soundIcon2.textContent = "🔊";
+        soundBtn2.appendChild(soundText2);
+        soundBtn2.appendChild(soundIcon2);
+        soundBtn2.addEventListener("click", function () { speakWord(SOUND_DEFS[p.targetKey].speak, "fr-FR"); });
+        els.problem.appendChild(soundBtn2);
+        fitWordText(soundBtn2, soundText2);
         els.problem.classList.remove("pop");
         void els.problem.offsetWidth;
         els.problem.classList.add("pop");
@@ -6949,6 +7143,37 @@
         return;
       }
 
+      if (state.problem.kind === "contraire") {
+        var contrairePalette = shuffle(CANDY_COLORS.slice());
+        var pendingContraireFits = [];
+        state.problem.choices.forEach(function (word, idx) {
+          var row = document.createElement("div");
+          row.className = "answer-row";
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "answer-btn word-btn " + contrairePalette[idx % contrairePalette.length];
+          var btnText = document.createElement("span");
+          btnText.className = "answer-btn-text";
+          btnText.textContent = word;
+          btn.appendChild(btnText);
+          btn.setAttribute("data-value", word);
+          btn.setAttribute("aria-label", "Répondre " + word);
+          btn.addEventListener("click", function () { onAnswer(word, btn); });
+          var listenBtn = document.createElement("button");
+          listenBtn.type = "button";
+          listenBtn.className = "answer-listen-btn";
+          listenBtn.setAttribute("aria-label", "Écouter le mot " + word);
+          listenBtn.textContent = "🔊";
+          listenBtn.addEventListener("click", function () { speakWord(word, "fr-FR"); });
+          row.appendChild(btn);
+          row.appendChild(listenBtn);
+          els.answers.appendChild(row);
+          pendingContraireFits.push([btn, btnText]);
+        });
+        pendingContraireFits.forEach(function (pair) { fitButtonText(pair[0], pair[1]); });
+        return;
+      }
+
       if (state.problem.kind === "pitch") {
         // Un seul bouton par son : taper joue le son ET le sélectionne (au
         // lieu d'une rangée à écouter séparée de la rangée à répondre,
@@ -6968,6 +7193,30 @@
           btn.setAttribute("aria-label", "Écouter et choisir le son " + (idx + 1));
           btn.addEventListener("click", function () {
             playMusicNote(state.problem.pitches[idx]);
+            var allBtns = els.answers.querySelectorAll(".answer-btn");
+            for (var j = 0; j < allBtns.length; j++) allBtns[j].classList.remove("selected");
+            btn.classList.add("selected");
+            pitchSelectedIdx = idx;
+            pitchSelectedBtn = btn;
+            els.pitchConfirmBtn.disabled = false;
+          });
+          els.answers.appendChild(btn);
+        });
+        return;
+      }
+
+      if (state.problem.kind === "sound") {
+        els.answers.classList.add("answers-row");
+        var soundPalette = shuffle(CANDY_COLORS.slice());
+        state.problem.choices.forEach(function (idx, i) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "answer-btn pitch-answer-btn " + soundPalette[i % soundPalette.length];
+          btn.textContent = "🔊 Son " + (idx + 1);
+          btn.setAttribute("data-value", idx);
+          btn.setAttribute("aria-label", "Écouter et choisir le son " + (idx + 1));
+          btn.addEventListener("click", function () {
+            speakWord(SOUND_DEFS[state.problem.optionKeys[idx]].speak, "fr-FR");
             var allBtns = els.answers.querySelectorAll(".answer-btn");
             for (var j = 0; j < allBtns.length; j++) allBtns[j].classList.remove("selected");
             btn.classList.add("selected");
@@ -9140,7 +9389,7 @@
       if (MODE_TO_OP_3[mode] || MIX_MODES_3[mode]) return "3";
       if (mode === "count" || mode === "compare" || mode === "sequence") return "calc";
       if (mode === "colors" || mode === "animals" || mode === "numbers" || mode === "body" || mode === "food") return "anglais";
-      if (mode === "reading" || mode === "letters" || mode === "syllables" || mode === "rhymes" || mode === "wordgrid" || mode === "casse") return "lire";
+      if (mode === "reading" || mode === "letters" || mode === "syllables" || mode === "rhymes" || mode === "wordgrid" || mode === "casse" || mode === "contraire" || mode === "sound") return "lire";
       if (isPaintMode(mode)) return "peinture";
       if (mode === "musiquelibre" || mode === "instruments" || mode === "pitch" || mode === "rythme") return "musique";
       if (mode === "animalname" || mode === "babies" || mode === "habitat" || mode === "diet" || mode === "animalsound") return "animaux";
@@ -9372,6 +9621,8 @@
     els.lettersCard.addEventListener("click", function () { selectMode("letters"); });
     els.syllablesCard.addEventListener("click", function () { selectMode("syllables"); });
     els.rhymesCard.addEventListener("click", function () { selectMode("rhymes"); });
+    els.contraireCard.addEventListener("click", function () { selectMode("contraire"); });
+    els.soundCard.addEventListener("click", function () { selectMode("sound"); });
     els.wordgridCard.addEventListener("click", function () { selectMode("wordgrid"); });
     els.casseCard.addEventListener("click", function () { selectMode("casse"); });
     els.coloriageCard.addEventListener("click", function () { selectMode("coloriage"); });
