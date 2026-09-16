@@ -6565,9 +6565,9 @@
       window.speechSynthesis.speak(utter);
     }
 
-    // Mini-jeu caché "Attrape le renard" : rester appuyé 2 secondes sur le
-    // renard de l'accueil (voir startFoxHold/cancelFoxHold plus bas) ouvre
-    // un décompte (3, 2, 1) puis un chrono de 30 secondes avec plusieurs
+    // Mini-jeu caché "Attrape le renard" : 3 taps rapprochés sur le renard
+    // de l'accueil (voir handleFoxActivate plus bas) ouvrent un décompte
+    // (3, 2, 1) puis un chrono de 30 secondes avec plusieurs
     // renards (même tête que le logo "Petit Malin", voir #foxHeadSymbol)
     // qui changent de place chacun à son propre rythme -- jamais tous en
     // même temps, voir le délai aléatoire dans foxGameScheduleHop.
@@ -6700,24 +6700,22 @@
       els.foxGameEndOverlay.hidden = true;
     }
 
-    // Appui long (2s) sur le renard de l'accueil : souris/tactile via
-    // Pointer Events, clavier via Entrée/Espace maintenu. Un simple tap
-    // garde son comportement habituel (le renard se présente).
-    var foxHoldTimer = null;
-    var foxHoldTriggered = false;
+    // 3 taps rapprochés sur le renard de l'accueil (souris/tactile/clavier)
+    // ouvrent le mini-jeu ; un tap isolé garde son comportement habituel
+    // (le renard se présente).
+    var FOX_TRIPLE_TAP_WINDOW = 600;
+    var foxTapTimes = [];
 
-    function startFoxHold() {
-      if (foxHoldTimer) return;
-      foxHoldTriggered = false;
-      foxHoldTimer = window.setTimeout(function () {
-        foxHoldTimer = null;
-        foxHoldTriggered = true;
+    function handleFoxActivate() {
+      var now = Date.now();
+      foxTapTimes.push(now);
+      foxTapTimes = foxTapTimes.filter(function (t) { return now - t <= FOX_TRIPLE_TAP_WINDOW; });
+      if (foxTapTimes.length >= 3) {
+        foxTapTimes = [];
         startFoxGame();
-      }, 2000);
-    }
-
-    function cancelFoxHold() {
-      if (foxHoldTimer) { window.clearTimeout(foxHoldTimer); foxHoldTimer = null; }
+        return;
+      }
+      speakFoxGreeting();
     }
 
     // Les mots à afficher (couleurs en anglais, lecture en français) ont une
@@ -10167,23 +10165,9 @@
 
     els.menuBtn.addEventListener("click", openMenu);
     els.gameBackBtn.addEventListener("click", openMenu);
-    els.foxWalker.addEventListener("click", function () {
-      if (foxHoldTriggered) { foxHoldTriggered = false; return; }
-      speakFoxGreeting();
-    });
-    els.foxWalker.addEventListener("pointerdown", startFoxHold);
-    els.foxWalker.addEventListener("pointerup", cancelFoxHold);
-    els.foxWalker.addEventListener("pointerleave", cancelFoxHold);
-    els.foxWalker.addEventListener("pointercancel", cancelFoxHold);
+    els.foxWalker.addEventListener("click", handleFoxActivate);
     els.foxWalker.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); startFoxHold(); }
-    });
-    els.foxWalker.addEventListener("keyup", function (e) {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        cancelFoxHold();
-        if (foxHoldTriggered) { foxHoldTriggered = false; } else { speakFoxGreeting(); }
-      }
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleFoxActivate(); }
     });
     els.foxGameCloseBtn.addEventListener("click", closeFoxGame);
     els.foxGameEndCloseBtn.addEventListener("click", closeFoxGame);
