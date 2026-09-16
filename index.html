@@ -2372,8 +2372,8 @@
     border: none;
     background: none;
     padding: 0;
-    width: clamp(3.2rem, 15vw, 4.6rem);
-    height: clamp(3.2rem, 15vw, 4.6rem);
+    width: clamp(2.3rem, 10vw, 3.6rem);
+    height: clamp(2.3rem, 10vw, 3.6rem);
     cursor: pointer;
     filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.25));
     transition: left 0.4s ease, top 0.4s ease, transform 0.15s ease, opacity 0.15s ease;
@@ -2384,9 +2384,9 @@
 
   .foxgame-target:active { transform: scale(0.82); }
 
-  /* renard attrapé : éclate sur place puis réapparaît ailleurs une fois
-     l'animation terminée (voir onFoxGameTargetTap, qui repositionne et
-     retire cette classe après FOX_GAME_CATCH_MS). */
+  /* renard attrapé : éclate sur place puis disparaît pour de bon une
+     fois l'animation terminée (voir onFoxGameTargetTap, qui le retire
+     du DOM après FOX_GAME_CATCH_MS). */
   .foxgame-target.caught {
     animation: fox-caught-pop 0.35s ease-in forwards;
     pointer-events: none;
@@ -4005,7 +4005,7 @@
     <div class="celebrate-panel">
       <div class="celebrate-badge">🦊</div>
       <h2 class="celebrate-title">Attrape le renard !</h2>
-      <p class="celebrate-sub">Attrape le plus de renards possible en 30 secondes !</p>
+      <p class="celebrate-sub">Attrape tous les renards, jusqu'à ce qu'il n'en reste plus !</p>
       <div class="celebrate-actions">
         <button class="celebrate-btn celebrate-btn-secondary" id="foxGameIntroCancelBtn" type="button">Annuler</button>
         <button class="celebrate-btn" id="foxGameIntroStartBtn" type="button">C'est parti !</button>
@@ -4015,8 +4015,7 @@
 
   <div class="foxgame-overlay" id="foxGameOverlay" hidden>
     <div class="foxgame-header">
-      <div class="foxgame-stat">⏱️ <span id="foxGameTime">30</span>s</div>
-      <div class="foxgame-stat">🦊 <span id="foxGameScore">0</span></div>
+      <div class="foxgame-stat">🦊 <span id="foxGameRemaining">20</span> restants</div>
       <button type="button" class="foxgame-close" id="foxGameCloseBtn" aria-label="Fermer le jeu">✕</button>
     </div>
     <div class="foxgame-field" id="foxGameField"></div>
@@ -4027,8 +4026,8 @@
     <div class="confetti" id="foxGameConfetti" aria-hidden="true"></div>
     <div class="celebrate-panel">
       <div class="celebrate-badge">🦊</div>
-      <h2 class="celebrate-title">Temps écoulé !</h2>
-      <p class="celebrate-sub">Tu as attrapé <span id="foxGameFinalScore">0</span> renards !</p>
+      <h2 class="celebrate-title">Bravo !</h2>
+      <p class="celebrate-sub">Tu as attrapé tous les renards !</p>
       <div class="celebrate-actions">
         <button class="celebrate-btn celebrate-btn-secondary" id="foxGameEndCloseBtn" type="button">Fermer</button>
         <button class="celebrate-btn" id="foxGameReplayBtn" type="button">Rejouer ↻</button>
@@ -6557,14 +6556,12 @@
       foxGameIntroStartBtn: document.getElementById("foxGameIntroStartBtn"),
       foxGameIntroCancelBtn: document.getElementById("foxGameIntroCancelBtn"),
       foxGameOverlay: document.getElementById("foxGameOverlay"),
-      foxGameTime: document.getElementById("foxGameTime"),
-      foxGameScore: document.getElementById("foxGameScore"),
+      foxGameRemaining: document.getElementById("foxGameRemaining"),
       foxGameCloseBtn: document.getElementById("foxGameCloseBtn"),
       foxGameField: document.getElementById("foxGameField"),
       foxGameCountdown: document.getElementById("foxGameCountdown"),
       foxGameEndOverlay: document.getElementById("foxGameEndOverlay"),
       foxGameConfetti: document.getElementById("foxGameConfetti"),
-      foxGameFinalScore: document.getElementById("foxGameFinalScore"),
       foxGameEndCloseBtn: document.getElementById("foxGameEndCloseBtn"),
       foxGameReplayBtn: document.getElementById("foxGameReplayBtn")
     };
@@ -6625,22 +6622,21 @@
 
     // Mini-jeu caché "Attrape le renard" : 3 taps rapprochés sur le renard
     // de l'accueil (voir handleFoxActivate plus bas) ouvrent un décompte
-    // (3, 2, 1) puis un chrono de 30 secondes avec plusieurs
-    // renards (même tête que le logo "Petit Malin", voir #foxHeadSymbol)
-    // qui changent de place chacun à son propre rythme -- jamais tous en
-    // même temps, voir le délai aléatoire dans foxGameScheduleHop.
-    var FOX_GAME_DURATION = 30;
-    var FOX_GAME_COUNT = 5;
+    // (3, 2, 1) puis une vingtaine de renards (même tête que le logo
+    // "Petit Malin", voir #foxHeadSymbol) qui changent de place chacun à
+    // son propre rythme -- jamais tous en même temps, voir le délai
+    // aléatoire dans foxGameScheduleHop. Pas de chrono : le but est de
+    // tous les attraper, jusqu'à ce qu'il n'en reste plus (chaque renard
+    // attrapé disparaît pour de bon, voir onFoxGameTargetTap).
+    var FOX_GAME_COUNT = 20;
     var FOX_GAME_HOP_MS = 2600;
     var FOX_GAME_HOP_JITTER = 800;
     var FOX_COUNTDOWN_STEP_MS = 800;
     var FOX_GAME_CATCH_MS = 350;
     var FOX_SPARK_COLORS = ["#ffd166", "#ff8a3d", "#e63946", "#ffb199", "#fff8ee"];
-    var foxGameInterval = null;
     var foxGameCountdownTimer = null;
     var foxGameHopTimers = [];
-    var foxGameTimeLeft = FOX_GAME_DURATION;
-    var foxGameScore = 0;
+    var foxGameRemaining = FOX_GAME_COUNT;
     var foxGameActive = false;
 
     function foxGameRandomPosition(target) {
@@ -6697,19 +6693,19 @@
 
     // Le renard attrapé éclate sur place (classe "caught", voir le
     // @keyframes fox-caught-pop) puis, une fois l'animation finie,
-    // réapparaît à un autre endroit et reprend son minuteur normal.
+    // disparaît pour de bon -- une fois tous attrapés, la partie est
+    // gagnée (voir endFoxGame).
     function onFoxGameTargetTap(target, idx) {
       if (!foxGameActive || target.classList.contains("caught")) return;
-      foxGameScore++;
-      els.foxGameScore.textContent = String(foxGameScore);
       if (foxGameHopTimers[idx]) window.clearTimeout(foxGameHopTimers[idx]);
+      foxGameHopTimers[idx] = null;
       target.classList.add("caught");
       foxGameSpawnBurst(target.offsetLeft + target.offsetWidth / 2, target.offsetTop + target.offsetHeight / 2);
-      foxGameHopTimers[idx] = window.setTimeout(function () {
-        if (!foxGameActive) return;
-        target.classList.remove("caught");
-        foxGameHopOne(target);
-        foxGameScheduleHop(target, idx, FOX_GAME_HOP_MS + (Math.random() * 2 - 1) * FOX_GAME_HOP_JITTER);
+      foxGameRemaining--;
+      els.foxGameRemaining.textContent = String(Math.max(0, foxGameRemaining));
+      window.setTimeout(function () {
+        if (target.parentNode) target.parentNode.removeChild(target);
+        if (foxGameActive && foxGameRemaining <= 0) endFoxGame();
       }, FOX_GAME_CATCH_MS);
     }
 
@@ -6734,7 +6730,6 @@
     }
 
     function stopFoxGameTimers() {
-      if (foxGameInterval) { window.clearInterval(foxGameInterval); foxGameInterval = null; }
       if (foxGameCountdownTimer) { window.clearTimeout(foxGameCountdownTimer); foxGameCountdownTimer = null; }
       for (var i = 0; i < foxGameHopTimers.length; i++) {
         if (foxGameHopTimers[i]) window.clearTimeout(foxGameHopTimers[i]);
@@ -6762,11 +6757,6 @@
     function foxGameBeginRound() {
       foxGameActive = true;
       buildFoxTargets();
-      foxGameInterval = window.setInterval(function () {
-        foxGameTimeLeft--;
-        els.foxGameTime.textContent = String(Math.max(0, foxGameTimeLeft));
-        if (foxGameTimeLeft <= 0) endFoxGame();
-      }, 1000);
     }
 
     // Avant le décompte, une bulle explique le but du jeu -- on ne lance
@@ -6774,10 +6764,8 @@
     function startFoxGame() {
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
       stopFoxGameTimers();
-      foxGameScore = 0;
-      foxGameTimeLeft = FOX_GAME_DURATION;
-      els.foxGameScore.textContent = "0";
-      els.foxGameTime.textContent = String(FOX_GAME_DURATION);
+      foxGameRemaining = FOX_GAME_COUNT;
+      els.foxGameRemaining.textContent = String(FOX_GAME_COUNT);
       els.foxGameField.innerHTML = "";
       els.foxGameEndOverlay.hidden = true;
       els.foxGameOverlay.hidden = true;
@@ -6794,7 +6782,6 @@
     function endFoxGame() {
       stopFoxGameTimers();
       els.foxGameOverlay.hidden = true;
-      els.foxGameFinalScore.textContent = String(foxGameScore);
       els.foxGameEndOverlay.hidden = false;
       spawnConfetti(els.foxGameConfetti, 30);
     }
