@@ -411,6 +411,10 @@
   .color-word:active { transform: translateY(2px); box-shadow: 0 3px 0 rgba(31, 42, 60, 0.15); }
   .color-word:focus-visible { outline: 3px solid var(--candy-blue); outline-offset: 3px; }
 
+  /* "Trouve le bon son" : bulle non tapable (voir renderProblem) --
+     retire l'affordance de bouton cliquable. */
+  div.color-word { cursor: default; }
+
   .color-word-text {
     font-weight: 900;
     font-size: var(--fs-op);
@@ -6778,21 +6782,18 @@
         soundInstr.className = "instruction-prompt";
         soundInstr.textContent = "Trouve le bon son !";
         els.problem.appendChild(soundInstr);
-        var soundBtn2 = document.createElement("button");
-        soundBtn2.type = "button";
-        soundBtn2.className = "color-word";
-        soundBtn2.setAttribute("aria-label", "Écouter le son " + p.label);
+        // Contrairement aux autres bulles blanches, celle-ci n'est PAS
+        // tapable : l'entendre reviendrait à donner la réponse (le but du
+        // jeu est justement de deviner le son à partir de sa graphie, pas
+        // de l'écouter directement).
+        var soundBadge2 = document.createElement("div");
+        soundBadge2.className = "color-word";
         var soundText2 = document.createElement("span");
         soundText2.className = "color-word-text";
         soundText2.textContent = p.label;
-        var soundIcon2 = document.createElement("span");
-        soundIcon2.className = "color-word-icon";
-        soundIcon2.textContent = "🔊";
-        soundBtn2.appendChild(soundText2);
-        soundBtn2.appendChild(soundIcon2);
-        soundBtn2.addEventListener("click", function () { speakWord(SOUND_DEFS[p.targetKey].speak, "fr-FR"); });
-        els.problem.appendChild(soundBtn2);
-        fitWordText(soundBtn2, soundText2);
+        soundBadge2.appendChild(soundText2);
+        els.problem.appendChild(soundBadge2);
+        fitWordText(soundBadge2, soundText2);
         els.problem.classList.remove("pop");
         void els.problem.offsetWidth;
         els.problem.classList.add("pop");
