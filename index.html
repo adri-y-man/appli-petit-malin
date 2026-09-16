@@ -2307,6 +2307,80 @@
     .confetti-piece { display: none; }
   }
 
+  /* ---------- mini-jeu caché : rester appuyé 2 secondes sur le renard
+     de l'accueil ouvre "Attrape le renard" (30 secondes chrono). ---------- */
+
+  .foxgame-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 22;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
+    padding: max(0.9rem, env(safe-area-inset-top)) max(0.9rem, env(safe-area-inset-right))
+      max(0.9rem, env(safe-area-inset-bottom)) max(0.9rem, env(safe-area-inset-left));
+  }
+
+  .foxgame-overlay[hidden] { display: none; }
+
+  .foxgame-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    padding-bottom: 0.8rem;
+  }
+
+  .foxgame-stat {
+    background: rgba(255, 255, 255, 0.85);
+    color: var(--ink);
+    font-weight: 800;
+    font-size: clamp(1rem, 4.4vw, 1.3rem);
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    box-shadow: 0 6px 12px -8px rgba(31, 42, 60, 0.4);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .foxgame-close {
+    position: absolute;
+    right: 0;
+    top: 0;
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    width: 2.3rem;
+    height: 2.3rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--ink);
+    font-size: 1.1rem;
+    font-weight: 800;
+  }
+
+  .foxgame-field {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .foxgame-target {
+    position: absolute;
+    appearance: none;
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: clamp(2.8rem, 13vw, 4.2rem);
+    line-height: 1;
+    cursor: pointer;
+    filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.25));
+    transition: left 0.18s ease, top 0.18s ease, transform 0.1s ease;
+    touch-action: manipulation;
+  }
+
+  .foxgame-target:active { transform: scale(0.82); }
+
   /* ---------- menu picto + écran de choix du jeu ---------- */
 
   .menu-btn {
@@ -3847,6 +3921,30 @@
   </div>
 
   <div class="exit-toast" id="exitToast" hidden>Appuie encore sur retour pour quitter</div>
+
+  <div class="foxgame-overlay" id="foxGameOverlay" hidden>
+    <div class="foxgame-header">
+      <div class="foxgame-stat">⏱️ <span id="foxGameTime">30</span>s</div>
+      <div class="foxgame-stat">🦊 <span id="foxGameScore">0</span></div>
+      <button type="button" class="foxgame-close" id="foxGameCloseBtn" aria-label="Fermer le jeu">✕</button>
+    </div>
+    <div class="foxgame-field" id="foxGameField">
+      <button type="button" class="foxgame-target" id="foxGameTarget" aria-label="Attrape le renard">🦊</button>
+    </div>
+  </div>
+
+  <div class="celebrate-overlay celebrate-win" id="foxGameEndOverlay" hidden>
+    <div class="confetti" id="foxGameConfetti" aria-hidden="true"></div>
+    <div class="celebrate-panel">
+      <div class="celebrate-badge">🦊</div>
+      <h2 class="celebrate-title">Temps écoulé !</h2>
+      <p class="celebrate-sub">Tu as attrapé <span id="foxGameFinalScore">0</span> renards !</p>
+      <div class="celebrate-actions">
+        <button class="celebrate-btn celebrate-btn-secondary" id="foxGameEndCloseBtn" type="button">Fermer</button>
+        <button class="celebrate-btn" id="foxGameReplayBtn" type="button">Rejouer ↻</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -6364,7 +6462,18 @@
       resetOverlay: document.getElementById("resetOverlay"),
       resetCancelBtn: document.getElementById("resetCancelBtn"),
       resetConfirmBtn: document.getElementById("resetConfirmBtn"),
-      exitToast: document.getElementById("exitToast")
+      exitToast: document.getElementById("exitToast"),
+      foxGameOverlay: document.getElementById("foxGameOverlay"),
+      foxGameTime: document.getElementById("foxGameTime"),
+      foxGameScore: document.getElementById("foxGameScore"),
+      foxGameCloseBtn: document.getElementById("foxGameCloseBtn"),
+      foxGameField: document.getElementById("foxGameField"),
+      foxGameTarget: document.getElementById("foxGameTarget"),
+      foxGameEndOverlay: document.getElementById("foxGameEndOverlay"),
+      foxGameConfetti: document.getElementById("foxGameConfetti"),
+      foxGameFinalScore: document.getElementById("foxGameFinalScore"),
+      foxGameEndCloseBtn: document.getElementById("foxGameEndCloseBtn"),
+      foxGameReplayBtn: document.getElementById("foxGameReplayBtn")
     };
 
     var STAR_PATH = "M12 2 L14.9 8.6 L22 9.3 L16.5 14 L18.2 21 L12 17.3 L5.8 21 L7.5 14 L2 9.3 L9.1 8.6 Z";
@@ -6419,6 +6528,103 @@
       var utter = new SpeechSynthesisUtterance("Coucou, je suis le renard malin !");
       utter.lang = "fr-FR";
       window.speechSynthesis.speak(utter);
+    }
+
+    // Mini-jeu caché "Attrape le renard" : rester appuyé 2 secondes sur le
+    // renard de l'accueil (voir startFoxHold/cancelFoxHold plus bas) ouvre
+    // un chrono de 30 secondes où il faut taper le renard qui change de
+    // place sans arrêt pour marquer un point à chaque fois.
+    var FOX_GAME_DURATION = 30;
+    var FOX_GAME_HOP_MS = 1100;
+    var foxGameInterval = null;
+    var foxGameHopTimer = null;
+    var foxGameTimeLeft = FOX_GAME_DURATION;
+    var foxGameScore = 0;
+
+    function foxGameRandomPosition() {
+      var field = els.foxGameField;
+      var target = els.foxGameTarget;
+      var w = Math.max(0, field.clientWidth - target.offsetWidth);
+      var h = Math.max(0, field.clientHeight - target.offsetHeight);
+      return { x: Math.random() * w, y: Math.random() * h };
+    }
+
+    function foxGameHop() {
+      var pos = foxGameRandomPosition();
+      els.foxGameTarget.style.left = pos.x + "px";
+      els.foxGameTarget.style.top = pos.y + "px";
+    }
+
+    function foxGameScheduleHop() {
+      if (foxGameHopTimer) window.clearTimeout(foxGameHopTimer);
+      foxGameHopTimer = window.setTimeout(function () {
+        foxGameHop();
+        foxGameScheduleHop();
+      }, FOX_GAME_HOP_MS);
+    }
+
+    function onFoxGameTargetTap() {
+      foxGameScore++;
+      els.foxGameScore.textContent = String(foxGameScore);
+      foxGameHop();
+      foxGameScheduleHop();
+    }
+
+    function stopFoxGameTimers() {
+      if (foxGameInterval) { window.clearInterval(foxGameInterval); foxGameInterval = null; }
+      if (foxGameHopTimer) { window.clearTimeout(foxGameHopTimer); foxGameHopTimer = null; }
+    }
+
+    function startFoxGame() {
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+      stopFoxGameTimers();
+      foxGameScore = 0;
+      foxGameTimeLeft = FOX_GAME_DURATION;
+      els.foxGameScore.textContent = "0";
+      els.foxGameTime.textContent = String(FOX_GAME_DURATION);
+      els.foxGameEndOverlay.hidden = true;
+      els.foxGameOverlay.hidden = false;
+      foxGameHop();
+      foxGameScheduleHop();
+      foxGameInterval = window.setInterval(function () {
+        foxGameTimeLeft--;
+        els.foxGameTime.textContent = String(Math.max(0, foxGameTimeLeft));
+        if (foxGameTimeLeft <= 0) endFoxGame();
+      }, 1000);
+    }
+
+    function endFoxGame() {
+      stopFoxGameTimers();
+      els.foxGameOverlay.hidden = true;
+      els.foxGameFinalScore.textContent = String(foxGameScore);
+      els.foxGameEndOverlay.hidden = false;
+      spawnConfetti(els.foxGameConfetti, 30);
+    }
+
+    function closeFoxGame() {
+      stopFoxGameTimers();
+      els.foxGameOverlay.hidden = true;
+      els.foxGameEndOverlay.hidden = true;
+    }
+
+    // Appui long (2s) sur le renard de l'accueil : souris/tactile via
+    // Pointer Events, clavier via Entrée/Espace maintenu. Un simple tap
+    // garde son comportement habituel (le renard se présente).
+    var foxHoldTimer = null;
+    var foxHoldTriggered = false;
+
+    function startFoxHold() {
+      if (foxHoldTimer) return;
+      foxHoldTriggered = false;
+      foxHoldTimer = window.setTimeout(function () {
+        foxHoldTimer = null;
+        foxHoldTriggered = true;
+        startFoxGame();
+      }, 2000);
+    }
+
+    function cancelFoxHold() {
+      if (foxHoldTimer) { window.clearTimeout(foxHoldTimer); foxHoldTimer = null; }
     }
 
     // Les mots à afficher (couleurs en anglais, lecture en français) ont une
@@ -9868,10 +10074,28 @@
 
     els.menuBtn.addEventListener("click", openMenu);
     els.gameBackBtn.addEventListener("click", openMenu);
-    els.foxWalker.addEventListener("click", speakFoxGreeting);
-    els.foxWalker.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); speakFoxGreeting(); }
+    els.foxWalker.addEventListener("click", function () {
+      if (foxHoldTriggered) { foxHoldTriggered = false; return; }
+      speakFoxGreeting();
     });
+    els.foxWalker.addEventListener("pointerdown", startFoxHold);
+    els.foxWalker.addEventListener("pointerup", cancelFoxHold);
+    els.foxWalker.addEventListener("pointerleave", cancelFoxHold);
+    els.foxWalker.addEventListener("pointercancel", cancelFoxHold);
+    els.foxWalker.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); startFoxHold(); }
+    });
+    els.foxWalker.addEventListener("keyup", function (e) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        cancelFoxHold();
+        if (foxHoldTriggered) { foxHoldTriggered = false; } else { speakFoxGreeting(); }
+      }
+    });
+    els.foxGameTarget.addEventListener("click", onFoxGameTargetTap);
+    els.foxGameCloseBtn.addEventListener("click", closeFoxGame);
+    els.foxGameEndCloseBtn.addEventListener("click", closeFoxGame);
+    els.foxGameReplayBtn.addEventListener("click", startFoxGame);
     els.modeCards.forEach(function (card) {
       card.addEventListener("click", function () { selectMode(card.getAttribute("data-mode")); });
     });
