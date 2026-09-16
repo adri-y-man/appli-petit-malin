@@ -2372,8 +2372,8 @@
     border: none;
     background: none;
     padding: 0;
-    width: clamp(2.3rem, 10vw, 3.6rem);
-    height: clamp(2.3rem, 10vw, 3.6rem);
+    width: clamp(2.8rem, 12vw, 4rem);
+    height: clamp(2.8rem, 12vw, 4rem);
     cursor: pointer;
     filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.25));
     transition: left 0.4s ease, top 0.4s ease, transform 0.15s ease, opacity 0.15s ease;
@@ -4005,7 +4005,7 @@
     <div class="celebrate-panel">
       <div class="celebrate-badge">🦊</div>
       <h2 class="celebrate-title">Attrape le renard !</h2>
-      <p class="celebrate-sub">Attrape tous les renards, jusqu'à ce qu'il n'en reste plus !</p>
+      <p class="celebrate-sub">Attrape le plus de renards possible en 30 secondes !</p>
       <div class="celebrate-actions">
         <button class="celebrate-btn celebrate-btn-secondary" id="foxGameIntroCancelBtn" type="button">Annuler</button>
         <button class="celebrate-btn" id="foxGameIntroStartBtn" type="button">C'est parti !</button>
@@ -4015,7 +4015,8 @@
 
   <div class="foxgame-overlay" id="foxGameOverlay" hidden>
     <div class="foxgame-header">
-      <div class="foxgame-stat">🦊 <span id="foxGameRemaining">20</span> restants</div>
+      <div class="foxgame-stat">⏱️ <span id="foxGameTime">30</span>s</div>
+      <div class="foxgame-stat">🦊 <span id="foxGameScore">0</span></div>
       <button type="button" class="foxgame-close" id="foxGameCloseBtn" aria-label="Fermer le jeu">✕</button>
     </div>
     <div class="foxgame-field" id="foxGameField"></div>
@@ -4026,8 +4027,8 @@
     <div class="confetti" id="foxGameConfetti" aria-hidden="true"></div>
     <div class="celebrate-panel">
       <div class="celebrate-badge">🦊</div>
-      <h2 class="celebrate-title">Bravo !</h2>
-      <p class="celebrate-sub">Tu as attrapé tous les renards !</p>
+      <h2 class="celebrate-title" id="foxGameEndTitle">Temps écoulé !</h2>
+      <p class="celebrate-sub">Tu as attrapé <span id="foxGameFinalScore">0</span> renards !</p>
       <div class="celebrate-actions">
         <button class="celebrate-btn celebrate-btn-secondary" id="foxGameEndCloseBtn" type="button">Fermer</button>
         <button class="celebrate-btn" id="foxGameReplayBtn" type="button">Rejouer ↻</button>
@@ -6556,12 +6557,15 @@
       foxGameIntroStartBtn: document.getElementById("foxGameIntroStartBtn"),
       foxGameIntroCancelBtn: document.getElementById("foxGameIntroCancelBtn"),
       foxGameOverlay: document.getElementById("foxGameOverlay"),
-      foxGameRemaining: document.getElementById("foxGameRemaining"),
+      foxGameTime: document.getElementById("foxGameTime"),
+      foxGameScore: document.getElementById("foxGameScore"),
       foxGameCloseBtn: document.getElementById("foxGameCloseBtn"),
       foxGameField: document.getElementById("foxGameField"),
       foxGameCountdown: document.getElementById("foxGameCountdown"),
       foxGameEndOverlay: document.getElementById("foxGameEndOverlay"),
       foxGameConfetti: document.getElementById("foxGameConfetti"),
+      foxGameEndTitle: document.getElementById("foxGameEndTitle"),
+      foxGameFinalScore: document.getElementById("foxGameFinalScore"),
       foxGameEndCloseBtn: document.getElementById("foxGameEndCloseBtn"),
       foxGameReplayBtn: document.getElementById("foxGameReplayBtn")
     };
@@ -6625,18 +6629,23 @@
     // (3, 2, 1) puis une vingtaine de renards (même tête que le logo
     // "Petit Malin", voir #foxHeadSymbol) qui changent de place chacun à
     // son propre rythme -- jamais tous en même temps, voir le délai
-    // aléatoire dans foxGameScheduleHop. Pas de chrono : le but est de
-    // tous les attraper, jusqu'à ce qu'il n'en reste plus (chaque renard
-    // attrapé disparaît pour de bon, voir onFoxGameTargetTap).
+    // aléatoire dans foxGameScheduleHop. Le but est d'en attraper le plus
+    // possible en 30 secondes ; chaque renard attrapé disparaît pour de
+    // bon (voir onFoxGameTargetTap), et la partie s'arrête dès que le
+    // temps est écoulé OU qu'il n'en reste plus, au premier des deux.
     var FOX_GAME_COUNT = 20;
+    var FOX_GAME_DURATION = 30;
     var FOX_GAME_HOP_MS = 2600;
     var FOX_GAME_HOP_JITTER = 800;
     var FOX_COUNTDOWN_STEP_MS = 800;
     var FOX_GAME_CATCH_MS = 350;
     var FOX_SPARK_COLORS = ["#ffd166", "#ff8a3d", "#e63946", "#ffb199", "#fff8ee"];
+    var foxGameInterval = null;
     var foxGameCountdownTimer = null;
     var foxGameHopTimers = [];
     var foxGameRemaining = FOX_GAME_COUNT;
+    var foxGameTimeLeft = FOX_GAME_DURATION;
+    var foxGameScore = 0;
     var foxGameActive = false;
 
     function foxGameRandomPosition(target) {
@@ -6693,19 +6702,21 @@
 
     // Le renard attrapé éclate sur place (classe "caught", voir le
     // @keyframes fox-caught-pop) puis, une fois l'animation finie,
-    // disparaît pour de bon -- une fois tous attrapés, la partie est
-    // gagnée (voir endFoxGame).
+    // disparaît pour de bon -- si jamais ils y passent tous avant la fin
+    // du chrono, la partie s'arrête là plutôt que de laisser
+    // l'enfant attendre devant un terrain vide (voir endFoxGame).
     function onFoxGameTargetTap(target, idx) {
       if (!foxGameActive || target.classList.contains("caught")) return;
       if (foxGameHopTimers[idx]) window.clearTimeout(foxGameHopTimers[idx]);
       foxGameHopTimers[idx] = null;
       target.classList.add("caught");
       foxGameSpawnBurst(target.offsetLeft + target.offsetWidth / 2, target.offsetTop + target.offsetHeight / 2);
+      foxGameScore++;
       foxGameRemaining--;
-      els.foxGameRemaining.textContent = String(Math.max(0, foxGameRemaining));
+      els.foxGameScore.textContent = String(foxGameScore);
       window.setTimeout(function () {
         if (target.parentNode) target.parentNode.removeChild(target);
-        if (foxGameActive && foxGameRemaining <= 0) endFoxGame();
+        if (foxGameActive && foxGameRemaining <= 0) endFoxGame("cleared");
       }, FOX_GAME_CATCH_MS);
     }
 
@@ -6730,6 +6741,7 @@
     }
 
     function stopFoxGameTimers() {
+      if (foxGameInterval) { window.clearInterval(foxGameInterval); foxGameInterval = null; }
       if (foxGameCountdownTimer) { window.clearTimeout(foxGameCountdownTimer); foxGameCountdownTimer = null; }
       for (var i = 0; i < foxGameHopTimers.length; i++) {
         if (foxGameHopTimers[i]) window.clearTimeout(foxGameHopTimers[i]);
@@ -6757,6 +6769,11 @@
     function foxGameBeginRound() {
       foxGameActive = true;
       buildFoxTargets();
+      foxGameInterval = window.setInterval(function () {
+        foxGameTimeLeft--;
+        els.foxGameTime.textContent = String(Math.max(0, foxGameTimeLeft));
+        if (foxGameTimeLeft <= 0) endFoxGame("timeout");
+      }, 1000);
     }
 
     // Avant le décompte, une bulle explique le but du jeu -- on ne lance
@@ -6764,8 +6781,11 @@
     function startFoxGame() {
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
       stopFoxGameTimers();
+      foxGameScore = 0;
       foxGameRemaining = FOX_GAME_COUNT;
-      els.foxGameRemaining.textContent = String(FOX_GAME_COUNT);
+      foxGameTimeLeft = FOX_GAME_DURATION;
+      els.foxGameScore.textContent = "0";
+      els.foxGameTime.textContent = String(FOX_GAME_DURATION);
       els.foxGameField.innerHTML = "";
       els.foxGameEndOverlay.hidden = true;
       els.foxGameOverlay.hidden = true;
@@ -6779,9 +6799,11 @@
       foxGameCountdownStep(3);
     }
 
-    function endFoxGame() {
+    function endFoxGame(reason) {
       stopFoxGameTimers();
       els.foxGameOverlay.hidden = true;
+      els.foxGameEndTitle.textContent = reason === "cleared" ? "Bravo !" : "Temps écoulé !";
+      els.foxGameFinalScore.textContent = String(foxGameScore);
       els.foxGameEndOverlay.hidden = false;
       spawnConfetti(els.foxGameConfetti, 30);
     }
