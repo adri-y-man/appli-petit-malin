@@ -2630,18 +2630,26 @@
     color: var(--white);
     font-weight: 800;
     font-size: clamp(1.15rem, 4.6vw, 1.5rem);
-    border-bottom: clamp(4px, 1.2vw, 7px) solid rgba(0, 0, 0, 0.22);
-    box-shadow: 0 10px 20px -10px rgba(31, 42, 60, 0.5);
+    box-shadow: 0 8px 16px -8px rgba(31, 42, 60, 0.4);
+    transform: rotate(var(--tilt, 0deg));
     transition: transform 0.12s ease, box-shadow 0.12s ease;
   }
 
-  .category-card:hover { transform: translateY(-2px); }
-  .category-card:active { transform: translateY(2px); border-bottom-width: 3px; }
+  .category-card:hover { transform: translateY(-2px) rotate(var(--tilt, 0deg)); }
+  .category-card:active { transform: translateY(2px) rotate(var(--tilt, 0deg)); }
 
   .category-card:focus-visible {
     outline: 4px solid var(--ink);
     outline-offset: 3px;
   }
+
+  /* légère inclinaison alternée façon planche de stickers -- seulement
+     sur les rangées des sous-menus, pas sur la grille d'icônes de
+     l'accueil (.category-card-app), plus dense et déjà bien tassée. */
+  .category-grid > .category-card:not(.category-card-app):nth-child(4n+1) { --tilt: -1.1deg; }
+  .category-grid > .category-card:not(.category-card-app):nth-child(4n+2) { --tilt: 0.9deg; }
+  .category-grid > .category-card:not(.category-card-app):nth-child(4n+3) { --tilt: -0.8deg; }
+  .category-grid > .category-card:not(.category-card-app):nth-child(4n+4) { --tilt: 1.2deg; }
 
   .category-card .icon { font-size: clamp(2.2rem, 8vw, 2.8rem); flex: none; }
 
