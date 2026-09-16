@@ -2372,8 +2372,8 @@
     border: none;
     background: none;
     padding: 0;
-    width: clamp(2.8rem, 12vw, 4rem);
-    height: clamp(2.8rem, 12vw, 4rem);
+    width: clamp(3.3rem, 14vw, 4.6rem);
+    height: clamp(3.3rem, 14vw, 4.6rem);
     cursor: pointer;
     filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.25));
     transition: left 0.4s ease, top 0.4s ease, transform 0.15s ease, opacity 0.15s ease;
@@ -6776,9 +6776,7 @@
       }, 1000);
     }
 
-    // Avant le décompte, une bulle explique le but du jeu -- on ne lance
-    // le décompte que quand l'enfant tape "C'est parti !".
-    function startFoxGame() {
+    function resetFoxGameState() {
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
       stopFoxGameTimers();
       foxGameScore = 0;
@@ -6788,8 +6786,21 @@
       els.foxGameTime.textContent = String(FOX_GAME_DURATION);
       els.foxGameField.innerHTML = "";
       els.foxGameEndOverlay.hidden = true;
+    }
+
+    // Avant le décompte, une bulle explique le but du jeu -- on ne lance
+    // le décompte que quand l'enfant tape "C'est parti !".
+    function startFoxGame() {
+      resetFoxGameState();
       els.foxGameOverlay.hidden = true;
       els.foxGameIntroOverlay.hidden = false;
+    }
+
+    // "Rejouer" depuis l'écran de fin : pas besoin de rappeler le but du
+    // jeu à nouveau, on va droit au décompte.
+    function replayFoxGame() {
+      resetFoxGameState();
+      foxGameIntroBegin();
     }
 
     function foxGameIntroBegin() {
@@ -10289,7 +10300,7 @@
     els.foxGameIntroCancelBtn.addEventListener("click", closeFoxGame);
     els.foxGameCloseBtn.addEventListener("click", closeFoxGame);
     els.foxGameEndCloseBtn.addEventListener("click", closeFoxGame);
-    els.foxGameReplayBtn.addEventListener("click", startFoxGame);
+    els.foxGameReplayBtn.addEventListener("click", replayFoxGame);
     els.modeCards.forEach(function (card) {
       card.addEventListener("click", function () { selectMode(card.getAttribute("data-mode")); });
     });
