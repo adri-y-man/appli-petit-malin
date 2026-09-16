@@ -2371,15 +2371,34 @@
     border: none;
     background: none;
     padding: 0;
-    font-size: clamp(2.8rem, 13vw, 4.2rem);
-    line-height: 1;
+    width: clamp(3.2rem, 15vw, 4.6rem);
+    height: clamp(3.2rem, 15vw, 4.6rem);
     cursor: pointer;
     filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.25));
-    transition: left 0.18s ease, top 0.18s ease, transform 0.1s ease;
+    transition: left 0.4s ease, top 0.4s ease, transform 0.1s ease;
     touch-action: manipulation;
   }
 
+  .foxgame-target svg { display: block; width: 100%; height: 100%; }
+
   .foxgame-target:active { transform: scale(0.82); }
+
+  .foxgame-countdown {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(5rem, 28vw, 8.5rem);
+    font-weight: 900;
+    color: var(--white);
+    text-shadow: 0 6px 0 rgba(31, 42, 60, 0.3);
+    background: rgba(31, 42, 60, 0.25);
+    border-radius: clamp(1rem, 4vw, 1.5rem);
+  }
+
+  .foxgame-countdown[hidden] { display: none; }
 
   /* ---------- menu picto + écran de choix du jeu ---------- */
 
@@ -3922,15 +3941,31 @@
 
   <div class="exit-toast" id="exitToast" hidden>Appuie encore sur retour pour quitter</div>
 
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+    <defs>
+      <symbol id="foxHeadSymbol" viewBox="0 0 200 200">
+        <path d="M57.7 76.2 L74.6 29.6 L95.8 80.4 Z" fill="#E8743B"/>
+        <path d="M142.3 76.2 L125.4 29.6 L104.2 80.4 Z" fill="#E8743B"/>
+        <circle cx="100" cy="110" r="55" fill="#E8743B"/>
+        <path d="M66.2 67.7 L78.8 46.5 L87.3 71.9 Z" fill="#3A2418"/>
+        <path d="M133.8 67.7 L121.2 46.5 L112.7 71.9 Z" fill="#3A2418"/>
+        <ellipse cx="108.5" cy="126.9" rx="25.4" ry="21.2" fill="#FDFBF6"/>
+        <circle cx="121.2" cy="101.5" r="6.8" fill="#2C2C2A"/>
+        <circle cx="87.3" cy="105.8" r="6.8" fill="#2C2C2A"/>
+        <ellipse cx="112.7" cy="120.6" rx="6.8" ry="5.1" fill="#3A2418"/>
+        <path d="M104.2 126.9 Q112.7 135.4 121.2 126.9" stroke="#3A2418" stroke-width="5" fill="none" stroke-linecap="round"/>
+      </symbol>
+    </defs>
+  </svg>
+
   <div class="foxgame-overlay" id="foxGameOverlay" hidden>
     <div class="foxgame-header">
       <div class="foxgame-stat">⏱️ <span id="foxGameTime">30</span>s</div>
       <div class="foxgame-stat">🦊 <span id="foxGameScore">0</span></div>
       <button type="button" class="foxgame-close" id="foxGameCloseBtn" aria-label="Fermer le jeu">✕</button>
     </div>
-    <div class="foxgame-field" id="foxGameField">
-      <button type="button" class="foxgame-target" id="foxGameTarget" aria-label="Attrape le renard">🦊</button>
-    </div>
+    <div class="foxgame-field" id="foxGameField"></div>
+    <div class="foxgame-countdown" id="foxGameCountdown" hidden></div>
   </div>
 
   <div class="celebrate-overlay celebrate-win" id="foxGameEndOverlay" hidden>
@@ -6468,7 +6503,7 @@
       foxGameScore: document.getElementById("foxGameScore"),
       foxGameCloseBtn: document.getElementById("foxGameCloseBtn"),
       foxGameField: document.getElementById("foxGameField"),
-      foxGameTarget: document.getElementById("foxGameTarget"),
+      foxGameCountdown: document.getElementById("foxGameCountdown"),
       foxGameEndOverlay: document.getElementById("foxGameEndOverlay"),
       foxGameConfetti: document.getElementById("foxGameConfetti"),
       foxGameFinalScore: document.getElementById("foxGameFinalScore"),
@@ -6532,47 +6567,108 @@
 
     // Mini-jeu caché "Attrape le renard" : rester appuyé 2 secondes sur le
     // renard de l'accueil (voir startFoxHold/cancelFoxHold plus bas) ouvre
-    // un chrono de 30 secondes où il faut taper le renard qui change de
-    // place sans arrêt pour marquer un point à chaque fois.
+    // un décompte (3, 2, 1) puis un chrono de 30 secondes avec plusieurs
+    // renards (même tête que le logo "Petit Malin", voir #foxHeadSymbol)
+    // qui changent de place chacun à son propre rythme -- jamais tous en
+    // même temps, voir le délai aléatoire dans foxGameScheduleHop.
     var FOX_GAME_DURATION = 30;
-    var FOX_GAME_HOP_MS = 1100;
+    var FOX_GAME_COUNT = 5;
+    var FOX_GAME_HOP_MS = 2600;
+    var FOX_GAME_HOP_JITTER = 800;
+    var FOX_COUNTDOWN_STEP_MS = 800;
     var foxGameInterval = null;
-    var foxGameHopTimer = null;
+    var foxGameCountdownTimer = null;
+    var foxGameHopTimers = [];
     var foxGameTimeLeft = FOX_GAME_DURATION;
     var foxGameScore = 0;
+    var foxGameActive = false;
 
-    function foxGameRandomPosition() {
+    function foxGameRandomPosition(target) {
       var field = els.foxGameField;
-      var target = els.foxGameTarget;
       var w = Math.max(0, field.clientWidth - target.offsetWidth);
       var h = Math.max(0, field.clientHeight - target.offsetHeight);
       return { x: Math.random() * w, y: Math.random() * h };
     }
 
-    function foxGameHop() {
-      var pos = foxGameRandomPosition();
-      els.foxGameTarget.style.left = pos.x + "px";
-      els.foxGameTarget.style.top = pos.y + "px";
+    function foxGameHopOne(target) {
+      var pos = foxGameRandomPosition(target);
+      target.style.left = pos.x + "px";
+      target.style.top = pos.y + "px";
     }
 
-    function foxGameScheduleHop() {
-      if (foxGameHopTimer) window.clearTimeout(foxGameHopTimer);
-      foxGameHopTimer = window.setTimeout(function () {
-        foxGameHop();
-        foxGameScheduleHop();
-      }, FOX_GAME_HOP_MS);
+    // Chaque renard a son propre minuteur, avec un peu d'aléatoire autour
+    // de FOX_GAME_HOP_MS (jamais exactement la même durée) : ils changent
+    // de place chacun leur tour plutôt que tous d'un coup.
+    function foxGameScheduleHop(target, idx, delay) {
+      if (foxGameHopTimers[idx]) window.clearTimeout(foxGameHopTimers[idx]);
+      foxGameHopTimers[idx] = window.setTimeout(function () {
+        if (!foxGameActive) return;
+        foxGameHopOne(target);
+        foxGameScheduleHop(target, idx, FOX_GAME_HOP_MS + (Math.random() * 2 - 1) * FOX_GAME_HOP_JITTER);
+      }, delay);
     }
 
-    function onFoxGameTargetTap() {
+    function onFoxGameTargetTap(target, idx) {
+      if (!foxGameActive) return;
       foxGameScore++;
       els.foxGameScore.textContent = String(foxGameScore);
-      foxGameHop();
-      foxGameScheduleHop();
+      foxGameHopOne(target);
+      foxGameScheduleHop(target, idx, FOX_GAME_HOP_MS + (Math.random() * 2 - 1) * FOX_GAME_HOP_JITTER);
+    }
+
+    function buildFoxTargets() {
+      els.foxGameField.innerHTML = "";
+      foxGameHopTimers = [];
+      for (var i = 0; i < FOX_GAME_COUNT; i++) {
+        (function (idx) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "foxgame-target";
+          btn.setAttribute("aria-label", "Attrape le renard");
+          btn.innerHTML = '<svg viewBox="0 0 200 200" aria-hidden="true"><use href="#foxHeadSymbol"></use></svg>';
+          btn.addEventListener("click", function () { onFoxGameTargetTap(btn, idx); });
+          els.foxGameField.appendChild(btn);
+          foxGameHopOne(btn);
+          // premier déplacement décalé aléatoirement pour chaque renard,
+          // pour qu'ils ne bougent jamais tous ensemble dès le départ.
+          foxGameScheduleHop(btn, idx, Math.random() * FOX_GAME_HOP_MS);
+        }(i));
+      }
     }
 
     function stopFoxGameTimers() {
       if (foxGameInterval) { window.clearInterval(foxGameInterval); foxGameInterval = null; }
-      if (foxGameHopTimer) { window.clearTimeout(foxGameHopTimer); foxGameHopTimer = null; }
+      if (foxGameCountdownTimer) { window.clearTimeout(foxGameCountdownTimer); foxGameCountdownTimer = null; }
+      for (var i = 0; i < foxGameHopTimers.length; i++) {
+        if (foxGameHopTimers[i]) window.clearTimeout(foxGameHopTimers[i]);
+      }
+      foxGameHopTimers = [];
+      foxGameActive = false;
+    }
+
+    function foxGameCountdownStep(n) {
+      els.foxGameCountdown.textContent = n > 0 ? String(n) : "C'est parti !";
+      els.foxGameCountdown.classList.remove("pop");
+      void els.foxGameCountdown.offsetWidth;
+      els.foxGameCountdown.classList.add("pop");
+      foxGameCountdownTimer = window.setTimeout(function () {
+        if (n > 0) {
+          foxGameCountdownStep(n - 1);
+        } else {
+          els.foxGameCountdown.hidden = true;
+          foxGameBeginRound();
+        }
+      }, FOX_COUNTDOWN_STEP_MS);
+    }
+
+    function foxGameBeginRound() {
+      foxGameActive = true;
+      buildFoxTargets();
+      foxGameInterval = window.setInterval(function () {
+        foxGameTimeLeft--;
+        els.foxGameTime.textContent = String(Math.max(0, foxGameTimeLeft));
+        if (foxGameTimeLeft <= 0) endFoxGame();
+      }, 1000);
     }
 
     function startFoxGame() {
@@ -6582,15 +6678,11 @@
       foxGameTimeLeft = FOX_GAME_DURATION;
       els.foxGameScore.textContent = "0";
       els.foxGameTime.textContent = String(FOX_GAME_DURATION);
+      els.foxGameField.innerHTML = "";
       els.foxGameEndOverlay.hidden = true;
       els.foxGameOverlay.hidden = false;
-      foxGameHop();
-      foxGameScheduleHop();
-      foxGameInterval = window.setInterval(function () {
-        foxGameTimeLeft--;
-        els.foxGameTime.textContent = String(Math.max(0, foxGameTimeLeft));
-        if (foxGameTimeLeft <= 0) endFoxGame();
-      }, 1000);
+      els.foxGameCountdown.hidden = false;
+      foxGameCountdownStep(3);
     }
 
     function endFoxGame() {
@@ -6604,6 +6696,7 @@
     function closeFoxGame() {
       stopFoxGameTimers();
       els.foxGameOverlay.hidden = true;
+      els.foxGameCountdown.hidden = true;
       els.foxGameEndOverlay.hidden = true;
     }
 
@@ -10092,7 +10185,6 @@
         if (foxHoldTriggered) { foxHoldTriggered = false; } else { speakFoxGreeting(); }
       }
     });
-    els.foxGameTarget.addEventListener("click", onFoxGameTargetTap);
     els.foxGameCloseBtn.addEventListener("click", closeFoxGame);
     els.foxGameEndCloseBtn.addEventListener("click", closeFoxGame);
     els.foxGameReplayBtn.addEventListener("click", startFoxGame);
