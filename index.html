@@ -2511,6 +2511,12 @@
     gap: 0.5rem;
     padding: max(0.8rem, env(safe-area-inset-top)) 1rem 0.8rem max(0.9rem, env(safe-area-inset-left));
     background: var(--sky-top);
+    cursor: pointer;
+  }
+
+  .menu-brand:focus-visible {
+    outline: 3px solid var(--white);
+    outline-offset: -3px;
   }
 
   .menu-brand-text {
@@ -3247,7 +3253,7 @@
   </section>
 
   <div class="menu-overlay" id="menuOverlay">
-    <div class="menu-brand">
+    <div class="menu-brand" id="menuBrand" role="button" tabindex="0" aria-label="Retour à l'accueil">
       <svg class="menu-logo" viewBox="0 0 200 200" aria-hidden="true">
         <rect x="8" y="8" width="184" height="184" rx="44" fill="#FFF6EC"/>
         <path d="M57.7 76.2 L74.6 29.6 L95.8 80.4 Z" fill="#E8743B"/>
@@ -6386,6 +6392,7 @@
       topbar: document.getElementById("topbar"),
       gameBackBtn: document.getElementById("gameBackBtn"),
       foxWalker: document.getElementById("foxWalker"),
+      menuBrand: document.getElementById("menuBrand"),
       menuOverlay: document.getElementById("menuOverlay"),
       menuHome: document.getElementById("menuHome"),
       menuCalc: document.getElementById("menuCalc"),
@@ -10291,6 +10298,10 @@
     }
 
     els.menuBtn.addEventListener("click", openMenu);
+    els.menuBrand.addEventListener("click", function () { showMenuScreen("home"); });
+    els.menuBrand.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); showMenuScreen("home"); }
+    });
     els.gameBackBtn.addEventListener("click", openMenu);
     els.foxWalker.addEventListener("click", handleFoxActivate);
     els.foxWalker.addEventListener("keydown", function (e) {
