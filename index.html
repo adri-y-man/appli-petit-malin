@@ -1480,6 +1480,89 @@
 
   .fillforme-tap-hint[hidden] { display: none; }
 
+  /* ---------- "Mon premier sudoku" (formes / chiffres) ---------- */
+
+  .sudoku-screen {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(1rem, 4vh, 1.6rem);
+    min-height: 0;
+    width: 100%;
+  }
+
+  .sudoku-screen[hidden] { display: none; }
+
+  .sudoku-board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    width: min(80vw, 58vh, 22rem);
+    aspect-ratio: 1;
+    background: #fff8ee;
+    border: 3px solid #1f2a3c;
+    border-radius: clamp(0.7rem, 2.5vw, 1rem);
+    overflow: hidden;
+    box-shadow: 0 12px 24px -12px rgba(31, 42, 60, 0.55);
+  }
+
+  .sudoku-cell {
+    appearance: none;
+    border: 1px solid rgba(31, 42, 60, 0.2);
+    background: #fff8ee;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    font-weight: 900;
+    font-size: clamp(1.3rem, 6.5vw, 2rem);
+    color: #1f2a3c;
+    cursor: pointer;
+  }
+
+  .sudoku-cell.box-right { border-right: 3px solid #1f2a3c; }
+  .sudoku-cell.box-bottom { border-bottom: 3px solid #1f2a3c; }
+
+  .sudoku-cell.given { background: #efe6d4; cursor: default; }
+  .sudoku-cell:disabled { cursor: default; }
+  .sudoku-cell.selected { background: #fff3a0; box-shadow: inset 0 0 0 3px #ffb648; }
+  .sudoku-cell.just-filled { background: #d9f2e6; }
+
+  .sudoku-cell .sudoku-shape { width: 62%; height: 62%; display: block; }
+  .sudoku-cell .sudoku-shape svg { display: block; width: 100%; height: 100%; }
+
+  .sudoku-palette {
+    display: flex;
+    gap: 0.6rem;
+  }
+
+  .sudoku-palette-btn {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    background: var(--candy-blue);
+    border-radius: clamp(0.8rem, 3vw, 1.1rem);
+    width: clamp(3rem, 12vw, 4rem);
+    height: clamp(3rem, 12vw, 4rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: clamp(1.3rem, 5.5vw, 1.7rem);
+    color: var(--white);
+    box-shadow: 0 8px 16px -10px rgba(31, 42, 60, 0.5);
+    transition: transform 0.1s ease;
+  }
+
+  .sudoku-palette-btn:active { transform: translateY(2px); }
+  .sudoku-palette-btn:disabled { opacity: 0.45; cursor: default; }
+
+  .sudoku-palette-btn .sudoku-shape { width: 60%; height: 60%; display: block; }
+  .sudoku-palette-btn .sudoku-shape svg { display: block; width: 100%; height: 100%; }
+
   /* Jeux de société : statut de tour partagé + bouton "Rejouer" partagés
      entre les 4 jeux (Morpion/Puissance 4/Dames/Bataille navale). */
   .boardgame-status {
@@ -2748,6 +2831,7 @@
   .mode-flat[data-mode="count"] { background: linear-gradient(135deg, #ffc93c, #f2994a); }
   .mode-flat[data-mode="compare"] { background: linear-gradient(135deg, #598ce6, #3454d1); }
   .mode-flat[data-mode="sequence"] { background: linear-gradient(135deg, #43b98a, #2a9d6f); }
+  .mode-flat[data-mode="sudokuchiffre"] { background: linear-gradient(135deg, #ffb199, #f77f5c); }
 
   .category-grid {
     width: 100%;
@@ -2841,6 +2925,7 @@
   .category-card-fillforme { background: linear-gradient(135deg, #b8a4e3, #8b6fc9); }
   .category-card-intrus { background: linear-gradient(135deg, #fff3a0, #ffe066); }
   .category-card-puzzle { background: linear-gradient(135deg, #7ee8d0, #45c7a8); }
+  .category-card-sudokuforme { background: linear-gradient(135deg, #a8b8f0, #7c8ee0); }
   .category-card-morpion { background: linear-gradient(135deg, #ff8fa3, #ff6b81); }
   .category-card-puissance4 { background: linear-gradient(135deg, #7ec8f7, #4a90d9); }
   .category-card-dames { background: linear-gradient(135deg, #b8a4e3, #8b6fc9); }
@@ -3204,6 +3289,11 @@
     <p class="fillforme-tap-hint" id="fillFormeHint">Touche et glisse pour colorier !</p>
   </section>
 
+  <section class="sudoku-screen" id="sudokuScreen" hidden>
+    <div class="sudoku-board" id="sudokuBoard"></div>
+    <div class="sudoku-palette" id="sudokuPalette"></div>
+  </section>
+
   <section class="morpion-screen" id="morpionScreen" hidden>
     <p class="boardgame-status" id="morpionStatus"></p>
     <div class="morpion-board" id="morpionBoard"></div>
@@ -3509,6 +3599,11 @@
         <span class="icon emoji">🔢</span>
         <span>Complète la suite</span>
         <span class="level-badge">GS-CE1</span>
+      </button>
+      <button class="mode-card mode-flat" type="button" data-mode="sudokuchiffre">
+        <span class="icon emoji">🔢</span>
+        <span>Mon premier sudoku (chiffres)</span>
+        <span class="level-badge">CP-CE1</span>
       </button>
     </div>
 
@@ -3822,6 +3917,11 @@
           <span class="icon emoji">🧩</span>
           <span>Complète le puzzle</span>
           <span class="level-badge">CP-CE1</span>
+        </button>
+        <button class="category-card category-card-sudokuforme" type="button" id="sudokuformeCard">
+          <span class="icon emoji">🔵</span>
+          <span>Mon premier sudoku (formes)</span>
+          <span class="level-badge">GS-CP</span>
         </button>
       </div>
     </div>
@@ -6552,6 +6652,10 @@
       fillFormeCanvas: document.getElementById("fillFormeCanvas"),
       fillFormeOutline: document.getElementById("fillFormeOutline"),
       fillFormeHint: document.getElementById("fillFormeHint"),
+      sudokuScreen: document.getElementById("sudokuScreen"),
+      sudokuBoard: document.getElementById("sudokuBoard"),
+      sudokuPalette: document.getElementById("sudokuPalette"),
+      sudokuformeCard: document.getElementById("sudokuformeCard"),
       levelUpOverlay: document.getElementById("levelUpOverlay"),
       levelUpNum: document.getElementById("levelUpNum"),
       levelUpConfetti: document.getElementById("levelUpConfetti"),
@@ -9278,6 +9382,234 @@
       }
     }
 
+    // "Mon premier sudoku" (formes / chiffres) : grille 4x4 classique,
+    // chaque valeur (1 forme ou 1 chiffre parmi 4) une seule fois par
+    // ligne, colonne et carré 2x2. Génère une grille complète au hasard
+    // par backtracking, puis retire des cases une à une tant que la
+    // grille garde une solution unique (sudokuCountSolutions s'arrête
+    // dès qu'elle en trouve 2, pour rester rapide sur une grille aussi
+    // petite).
+    var SUDOKU_SIZE = 4;
+    var SUDOKU_BOX = 2;
+    var SUDOKU_SHAPE_KEYS = ["rond", "croix", "triangle", "coeur"];
+    var SUDOKU_SHAPE_COLORS = { rond: "#3d7fe0", croix: "#e63946", triangle: "#43b98a", coeur: "#ef5da8" };
+    var SUDOKU_GIVENS_FOR_LEVEL = [10, 9, 8, 7, 6];
+
+    function sudokuValid(grid, r, c, val) {
+      for (var i = 0; i < SUDOKU_SIZE; i++) {
+        if (grid[r][i] === val || grid[i][c] === val) return false;
+      }
+      var br = Math.floor(r / SUDOKU_BOX) * SUDOKU_BOX;
+      var bc = Math.floor(c / SUDOKU_BOX) * SUDOKU_BOX;
+      for (var i2 = 0; i2 < SUDOKU_BOX; i2++) {
+        for (var j2 = 0; j2 < SUDOKU_BOX; j2++) {
+          if (grid[br + i2][bc + j2] === val) return false;
+        }
+      }
+      return true;
+    }
+
+    function sudokuGenerateSolution() {
+      var grid = [];
+      for (var r = 0; r < SUDOKU_SIZE; r++) grid.push(new Array(SUDOKU_SIZE).fill(0));
+      function fill(pos) {
+        if (pos === SUDOKU_SIZE * SUDOKU_SIZE) return true;
+        var r = Math.floor(pos / SUDOKU_SIZE);
+        var c = pos % SUDOKU_SIZE;
+        var vals = shuffle([1, 2, 3, 4]);
+        for (var i = 0; i < vals.length; i++) {
+          if (sudokuValid(grid, r, c, vals[i])) {
+            grid[r][c] = vals[i];
+            if (fill(pos + 1)) return true;
+            grid[r][c] = 0;
+          }
+        }
+        return false;
+      }
+      fill(0);
+      return grid;
+    }
+
+    function sudokuCountSolutions(grid, limit) {
+      var count = 0;
+      function solve(pos) {
+        if (count >= limit) return;
+        if (pos === SUDOKU_SIZE * SUDOKU_SIZE) { count++; return; }
+        var r = Math.floor(pos / SUDOKU_SIZE);
+        var c = pos % SUDOKU_SIZE;
+        if (grid[r][c] !== 0) { solve(pos + 1); return; }
+        for (var v = 1; v <= SUDOKU_SIZE; v++) {
+          if (sudokuValid(grid, r, c, v)) {
+            grid[r][c] = v;
+            solve(pos + 1);
+            grid[r][c] = 0;
+            if (count >= limit) return;
+          }
+        }
+      }
+      solve(0);
+      return count;
+    }
+
+    function sudokuGeneratePuzzle(givens) {
+      var solution = sudokuGenerateSolution();
+      var puzzle = solution.map(function (row) { return row.slice(); });
+      var cells = [];
+      for (var r = 0; r < SUDOKU_SIZE; r++) {
+        for (var c = 0; c < SUDOKU_SIZE; c++) cells.push([r, c]);
+      }
+      cells = shuffle(cells);
+      var blanksToRemove = SUDOKU_SIZE * SUDOKU_SIZE - givens;
+      var removed = 0;
+      for (var i = 0; i < cells.length && removed < blanksToRemove; i++) {
+        var r2 = cells[i][0];
+        var c2 = cells[i][1];
+        var backup = puzzle[r2][c2];
+        puzzle[r2][c2] = 0;
+        var testGrid = puzzle.map(function (row) { return row.slice(); });
+        if (sudokuCountSolutions(testGrid, 2) === 1) {
+          removed++;
+        } else {
+          puzzle[r2][c2] = backup;
+        }
+      }
+      return { puzzle: puzzle, solution: solution };
+    }
+
+    function sudokuSymbolEl(val) {
+      if (state.mode === "sudokuforme") {
+        var key = SUDOKU_SHAPE_KEYS[val - 1];
+        var span = document.createElement("span");
+        span.className = "sudoku-shape";
+        span.innerHTML = '<svg viewBox="0 0 200 200" aria-hidden="true">' + shapeFillSvgInner(key, SUDOKU_SHAPE_COLORS[key]) + "</svg>";
+        return span;
+      }
+      var span2 = document.createElement("span");
+      span2.textContent = String(val);
+      return span2;
+    }
+
+    function startSudokuProblem() {
+      var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
+      var gen = sudokuGeneratePuzzle(SUDOKU_GIVENS_FOR_LEVEL[levelIdx]);
+      state.sudokuPuzzle = gen.puzzle;
+      state.sudokuSolution = gen.solution;
+      state.sudokuSelected = null;
+      renderSudokuScreen();
+      setGameFeedback("");
+      saveProgress();
+    }
+
+    function renderSudokuPalette() {
+      els.sudokuPalette.innerHTML = "";
+      for (var v = 1; v <= SUDOKU_SIZE; v++) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "sudoku-palette-btn";
+        btn.disabled = !state.sudokuSelected;
+        btn.setAttribute("aria-label", "Placer la valeur " + v);
+        btn.appendChild(sudokuSymbolEl(v));
+        btn.addEventListener("click", (function (val) { return function () { onSudokuPaletteTap(val); }; }(v)));
+        els.sudokuPalette.appendChild(btn);
+      }
+    }
+
+    function renderSudokuScreen() {
+      els.sudokuBoard.innerHTML = "";
+      for (var r = 0; r < SUDOKU_SIZE; r++) {
+        for (var c = 0; c < SUDOKU_SIZE; c++) {
+          var val = state.sudokuPuzzle[r][c];
+          var cell = document.createElement("button");
+          cell.type = "button";
+          var cls = "sudoku-cell";
+          if (c === 1) cls += " box-right";
+          if (r === 1) cls += " box-bottom";
+          if (val !== 0) {
+            cls += " given";
+            cell.disabled = true;
+          } else if (state.sudokuSelected && state.sudokuSelected[0] === r && state.sudokuSelected[1] === c) {
+            cls += " selected";
+          }
+          cell.className = cls;
+          if (val !== 0) {
+            cell.appendChild(sudokuSymbolEl(val));
+            cell.setAttribute("aria-label", "Case fixée");
+          } else {
+            cell.setAttribute("aria-label", "Case vide, ligne " + (r + 1) + " colonne " + (c + 1));
+            cell.addEventListener("click", (function (rr, cc) { return function () { onSudokuCellTap(rr, cc); }; }(r, c)));
+          }
+          els.sudokuBoard.appendChild(cell);
+        }
+      }
+      renderSudokuPalette();
+    }
+
+    function onSudokuCellTap(r, c) {
+      if (state.sudokuPuzzle[r][c] !== 0) return;
+      state.sudokuSelected = (state.sudokuSelected && state.sudokuSelected[0] === r && state.sudokuSelected[1] === c) ? null : [r, c];
+      renderSudokuScreen();
+    }
+
+    function sudokuIsComplete() {
+      for (var r = 0; r < SUDOKU_SIZE; r++) {
+        for (var c = 0; c < SUDOKU_SIZE; c++) {
+          if (state.sudokuPuzzle[r][c] === 0) return false;
+        }
+      }
+      return true;
+    }
+
+    function onSudokuPaletteTap(val) {
+      if (!state.sudokuSelected) return;
+      var r = state.sudokuSelected[0];
+      var c = state.sudokuSelected[1];
+      if (state.sudokuSolution[r][c] === val) {
+        state.sudokuPuzzle[r][c] = val;
+        state.sudokuSelected = null;
+        renderSudokuScreen();
+        var idx = r * SUDOKU_SIZE + c;
+        var filledCell = els.sudokuBoard.children[idx];
+        if (filledCell) filledCell.classList.add("just-filled");
+        if (sudokuIsComplete()) {
+          window.setTimeout(onSudokuComplete, 350);
+        }
+      } else {
+        var badIdx = r * SUDOKU_SIZE + c;
+        var badCell = els.sudokuBoard.children[badIdx];
+        if (badCell) {
+          badCell.classList.remove("shake");
+          void badCell.offsetWidth;
+          badCell.classList.add("shake");
+        }
+      }
+    }
+
+    function onSudokuComplete() {
+      state.wrongStreak = 0;
+      state.correctStreak++;
+      var leveledUp = false;
+      var justWon = false;
+      if (state.correctStreak >= starsToLevelUp(state.mode)) {
+        if (state.level < MAX_LEVEL) {
+          state.level++;
+          leveledUp = true;
+        } else {
+          justWon = true;
+        }
+        state.correctStreak = 0;
+      }
+      if (!leveledUp && !justWon) renderLevel();
+      saveProgress();
+      setGameFeedback("Bravo ! Grille complète ! 🎉", "correct");
+      if (leveledUp) {
+        window.setTimeout(function () { showLevelUp(state.level); }, 900);
+      } else if (justWon) {
+        window.setTimeout(showWin, 900);
+      } else {
+        window.setTimeout(startSudokuProblem, 1100);
+      }
+    }
+
     var CONFETTI_COLORS = ["var(--green-add)", "var(--orange-sub)", "var(--candy-blue)", "var(--candy-pink)", "var(--gold)"];
 
     function spawnConfetti(container, count) {
@@ -10080,7 +10412,7 @@
     function categoryOfMode(mode) {
       if (mode === "add" || mode === "sub" || mode === "mul" || mode === "div" || MIX_MODES[mode]) return "2";
       if (MODE_TO_OP_3[mode] || MIX_MODES_3[mode]) return "3";
-      if (mode === "count" || mode === "compare" || mode === "sequence") return "calc";
+      if (mode === "count" || mode === "compare" || mode === "sequence" || mode === "sudokuchiffre") return "calc";
       if (mode === "colors" || mode === "animals" || mode === "numbers" || mode === "body" || mode === "food") return "anglais";
       if (mode === "reading" || mode === "letters" || mode === "syllables" || mode === "rhymes" || mode === "wordgrid" || mode === "casse" || mode === "sound") return "lire";
       if (isPaintMode(mode)) return "peinture";
@@ -10088,7 +10420,7 @@
       if (mode === "animalname" || mode === "babies" || mode === "habitat" || mode === "diet" || mode === "animalsound") return "animaux";
       if (isMemoryMode(mode) || mode === "disparu" || mode === "ordre" || mode === "change" || mode === "suitelum") return "memoire";
       if (mode === "mot" || mode === "composesimple" || mode === "composelibre" || mode === "lettreman" || mode === "trace" || mode === "syllordre" || mode === "article") return "ecriture";
-      if (mode === "traceforme" || mode === "shapes" || mode === "fillforme" || mode === "intrus" || mode === "puzzle") return "formes";
+      if (mode === "traceforme" || mode === "shapes" || mode === "fillforme" || mode === "intrus" || mode === "puzzle" || mode === "sudokuforme") return "formes";
       if (mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino" || mode === "solitaire" || mode === "contraire") return "jeux";
       return null;
     }
@@ -10176,14 +10508,15 @@
       var spell = isSpellMode(mode);
       var trace = isTraceMode(mode);
       var fillforme = mode === "fillforme";
+      var sudoku = mode === "sudokuforme" || mode === "sudokuchiffre";
       var morpion = mode === "morpion";
       var puissance4 = mode === "puissance4";
       var dames = mode === "dames";
       var bataillenavale = mode === "bataillenavale";
       var domino = mode === "domino";
       var solitaire = mode === "solitaire";
-      els.problemZone.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || morpion || puissance4 || dames || bataillenavale || domino || solitaire;
-      els.answers.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || morpion || puissance4 || dames || bataillenavale || domino || solitaire;
+      els.problemZone.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire;
+      els.answers.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire;
       els.paintScreen.hidden = !paint;
       els.musicScreen.hidden = !music;
       els.rhythmScreen.hidden = !rhythm;
@@ -10193,6 +10526,7 @@
       els.spellScreen.hidden = !spell;
       els.traceScreen.hidden = !trace;
       els.fillFormeScreen.hidden = !fillforme;
+      els.sudokuScreen.hidden = !sudoku;
       els.morpionScreen.hidden = !morpion;
       els.puissance4Screen.hidden = !puissance4;
       els.damesScreen.hidden = !dames;
@@ -10287,6 +10621,11 @@
         startFillFormeProblem();
         return;
       }
+      if (sudoku) {
+        state.problem = null;
+        startSudokuProblem();
+        return;
+      }
 
       var savedProblem = saved && saved.problem && Array.isArray(saved.problem.choices) ? saved.problem : null;
       if (savedProblem) {
@@ -10366,6 +10705,7 @@
     els.fillFormeCard.addEventListener("click", function () { selectMode("fillforme"); });
     els.intrusCard.addEventListener("click", function () { selectMode("intrus"); });
     els.puzzleCard.addEventListener("click", function () { selectMode("puzzle"); });
+    els.sudokuformeCard.addEventListener("click", function () { selectMode("sudokuforme"); });
     els.morpionCard.addEventListener("click", function () { selectMode("morpion"); });
     els.puissance4Card.addEventListener("click", function () { selectMode("puissance4"); });
     els.damesCard.addEventListener("click", function () { selectMode("dames"); });
