@@ -2168,6 +2168,7 @@
 
   .celebrate-levelup { background: linear-gradient(160deg, #ffd166, #ff8fa3); }
   .celebrate-win { background: linear-gradient(160deg, #ffd166, #ff8a3d); }
+  .celebrate-foxintro { background: linear-gradient(160deg, #ffb199, #e8743b); }
 
   .celebrate-panel {
     position: relative;
@@ -2375,13 +2376,47 @@
     height: clamp(3.2rem, 15vw, 4.6rem);
     cursor: pointer;
     filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.25));
-    transition: left 0.4s ease, top 0.4s ease, transform 0.1s ease;
+    transition: left 0.4s ease, top 0.4s ease, transform 0.15s ease, opacity 0.15s ease;
     touch-action: manipulation;
   }
 
   .foxgame-target svg { display: block; width: 100%; height: 100%; }
 
   .foxgame-target:active { transform: scale(0.82); }
+
+  /* renard attrapé : éclate sur place puis réapparaît ailleurs une fois
+     l'animation terminée (voir onFoxGameTargetTap, qui repositionne et
+     retire cette classe après FOX_GAME_CATCH_MS). */
+  .foxgame-target.caught {
+    animation: fox-caught-pop 0.35s ease-in forwards;
+    pointer-events: none;
+  }
+
+  @keyframes fox-caught-pop {
+    0% { transform: scale(1) rotate(0deg); opacity: 1; }
+    40% { transform: scale(1.3) rotate(-10deg); opacity: 1; }
+    100% { transform: scale(0.15) rotate(14deg); opacity: 0; }
+  }
+
+  .foxgame-spark {
+    position: absolute;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    animation: foxgame-spark-fly 0.55s ease-out forwards;
+  }
+
+  @keyframes foxgame-spark-fly {
+    0% { transform: translate(-50%, -50%) translate(0, 0) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) translate(var(--dx, 0px), var(--dy, 0px)) scale(0.3); opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .foxgame-target.caught { animation: none; opacity: 0; }
+    .foxgame-spark { display: none; }
+  }
 
   .foxgame-countdown {
     position: absolute;
@@ -3957,6 +3992,18 @@
       </symbol>
     </defs>
   </svg>
+
+  <div class="celebrate-overlay celebrate-foxintro" id="foxGameIntroOverlay" hidden>
+    <div class="celebrate-panel">
+      <div class="celebrate-badge">🦊</div>
+      <h2 class="celebrate-title">Attrape le renard !</h2>
+      <p class="celebrate-sub">Attrape le plus de renards possible en 30 secondes !</p>
+      <div class="celebrate-actions">
+        <button class="celebrate-btn celebrate-btn-secondary" id="foxGameIntroCancelBtn" type="button">Annuler</button>
+        <button class="celebrate-btn" id="foxGameIntroStartBtn" type="button">C'est parti !</button>
+      </div>
+    </div>
+  </div>
 
   <div class="foxgame-overlay" id="foxGameOverlay" hidden>
     <div class="foxgame-header">
@@ -6498,6 +6545,9 @@
       resetCancelBtn: document.getElementById("resetCancelBtn"),
       resetConfirmBtn: document.getElementById("resetConfirmBtn"),
       exitToast: document.getElementById("exitToast"),
+      foxGameIntroOverlay: document.getElementById("foxGameIntroOverlay"),
+      foxGameIntroStartBtn: document.getElementById("foxGameIntroStartBtn"),
+      foxGameIntroCancelBtn: document.getElementById("foxGameIntroCancelBtn"),
       foxGameOverlay: document.getElementById("foxGameOverlay"),
       foxGameTime: document.getElementById("foxGameTime"),
       foxGameScore: document.getElementById("foxGameScore"),
@@ -6576,6 +6626,8 @@
     var FOX_GAME_HOP_MS = 2600;
     var FOX_GAME_HOP_JITTER = 800;
     var FOX_COUNTDOWN_STEP_MS = 800;
+    var FOX_GAME_CATCH_MS = 350;
+    var FOX_SPARK_COLORS = ["#ffd166", "#ff8a3d", "#e63946", "#ffb199", "#fff8ee"];
     var foxGameInterval = null;
     var foxGameCountdownTimer = null;
     var foxGameHopTimers = [];
@@ -6608,12 +6660,49 @@
       }, delay);
     }
 
+    // Petite volée d'étincelles qui s'envolent depuis le point (x, y) et
+    // s'évanouissent -- purement décoratif, chaque étincelle se retire
+    // elle-même du DOM une fois son animation terminée.
+    function foxGameSpawnBurst(x, y) {
+      var count = 7;
+      for (var i = 0; i < count; i++) {
+        var angle = ((Math.PI * 2) / count) * i + Math.random() * 0.5;
+        var dist = 26 + Math.random() * 22;
+        var spark = document.createElement("span");
+        spark.className = "foxgame-spark";
+        spark.style.left = x + "px";
+        spark.style.top = y + "px";
+        spark.style.background = FOX_SPARK_COLORS[i % FOX_SPARK_COLORS.length];
+        spark.style.setProperty("--dx", (Math.cos(angle) * dist).toFixed(1) + "px");
+        spark.style.setProperty("--dy", (Math.sin(angle) * dist).toFixed(1) + "px");
+        els.foxGameField.appendChild(spark);
+        // fermeture par appel de fonction : "var spark" est partagé par
+        // toutes les itérations, sans ça chaque setTimeout retirerait la
+        // même (dernière) étincelle au lieu de la sienne.
+        (function (sparkEl) {
+          window.setTimeout(function () {
+            if (sparkEl.parentNode) sparkEl.parentNode.removeChild(sparkEl);
+          }, 600);
+        }(spark));
+      }
+    }
+
+    // Le renard attrapé éclate sur place (classe "caught", voir le
+    // @keyframes fox-caught-pop) puis, une fois l'animation finie,
+    // réapparaît à un autre endroit et reprend son minuteur normal.
     function onFoxGameTargetTap(target, idx) {
-      if (!foxGameActive) return;
+      if (!foxGameActive || target.classList.contains("caught")) return;
       foxGameScore++;
       els.foxGameScore.textContent = String(foxGameScore);
-      foxGameHopOne(target);
-      foxGameScheduleHop(target, idx, FOX_GAME_HOP_MS + (Math.random() * 2 - 1) * FOX_GAME_HOP_JITTER);
+      if (foxGameHopTimers[idx]) window.clearTimeout(foxGameHopTimers[idx]);
+      target.classList.add("caught");
+      foxGameSpawnBurst(target.offsetLeft + target.offsetWidth / 2, target.offsetTop + target.offsetHeight / 2);
+      foxGameHopTimers[idx] = window.setTimeout(function () {
+        if (!foxGameActive) return;
+        target.classList.remove("caught");
+        foxGameHopOne(target);
+        foxGameScheduleHop(target, idx, FOX_GAME_HOP_MS + (Math.random() * 2 - 1) * FOX_GAME_HOP_JITTER);
+      }, FOX_GAME_CATCH_MS);
     }
 
     function buildFoxTargets() {
@@ -6671,6 +6760,8 @@
       }, 1000);
     }
 
+    // Avant le décompte, une bulle explique le but du jeu -- on ne lance
+    // le décompte que quand l'enfant tape "C'est parti !".
     function startFoxGame() {
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
       stopFoxGameTimers();
@@ -6680,6 +6771,12 @@
       els.foxGameTime.textContent = String(FOX_GAME_DURATION);
       els.foxGameField.innerHTML = "";
       els.foxGameEndOverlay.hidden = true;
+      els.foxGameOverlay.hidden = true;
+      els.foxGameIntroOverlay.hidden = false;
+    }
+
+    function foxGameIntroBegin() {
+      els.foxGameIntroOverlay.hidden = true;
       els.foxGameOverlay.hidden = false;
       els.foxGameCountdown.hidden = false;
       foxGameCountdownStep(3);
@@ -6695,6 +6792,7 @@
 
     function closeFoxGame() {
       stopFoxGameTimers();
+      els.foxGameIntroOverlay.hidden = true;
       els.foxGameOverlay.hidden = true;
       els.foxGameCountdown.hidden = true;
       els.foxGameEndOverlay.hidden = true;
@@ -10169,6 +10267,8 @@
     els.foxWalker.addEventListener("keydown", function (e) {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleFoxActivate(); }
     });
+    els.foxGameIntroStartBtn.addEventListener("click", foxGameIntroBegin);
+    els.foxGameIntroCancelBtn.addEventListener("click", closeFoxGame);
     els.foxGameCloseBtn.addEventListener("click", closeFoxGame);
     els.foxGameEndCloseBtn.addEventListener("click", closeFoxGame);
     els.foxGameReplayBtn.addEventListener("click", startFoxGame);
