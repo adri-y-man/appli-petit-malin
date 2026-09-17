@@ -827,6 +827,20 @@
     }
   }
 
+  /* "Trouve l'intrus" en mobile portrait : les cases restaient petites
+     avec beaucoup de vide autour -- on les agrandit et on resserre
+     l'espacement entre elles pour mieux remplir l'écran. */
+  @media (max-width: 640px) and (orientation: portrait) {
+    .shape-icon-btn-small {
+      width: min(27.5vw, 8rem);
+      height: min(27.5vw, 8rem);
+    }
+
+    .answers.intrus-grid {
+      gap: clamp(0.15rem, 0.6vw, 0.3rem);
+    }
+  }
+
   /* "orientation: landscape" ici : en portrait (téléphone ET tablette),
      la hauteur disponible n'est pas démesurée -- les boutons empilés en
      colonne (comme en mobile portrait, cf. plus bas) restent bien
