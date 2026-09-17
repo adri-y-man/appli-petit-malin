@@ -836,8 +836,30 @@
      rapetissent progressivement pour garder une bonne respiration quand il
      y a plus de rangées à empiler. */
   @media (max-width: 640px) and (orientation: portrait) {
+    /* "repeat(N, 1fr)" + "grid-auto-rows: 1fr" (hérité de .answers-grid-2/3)
+       étirent chaque colonne/rangée pour remplir tout .answers -- avec des
+       cases bien plus petites que ces pistes, ça laisse un vide autour de
+       chaque case (les cases restent centrées dans leur piste via
+       align-self/justify-self) en plus du "gap" lui-même, et ce vide de
+       centrage n'est pas le même horizontalement (colonnes) que
+       verticalement (rangées), donc les écarts visuels ne se valent pas.
+       "auto" + justify-content/align-content: le quadrillage se resserre
+       à la taille réelle des cases, centré dans .answers : l'écart visuel
+       entre 2 cases devient alors exactement "gap", identique dans les
+       deux sens. */
     .answers.intrus-grid {
+      grid-auto-rows: auto;
+      justify-content: center;
+      align-content: start;
       gap: clamp(0.15rem, 0.6vw, 0.3rem);
+    }
+
+    .answers.intrus-grid.answers-grid-2 {
+      grid-template-columns: repeat(2, auto);
+    }
+
+    .answers.intrus-grid.answers-grid-3 {
+      grid-template-columns: repeat(3, auto);
     }
 
     .intrus-grid .answer-btn {
@@ -856,17 +878,6 @@
     .intrus-count-6 .shape-icon-btn-small {
       width: min(27.5vw, 8rem);
       height: min(27.5vw, 8rem);
-    }
-
-    /* À 6 cases (2 rangées de 3), "grid-auto-rows: 1fr" (hérité de
-       .answers-grid-3) étire chaque rangée sur toute la hauteur de
-       .answers -- avec des cases bien plus petites que ça, ça laissait un
-       très grand vide vertical entre les 2 rangées. "auto" + align-content
-       les fait coller à leur propre taille en haut, comme .wordgrid-grid
-       plus haut. */
-    .answers.intrus-grid.intrus-count-6 {
-      grid-auto-rows: auto;
-      align-content: start;
     }
 
     .intrus-count-9 .shape-icon-btn-small {
