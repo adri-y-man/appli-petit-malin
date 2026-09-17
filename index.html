@@ -7652,6 +7652,32 @@
       }
     }
 
+    // Certains emoji (fusée, canard...) ne sont pas dessinés au centre de
+    // leur propre boîte de caractère par la police -- centrer le bouton
+    // en CSS (flex) centre alors cette boîte, pas le dessin visible à
+    // l'intérieur, ce qui laisse un décalage bien visible en grand
+    // format. Un <canvas> qui dessine le symbole avec textAlign/
+    // textBaseline "center"/"middle" au milieu d'un carré recentre le
+    // VRAI dessin, quel que soit l'emoji.
+    function appendCenteredEmoji(btn, symbol) {
+      btn.textContent = symbol;
+      var size = parseFloat(getComputedStyle(btn).fontSize) || 40;
+      var dpr = window.devicePixelRatio || 1;
+      var canvas = document.createElement("canvas");
+      canvas.width = Math.round(size * dpr);
+      canvas.height = Math.round(size * dpr);
+      canvas.style.width = size + "px";
+      canvas.style.height = size + "px";
+      var ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+      ctx.font = size + 'px "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(symbol, size / 2, size / 2);
+      btn.textContent = "";
+      btn.appendChild(canvas);
+    }
+
     function renderAnswers() {
       els.answers.innerHTML = "";
       els.answers.classList.remove("answers-grid-2");
@@ -8014,12 +8040,12 @@
           var btn = document.createElement("button");
           btn.type = "button";
           btn.className = "answer-btn picture-btn emoji " + symbolPalette[idx % symbolPalette.length];
-          btn.textContent = value;
           btn.setAttribute("data-value", value);
           btn.setAttribute("aria-label", "Répondre " + value);
           if (state.problem.kind === "disparu") btn.disabled = true;
           btn.addEventListener("click", function () { onAnswer(value, btn); });
           els.answers.appendChild(btn);
+          appendCenteredEmoji(btn, value);
         });
         return;
       }
