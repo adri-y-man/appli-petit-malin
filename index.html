@@ -831,8 +831,8 @@
      avec beaucoup de vide autour -- on les agrandit et on resserre
      l'espacement entre elles pour mieux remplir l'écran. Avec seulement 4
      cases (2 colonnes), il y a beaucoup plus de largeur par case qu'avec
-     6/9/12 (3 colonnes) : les cases grandissent donc jusqu'à se toucher
-     (gap: 0), tandis que 6/9/12 partagent la même largeur de colonne mais
+     6/9/12 (3 colonnes) : les cases grandissent donc beaucoup plus,
+     tandis que 6/9/12 partagent la même largeur de colonne mais
      rapetissent progressivement pour garder une bonne respiration quand il
      y a plus de rangées à empiler. */
   @media (max-width: 640px) and (orientation: portrait) {
@@ -840,18 +840,33 @@
       gap: clamp(0.15rem, 0.6vw, 0.3rem);
     }
 
-    .answers.intrus-grid.intrus-count-4 {
-      gap: 0;
+    .intrus-grid .answer-btn {
+      border-bottom: none;
     }
 
     .intrus-count-4 .shape-icon-btn-small {
-      width: min(45vw - 13px, 10rem);
-      height: min(45vw - 13px, 10rem);
+      width: min(45vw - 19px, 10rem);
+      height: min(45vw - 19px, 10rem);
+    }
+
+    .answers.intrus-grid.intrus-count-4 {
+      gap: clamp(0.4rem, 1.5vw, 0.6rem);
     }
 
     .intrus-count-6 .shape-icon-btn-small {
       width: min(27.5vw, 8rem);
       height: min(27.5vw, 8rem);
+    }
+
+    /* À 6 cases (2 rangées de 3), "grid-auto-rows: 1fr" (hérité de
+       .answers-grid-3) étire chaque rangée sur toute la hauteur de
+       .answers -- avec des cases bien plus petites que ça, ça laissait un
+       très grand vide vertical entre les 2 rangées. "auto" + align-content
+       les fait coller à leur propre taille en haut, comme .wordgrid-grid
+       plus haut. */
+    .answers.intrus-grid.intrus-count-6 {
+      grid-auto-rows: auto;
+      align-content: start;
     }
 
     .intrus-count-9 .shape-icon-btn-small {
