@@ -2392,6 +2392,40 @@
 
   .celebrate-btn-secondary { background: var(--candy-teal); }
 
+  /* Choix de difficulté d'"Attrape le renard" (voir foxGameDiffEasyBtn/
+     foxGameDiffHardBtn) : un petit interrupteur à 2 options plutôt que des
+     .celebrate-btn pleines, pour bien le distinguer visuellement des
+     actions "Annuler"/"C'est parti !" juste en dessous. */
+  .foxgame-diff-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.1rem;
+  }
+
+  .foxgame-diff-btn {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 800;
+    font-size: clamp(0.85rem, 3.2vw, 1rem);
+    color: var(--ink);
+    background: rgba(31, 42, 60, 0.08);
+    padding: 0.55rem 1.1rem;
+    border-radius: 999px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .foxgame-diff-btn.is-selected {
+    background: var(--candy-blue);
+    color: var(--white);
+  }
+
+  .foxgame-diff-btn:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 2px;
+  }
+
   @keyframes celebrate-pop {
     0% { transform: scale(0.4) rotate(-15deg); opacity: 0; }
     60% { transform: scale(1.15) rotate(6deg); opacity: 1; }
@@ -4183,6 +4217,10 @@
       <div class="celebrate-badge">🦊</div>
       <h2 class="celebrate-title">Attrape le renard !</h2>
       <p class="celebrate-sub">Attrape le plus de renards possible en 30 secondes !</p>
+      <div class="foxgame-diff-group" role="group" aria-label="Difficulté">
+        <button class="foxgame-diff-btn is-selected" id="foxGameDiffEasyBtn" type="button" data-difficulty="easy">Facile</button>
+        <button class="foxgame-diff-btn" id="foxGameDiffHardBtn" type="button" data-difficulty="hard">Difficile</button>
+      </div>
       <div class="celebrate-actions">
         <button class="celebrate-btn celebrate-btn-secondary" id="foxGameIntroCancelBtn" type="button">Annuler</button>
         <button class="celebrate-btn" id="foxGameIntroStartBtn" type="button">C'est parti !</button>
@@ -6742,6 +6780,8 @@
       foxGameIntroOverlay: document.getElementById("foxGameIntroOverlay"),
       foxGameIntroStartBtn: document.getElementById("foxGameIntroStartBtn"),
       foxGameIntroCancelBtn: document.getElementById("foxGameIntroCancelBtn"),
+      foxGameDiffEasyBtn: document.getElementById("foxGameDiffEasyBtn"),
+      foxGameDiffHardBtn: document.getElementById("foxGameDiffHardBtn"),
       foxGameOverlay: document.getElementById("foxGameOverlay"),
       foxGameTime: document.getElementById("foxGameTime"),
       foxGameScore: document.getElementById("foxGameScore"),
@@ -6821,7 +6861,11 @@
     // temps est écoulé OU qu'il n'en reste plus, au premier des deux.
     var FOX_GAME_COUNT = 20;
     var FOX_GAME_DURATION = 30;
-    var FOX_GAME_HOP_MS = 2600;
+    // "Facile" garde le rythme d'origine du jeu ; "Difficile" ne fait que
+    // réduire le temps où chaque renard reste immobile avant de sauter
+    // ailleurs (voir foxGameHopMs, mis à jour par setFoxGameDifficulty).
+    var FOX_GAME_HOP_MS_EASY = 2600;
+    var FOX_GAME_HOP_MS_HARD = 1600;
     var FOX_GAME_HOP_JITTER = 800;
     var FOX_COUNTDOWN_STEP_MS = 800;
     var FOX_GAME_CATCH_MS = 350;
@@ -6829,6 +6873,8 @@
     var foxGameInterval = null;
     var foxGameCountdownTimer = null;
     var foxGameHopTimers = [];
+    var foxGameDifficulty = "easy";
+    var foxGameHopMs = FOX_GAME_HOP_MS_EASY;
     var foxGameRemaining = FOX_GAME_COUNT;
     var foxGameTimeLeft = FOX_GAME_DURATION;
     var foxGameScore = 0;
@@ -6848,14 +6894,14 @@
     }
 
     // Chaque renard a son propre minuteur, avec un peu d'aléatoire autour
-    // de FOX_GAME_HOP_MS (jamais exactement la même durée) : ils changent
-    // de place chacun leur tour plutôt que tous d'un coup.
+    // de foxGameHopMs (jamais exactement la même durée) : ils changent de
+    // place chacun leur tour plutôt que tous d'un coup.
     function foxGameScheduleHop(target, idx, delay) {
       if (foxGameHopTimers[idx]) window.clearTimeout(foxGameHopTimers[idx]);
       foxGameHopTimers[idx] = window.setTimeout(function () {
         if (!foxGameActive) return;
         foxGameHopOne(target);
-        foxGameScheduleHop(target, idx, FOX_GAME_HOP_MS + (Math.random() * 2 - 1) * FOX_GAME_HOP_JITTER);
+        foxGameScheduleHop(target, idx, foxGameHopMs + (Math.random() * 2 - 1) * FOX_GAME_HOP_JITTER);
       }, delay);
     }
 
@@ -6921,7 +6967,7 @@
           foxGameHopOne(btn);
           // premier déplacement décalé aléatoirement pour chaque renard,
           // pour qu'ils ne bougent jamais tous ensemble dès le départ.
-          foxGameScheduleHop(btn, idx, Math.random() * FOX_GAME_HOP_MS);
+          foxGameScheduleHop(btn, idx, Math.random() * foxGameHopMs);
         }(i));
       }
     }
@@ -6960,6 +7006,15 @@
         els.foxGameTime.textContent = String(Math.max(0, foxGameTimeLeft));
         if (foxGameTimeLeft <= 0) endFoxGame("timeout");
       }, 1000);
+    }
+
+    // "Facile" par défaut ; le choix reste actif d'une partie à l'autre
+    // (Rejouer, etc.) tant que la page n'est pas rechargée.
+    function setFoxGameDifficulty(difficulty) {
+      foxGameDifficulty = difficulty;
+      foxGameHopMs = difficulty === "hard" ? FOX_GAME_HOP_MS_HARD : FOX_GAME_HOP_MS_EASY;
+      els.foxGameDiffEasyBtn.classList.toggle("is-selected", difficulty !== "hard");
+      els.foxGameDiffHardBtn.classList.toggle("is-selected", difficulty === "hard");
     }
 
     function resetFoxGameState() {
@@ -10750,6 +10805,8 @@
     });
     els.foxGameIntroStartBtn.addEventListener("click", foxGameIntroBegin);
     els.foxGameIntroCancelBtn.addEventListener("click", closeFoxGame);
+    els.foxGameDiffEasyBtn.addEventListener("click", function () { setFoxGameDifficulty("easy"); });
+    els.foxGameDiffHardBtn.addEventListener("click", function () { setFoxGameDifficulty("hard"); });
     els.foxGameCloseBtn.addEventListener("click", closeFoxGame);
     els.foxGameEndCloseBtn.addEventListener("click", closeFoxGame);
     els.foxGameReplayBtn.addEventListener("click", replayFoxGame);
