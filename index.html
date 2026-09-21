@@ -1636,6 +1636,254 @@
   .sudoku-palette-btn .sudoku-shape { width: 60%; height: 60%; display: block; }
   .sudoku-palette-btn .sudoku-shape svg { display: block; width: 100%; height: 100%; }
 
+  /* ---------- "Petit Codeur" : moteur partagé par les 5 mini-jeux
+     (grille + renard qui exécute une suite d'instructions) ---------- */
+
+  .code-screen {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.6rem, 3vh, 1.2rem);
+    min-height: 0;
+    width: 100%;
+    padding: 0 0.5rem;
+  }
+
+  .code-screen[hidden] { display: none; }
+
+  .code-instruction {
+    margin: 0;
+    text-align: center;
+    font-weight: 800;
+    font-size: clamp(0.95rem, 3.8vw, 1.15rem);
+    color: var(--white);
+    text-shadow: 0 3px 0 rgba(31, 42, 60, 0.25);
+    max-width: 26rem;
+  }
+
+  .code-board-wrap {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .code-board {
+    position: relative;
+    display: grid;
+    width: min(78vw, 46vh, 20rem);
+    aspect-ratio: var(--code-aspect, 1);
+    background: #7ec9a3;
+    border: 3px solid #1f2a3c;
+    border-radius: clamp(0.7rem, 2.5vw, 1rem);
+    overflow: hidden;
+    box-shadow: 0 12px 24px -12px rgba(31, 42, 60, 0.55);
+  }
+
+  .code-cell {
+    background: #8ed6ac;
+    border: 1px solid rgba(31, 42, 60, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(1.2rem, 6vw, 1.8rem);
+  }
+
+  .code-cell.wall { background: #5b6472; }
+  .code-cell.target { background: #ffe8a3; }
+  .code-cell.puddle { background: #6fb6e8; }
+  .code-cell.coin { background: #8ed6ac; }
+
+  .code-fox {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: left 0.4s ease, top 0.4s ease;
+    pointer-events: none;
+  }
+
+  .code-fox svg { display: block; width: 78%; height: 78%; }
+
+  .code-fox-arrow {
+    position: absolute;
+    top: -0.6rem;
+    left: 50%;
+    font-size: clamp(0.9rem, 4vw, 1.2rem);
+    transform-origin: 50% 150%;
+    transform: translateX(-50%) rotate(var(--code-dir-deg, 0deg));
+    transition: transform 0.3s ease;
+  }
+
+  .code-fox.bump { animation: shake 0.4s ease; }
+
+  .code-builder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(0.5rem, 2vh, 0.8rem);
+    width: 100%;
+    max-width: 26rem;
+  }
+
+  .code-palette {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .code-block-btn {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    background: var(--candy-blue);
+    border-radius: clamp(0.7rem, 2.6vw, 1rem);
+    min-width: clamp(2.8rem, 11vw, 3.6rem);
+    height: clamp(2.8rem, 11vw, 3.6rem);
+    padding: 0 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: clamp(1.2rem, 5vw, 1.5rem);
+    color: var(--white);
+    box-shadow: 0 8px 16px -10px rgba(31, 42, 60, 0.5);
+    transition: transform 0.1s ease;
+  }
+
+  .code-block-btn:active { transform: translateY(2px); }
+  .code-block-btn:disabled { opacity: 0.45; cursor: default; }
+
+  .code-program {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    min-height: clamp(2.6rem, 10vw, 3.2rem);
+    padding: 0.4rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: clamp(0.7rem, 2.6vw, 1rem);
+    overflow-x: auto;
+  }
+
+  .code-program-empty {
+    margin: 0 auto;
+    font-weight: 700;
+    font-size: clamp(0.85rem, 3.4vw, 1rem);
+    color: rgba(31, 42, 60, 0.6);
+  }
+
+  .code-program-slot {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    flex: 0 0 auto;
+    background: var(--white);
+    border-radius: clamp(0.5rem, 2vw, 0.7rem);
+    width: clamp(2.1rem, 8vw, 2.6rem);
+    height: clamp(2.1rem, 8vw, 2.6rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(1rem, 4.2vw, 1.3rem);
+    box-shadow: 0 4px 10px -6px rgba(31, 42, 60, 0.5);
+  }
+
+  .code-program-slot.selectable { cursor: default; }
+  .code-program-slot.is-selected { box-shadow: inset 0 0 0 3px #ffb648; }
+  .code-program-slot.is-current { background: #fff3a0; }
+
+  .code-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.6rem;
+  }
+
+  .code-action-btn {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 800;
+    font-size: clamp(0.95rem, 3.8vw, 1.15rem);
+    color: var(--white);
+    background: var(--correct);
+    padding: 0.7rem 1.4rem;
+    border-radius: 999px;
+    box-shadow: 0 8px 16px -10px rgba(31, 42, 60, 0.5);
+  }
+
+  .code-action-btn:active { transform: translateY(2px); }
+  .code-action-btn:disabled { opacity: 0.45; cursor: default; }
+  .code-action-btn.secondary { background: var(--candy-teal); }
+
+  .code-loop-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .code-count-group {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .code-count-btn {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 800;
+    background: rgba(31, 42, 60, 0.08);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 0.5rem 0.85rem;
+    font-size: clamp(0.9rem, 3.6vw, 1.05rem);
+  }
+
+  .code-count-btn.is-selected { background: var(--candy-blue); color: var(--white); }
+
+  .code-if-rules {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    width: 100%;
+  }
+
+  .code-if-rule {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: clamp(0.7rem, 2.6vw, 1rem);
+    padding: 0.5rem 0.7rem;
+  }
+
+  .code-if-condition {
+    font-size: clamp(1.3rem, 5.6vw, 1.7rem);
+  }
+
+  .code-if-arrow { font-weight: 800; color: var(--ink); }
+
+  .code-if-choice {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    background: rgba(31, 42, 60, 0.08);
+    border-radius: clamp(0.6rem, 2.3vw, 0.9rem);
+    width: clamp(2.4rem, 9.5vw, 3rem);
+    height: clamp(2.4rem, 9.5vw, 3rem);
+    font-size: clamp(1.1rem, 4.6vw, 1.4rem);
+  }
+
+  .code-if-choice.is-selected { background: var(--candy-blue); }
+
   /* Jeux de société : statut de tour partagé + bouton "Rejouer" partagés
      entre les 4 jeux (Morpion/Puissance 4/Dames/Bataille navale). */
   .boardgame-status {
@@ -3024,6 +3272,11 @@
   .category-card-contraire { background: linear-gradient(135deg, #a8e6a1, #6fcf6a); }
   .category-card-sound { background: linear-gradient(135deg, #ffd68a, #ffb648); }
   .category-card-syllordre { background: linear-gradient(135deg, #a8e6a1, #6fcf6a); }
+  .category-card-codeseq { background: linear-gradient(135deg, #ffb199, #f77f5c); }
+  .category-card-codeloop { background: linear-gradient(135deg, #7ec8f7, #4a90d9); }
+  .category-card-codedebug { background: linear-gradient(135deg, #a8e6a1, #6fcf6a); }
+  .category-card-codeif { background: linear-gradient(135deg, #a8b8f0, #7c8ee0); }
+  .category-card-codesandbox { background: linear-gradient(135deg, #fff3a0, #ffe066); }
   .category-card-article { background: linear-gradient(135deg, #a8b8f0, #7c8ee0); }
   .category-card-traceforme { background: linear-gradient(135deg, #7ec8f7, #4a90d9); }
   .category-card-shapes { background: linear-gradient(135deg, #ffb199, #f77f5c); }
@@ -3399,6 +3652,14 @@
     <div class="sudoku-palette" id="sudokuPalette"></div>
   </section>
 
+  <section class="code-screen" id="codeScreen" hidden>
+    <p class="code-instruction" id="codeInstruction"></p>
+    <div class="code-board-wrap">
+      <div class="code-board" id="codeBoard"></div>
+    </div>
+    <div class="code-builder" id="codeBuilder"></div>
+  </section>
+
   <section class="morpion-screen" id="morpionScreen" hidden>
     <p class="boardgame-status" id="morpionStatus"></p>
     <div class="morpion-board" id="morpionBoard"></div>
@@ -3628,6 +3889,17 @@
             </svg>
           </span>
           <span class="app-icon-label">Jeux de société</span>
+        </button>
+        <button class="category-card category-card-app" type="button" data-category="code">
+          <span class="app-icon-tile">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <rect x="4" y="4" width="112" height="112" rx="30" fill="#fff8ee" />
+              <path d="M46 30 L20 60 L46 90" fill="none" stroke="#3d7fe0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M74 30 L100 60 L74 90" fill="none" stroke="#3d7fe0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+              <line x1="68" y1="24" x2="52" y2="96" stroke="#ffb648" stroke-width="10" stroke-linecap="round" />
+            </svg>
+          </span>
+          <span class="app-icon-label">Petit Codeur</span>
         </button>
       </div>
       <div class="fox-walk-lane">
@@ -4075,6 +4347,44 @@
           <span class="icon emoji">🔀</span>
           <span>Trouve le contraire</span>
           <span class="level-badge">MS-GS</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="menu-panel" id="menuCode" hidden>
+      <div class="menu-header">
+        <button class="menu-back" id="codeBackBtn" type="button" aria-label="Retour">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 4 L7 12 L15 20" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </button>
+        <h1 class="menu-title">Petit Codeur</h1>
+      </div>
+      <div class="category-grid">
+        <button class="category-card category-card-codeseq" type="button" id="codeseqCard">
+          <span class="icon emoji">🦊</span>
+          <span>Guide le renard</span>
+          <span class="level-badge">MS-GS</span>
+        </button>
+        <button class="category-card category-card-codeloop" type="button" id="codeloopCard">
+          <span class="icon emoji">🔁</span>
+          <span>Répète avec moi</span>
+          <span class="level-badge">GS-CP</span>
+        </button>
+        <button class="category-card category-card-codedebug" type="button" id="codedebugCard">
+          <span class="icon emoji">🐛</span>
+          <span>Trouve le bug</span>
+          <span class="level-badge">CP-CE1</span>
+        </button>
+        <button class="category-card category-card-codeif" type="button" id="codeifCard">
+          <span class="icon emoji">🔀</span>
+          <span>Si... alors...</span>
+          <span class="level-badge">CP-CE1</span>
+        </button>
+        <button class="category-card category-card-codesandbox" type="button" id="codesandboxCard">
+          <span class="icon emoji">🤖</span>
+          <span>Construis le robot</span>
+          <span class="level-badge">MS-CE1</span>
         </button>
       </div>
     </div>
@@ -6620,6 +6930,17 @@
       menuEcriture: document.getElementById("menuEcriture"),
       menuFormes: document.getElementById("menuFormes"),
       menuJeux: document.getElementById("menuJeux"),
+      menuCode: document.getElementById("menuCode"),
+      codeBackBtn: document.getElementById("codeBackBtn"),
+      codeseqCard: document.getElementById("codeseqCard"),
+      codeloopCard: document.getElementById("codeloopCard"),
+      codedebugCard: document.getElementById("codedebugCard"),
+      codeifCard: document.getElementById("codeifCard"),
+      codesandboxCard: document.getElementById("codesandboxCard"),
+      codeScreen: document.getElementById("codeScreen"),
+      codeInstruction: document.getElementById("codeInstruction"),
+      codeBoard: document.getElementById("codeBoard"),
+      codeBuilder: document.getElementById("codeBuilder"),
       morpionScreen: document.getElementById("morpionScreen"),
       morpionStatus: document.getElementById("morpionStatus"),
       morpionBoard: document.getElementById("morpionBoard"),
@@ -9763,6 +10084,618 @@
       }
     }
 
+    // ============================================================
+    // "Petit Codeur" : 5 mini-jeux d'initiation au code, tous bâtis sur
+    // le même moteur -- une grille et un renard qui exécute une suite
+    // d'instructions (avance / tourne à gauche / tourne à droite).
+    // Chaque niveau est décrit en texte (une chaîne = une rangée) : "."
+    // case libre, "#" mur, "T" carotte (objectif), "~" flaque, "o" pièce
+    // (ces 2 derniers seulement pour "Si... alors...").
+    // ============================================================
+
+    var CODE_DIR_DELTA = { N: { dx: 0, dy: -1 }, E: { dx: 1, dy: 0 }, S: { dx: 0, dy: 1 }, O: { dx: -1, dy: 0 } };
+    var CODE_DIR_ANGLE = { N: 0, E: 90, S: 180, O: 270 };
+    var CODE_LEFT_OF = { N: "O", O: "S", S: "E", E: "N" };
+    var CODE_RIGHT_OF = { N: "E", E: "S", S: "O", O: "N" };
+    var CODE_STEP_MS = 450;
+    var CODE_BLOCK_ICON = { F: "⬆️", L: "↩️", R: "↪️" };
+    var CODE_BLOCK_LABEL = { F: "avance", L: "tourne à gauche", R: "tourne à droite" };
+
+    // "Guide le renard" : de plus en plus de cases/virages, un mur en
+    // plus aux 2 derniers niveaux.
+    var CODESEQ_LEVELS = [
+      { rows: ["..T"], start: { x: 0, y: 0, dir: "E" } },
+      { rows: ["....T"], start: { x: 0, y: 0, dir: "E" } },
+      { rows: ["...", "...", "..T"], start: { x: 0, y: 0, dir: "E" } },
+      { rows: [".#..", "....", "....", "...T"], start: { x: 0, y: 0, dir: "E" } },
+      { rows: [".#..", "....", "..#.", "...T"], start: { x: 0, y: 0, dir: "E" } }
+    ];
+
+    // "Répète avec moi" : la carotte est toujours placée là où un motif
+    // court (1 à 3 blocs) répété quelques fois amène le renard.
+    var CODELOOP_LEVELS = [
+      { rows: ["..T..."], start: { x: 0, y: 0, dir: "E" } },
+      { rows: ["....T..."], start: { x: 0, y: 0, dir: "E" } },
+      { rows: ["....", "....", "..T.", "...."], start: { x: 0, y: 0, dir: "E" } },
+      { rows: ["....", "....", "T...", "...."], start: { x: 0, y: 0, dir: "E" } },
+      { rows: [".....", ".....", ".....", ".....", "T...."], start: { x: 0, y: 0, dir: "E" } }
+    ];
+
+    // "Trouve le bug" : un programme déjà écrit, un seul bloc n'est pas
+    // le bon (vérifié hors-ligne : échange exactement ce bloc contre un
+    // autre de la palette pour corriger).
+    var CODEDEBUG_LEVELS = [
+      { rows: ["...T"], start: { x: 0, y: 0, dir: "E" }, program: ["F", "F", "R"] },
+      { rows: [".....T"], start: { x: 0, y: 0, dir: "E" }, program: ["F", "F", "F", "F", "L"] },
+      { rows: ["....", "....", "....", "...T"], start: { x: 0, y: 0, dir: "E" }, program: ["F", "F", "F", "L", "F", "F", "F"] },
+      { rows: ["....", "....", "...."], start: { x: 0, y: 2, dir: "E" }, program: ["F", "F", "R", "F", "F"] },
+      { rows: [".....", ".....", ".....", ".....", "....T"], start: { x: 0, y: 0, dir: "E" }, program: ["F", "F", "F", "F", "L", "F", "F", "F", "F"] }
+    ];
+    var CODEDEBUG_PALETTE = ["F", "L", "R"];
+
+    // "Si... alors..." : chemin en ligne droite (rangée unique), "o"
+    // pièce à ramasser, "~" flaque à sauter -- les 2 règles choisies
+    // s'appliquent à CHAQUE case de ce type sur tout le chemin.
+    var CODEIF_LEVELS = [".o.T", ".~.T", ".o~T", ".o~oT", ".o~o~T"];
+    var CODE_IF_ACTIONS = ["ramasse", "saute", "avance"];
+    var CODE_IF_ACTION_ICON = { ramasse: "✋", saute: "🦘", avance: "➡️" };
+    var CODE_IF_ACTION_LABEL = { ramasse: "ramasser", saute: "sauter", avance: "avancer" };
+
+    // "Construis le robot" : bac à sable libre, pas de carotte à
+    // atteindre, juste un plateau vide pour expérimenter.
+    var CODESANDBOX_GRID = ["....", "....", "....", "...."];
+    var CODE_SANDBOX_MAX_BLOCKS = 12;
+
+    var codeFoxState = { x: 0, y: 0, dir: "E" };
+    var codeCurrentGrid = null;
+    var codeCurrentDims = { width: 1, height: 1 };
+    var codeFoxEl = null;
+    var codeRunning = false;
+    var codeCurrentProgram = [];
+    var codeLoopPattern = [];
+    var codeLoopCount = 2;
+    var codeDebugProgram = [];
+    var codeDebugSelected = -1;
+    var codeIfCoinRule = null;
+    var codeIfPuddleRule = null;
+
+    function codeGridDims(grid) {
+      return { width: grid[0].length, height: grid.length };
+    }
+
+    function findCodeCell(grid, ch) {
+      for (var y = 0; y < grid.length; y++) {
+        for (var x = 0; x < grid[y].length; x++) {
+          if (grid[y][x] === ch) return { x: x, y: y };
+        }
+      }
+      return null;
+    }
+
+    function codeApplyStep(pos, step) {
+      if (step === "L") return { x: pos.x, y: pos.y, dir: CODE_LEFT_OF[pos.dir] };
+      if (step === "R") return { x: pos.x, y: pos.y, dir: CODE_RIGHT_OF[pos.dir] };
+      var delta = CODE_DIR_DELTA[pos.dir];
+      return { x: pos.x + delta.dx, y: pos.y + delta.dy, dir: pos.dir };
+    }
+
+    function codeCellBlocked(grid, x, y) {
+      var dims = codeGridDims(grid);
+      if (x < 0 || x >= dims.width || y < 0 || y >= dims.height) return true;
+      return grid[y][x] === "#";
+    }
+
+    // Construit la grille (cases + renard) à l'intérieur de #codeBoard.
+    function renderCodeBoard(grid, fox) {
+      var dims = codeGridDims(grid);
+      codeCurrentDims = dims;
+      els.codeBoard.innerHTML = "";
+      els.codeBoard.style.gridTemplateColumns = "repeat(" + dims.width + ", 1fr)";
+      els.codeBoard.style.gridTemplateRows = "repeat(" + dims.height + ", 1fr)";
+      els.codeBoard.style.setProperty("--code-aspect", dims.width + " / " + dims.height);
+      for (var y = 0; y < dims.height; y++) {
+        for (var x = 0; x < dims.width; x++) {
+          var ch = grid[y][x];
+          var cell = document.createElement("div");
+          var cls = "code-cell";
+          if (ch === "#") cls += " wall";
+          else if (ch === "T") cls += " target";
+          else if (ch === "~") cls += " puddle";
+          else if (ch === "o") cls += " coin";
+          cell.className = cls;
+          if (ch === "T") cell.textContent = "🥕";
+          else if (ch === "~") cell.textContent = "💧";
+          else if (ch === "o") cell.textContent = "🪙";
+          els.codeBoard.appendChild(cell);
+        }
+      }
+      var foxEl = document.createElement("div");
+      foxEl.className = "code-fox";
+      foxEl.style.width = (100 / dims.width) + "%";
+      foxEl.style.height = (100 / dims.height) + "%";
+      foxEl.innerHTML = '<svg viewBox="0 0 200 200" aria-hidden="true"><use href="#foxHeadSymbol"></use></svg><span class="code-fox-arrow">▲</span>';
+      els.codeBoard.appendChild(foxEl);
+      codeFoxEl = foxEl;
+      placeCodeFox(fox.x, fox.y, fox.dir, false);
+    }
+
+    function placeCodeFox(x, y, dir, animate) {
+      if (!codeFoxEl) return;
+      if (!animate) codeFoxEl.style.transition = "none";
+      codeFoxEl.style.left = (x / codeCurrentDims.width * 100) + "%";
+      codeFoxEl.style.top = (y / codeCurrentDims.height * 100) + "%";
+      codeFoxEl.style.setProperty("--code-dir-deg", CODE_DIR_ANGLE[dir] + "deg");
+      if (!animate) {
+        void codeFoxEl.offsetWidth;
+        codeFoxEl.style.transition = "";
+      }
+    }
+
+    // Exécute "steps" un par un (avec animation), s'arrête net (bump) au
+    // premier mur/bord rencontré. onStepIndex(i), si fourni, permet de
+    // surligner le bloc en cours dans le programme affiché.
+    function codeRunProgram(steps, onDone, onStepIndex) {
+      codeRunning = true;
+      var i = 0;
+      function step() {
+        if (i >= steps.length) {
+          codeRunning = false;
+          onDone(true);
+          return;
+        }
+        if (onStepIndex) onStepIndex(i);
+        var mv = steps[i];
+        var next = codeApplyStep(codeFoxState, mv);
+        var blocked = mv === "F" && codeCellBlocked(codeCurrentGrid, next.x, next.y);
+        if (blocked) {
+          codeFoxEl.classList.remove("bump");
+          void codeFoxEl.offsetWidth;
+          codeFoxEl.classList.add("bump");
+          codeRunning = false;
+          onDone(false);
+          return;
+        }
+        codeFoxState = next;
+        placeCodeFox(next.x, next.y, next.dir, true);
+        i++;
+        window.setTimeout(step, CODE_STEP_MS);
+      }
+      step();
+    }
+
+    function codeHighlightProgramSlot(idx) {
+      var slots = els.codeBuilder.querySelectorAll(".code-program-slot");
+      for (var i = 0; i < slots.length; i++) {
+        slots[i].classList.toggle("is-current", i === idx);
+      }
+    }
+
+    function codeSetBuilderDisabled(disabled) {
+      var btns = els.codeBuilder.querySelectorAll("button");
+      for (var i = 0; i < btns.length; i++) btns[i].disabled = disabled;
+    }
+
+    // Palette de blocs tapotables (avance / tourne...), partagée par
+    // "Guide le renard", "Répète avec moi", "Trouve le bug" et "Construis
+    // le robot".
+    function codeBuildPalette(blocks, onTap, disableAll) {
+      var wrap = document.createElement("div");
+      wrap.className = "code-palette";
+      blocks.forEach(function (blk) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "code-block-btn";
+        btn.textContent = CODE_BLOCK_ICON[blk];
+        btn.setAttribute("aria-label", CODE_BLOCK_LABEL[blk]);
+        btn.disabled = !!disableAll;
+        btn.addEventListener("click", function () { onTap(blk); });
+        wrap.appendChild(btn);
+      });
+      return wrap;
+    }
+
+    // Rangée du programme assemblé -- touche un bloc pour le retirer.
+    function codeBuildProgramRow(program, onRemove) {
+      var wrap = document.createElement("div");
+      wrap.className = "code-program";
+      if (program.length === 0) {
+        var empty = document.createElement("p");
+        empty.className = "code-program-empty";
+        empty.textContent = "Touche un bloc pour commencer !";
+        wrap.appendChild(empty);
+        return wrap;
+      }
+      program.forEach(function (blk, idx) {
+        var slot = document.createElement("button");
+        slot.type = "button";
+        slot.className = "code-program-slot";
+        slot.textContent = CODE_BLOCK_ICON[blk];
+        slot.setAttribute("data-slot-index", String(idx));
+        slot.setAttribute("aria-label", "Retirer " + CODE_BLOCK_LABEL[blk]);
+        slot.addEventListener("click", function () { onRemove(idx); });
+        wrap.appendChild(slot);
+      });
+      return wrap;
+    }
+
+    // Rangée du programme figé de "Trouve le bug" -- touche un bloc pour
+    // le sélectionner (avant de choisir son remplaçant dans la palette).
+    function codeBuildDebugProgramRow(program, selectedIndex, onSelect) {
+      var wrap = document.createElement("div");
+      wrap.className = "code-program";
+      program.forEach(function (blk, idx) {
+        var slot = document.createElement("button");
+        slot.type = "button";
+        slot.className = "code-program-slot selectable" + (idx === selectedIndex ? " is-selected" : "");
+        slot.textContent = CODE_BLOCK_ICON[blk];
+        slot.setAttribute("data-slot-index", String(idx));
+        slot.setAttribute("aria-label", "Case " + (idx + 1));
+        slot.addEventListener("click", function () { onSelect(idx); });
+        wrap.appendChild(slot);
+      });
+      return wrap;
+    }
+
+    function codeBuildActions(opts) {
+      var wrap = document.createElement("div");
+      wrap.className = "code-actions";
+      var clearBtn = document.createElement("button");
+      clearBtn.type = "button";
+      clearBtn.className = "code-action-btn secondary";
+      clearBtn.textContent = "Effacer";
+      clearBtn.addEventListener("click", opts.onClear);
+      var runBtn = document.createElement("button");
+      runBtn.type = "button";
+      runBtn.className = "code-action-btn";
+      runBtn.textContent = "Lancer ▶";
+      runBtn.disabled = !!opts.runDisabled;
+      runBtn.addEventListener("click", opts.onRun);
+      wrap.appendChild(clearBtn);
+      wrap.appendChild(runBtn);
+      return wrap;
+    }
+
+    // Même paliers de niveaux/étoiles que les autres jeux "écran dédié"
+    // (voir onSudokuComplete) -- juste factorisé ici pour les 4 jeux de
+    // code notés (tout sauf le bac à sable).
+    function onCodeLevelComplete(message, restartFn) {
+      state.wrongStreak = 0;
+      state.correctStreak++;
+      var leveledUp = false;
+      var justWon = false;
+      if (state.correctStreak >= starsToLevelUp(state.mode)) {
+        if (state.level < MAX_LEVEL) {
+          state.level++;
+          leveledUp = true;
+        } else {
+          justWon = true;
+        }
+        state.correctStreak = 0;
+      }
+      if (!leveledUp && !justWon) renderLevel();
+      saveProgress();
+      setGameFeedback(message, "correct");
+      if (leveledUp) {
+        window.setTimeout(function () { showLevelUp(state.level); }, 900);
+      } else if (justWon) {
+        window.setTimeout(showWin, 900);
+      } else {
+        window.setTimeout(restartFn, 1300);
+      }
+    }
+
+    function startCodeProblem() {
+      setGameFeedback("");
+      if (state.mode === "codeseq") { startCodeSeqLevel(); return; }
+      if (state.mode === "codeloop") { startCodeLoopLevel(); return; }
+      if (state.mode === "codedebug") { startCodeDebugLevel(); return; }
+      if (state.mode === "codeif") { startCodeIfLevel(); return; }
+      startCodeSandbox();
+    }
+
+    // ---------- "Guide le renard" ----------
+
+    function startCodeSeqLevel() {
+      var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
+      var def = CODESEQ_LEVELS[levelIdx];
+      var grid = def.rows.map(function (r) { return r.split(""); });
+      codeCurrentGrid = grid;
+      codeFoxState = { x: def.start.x, y: def.start.y, dir: def.start.dir };
+      codeCurrentProgram = [];
+      els.codeInstruction.textContent = "Guide le renard jusqu'à la carotte !";
+      renderCodeBoard(grid, codeFoxState);
+      renderCodeSeqBuilder();
+    }
+
+    function renderCodeSeqBuilder() {
+      els.codeBuilder.innerHTML = "";
+      els.codeBuilder.appendChild(codeBuildPalette(["F", "L", "R"], function (blk) {
+        codeCurrentProgram.push(blk);
+        renderCodeSeqBuilder();
+      }));
+      els.codeBuilder.appendChild(codeBuildProgramRow(codeCurrentProgram, function (idx) {
+        codeCurrentProgram.splice(idx, 1);
+        renderCodeSeqBuilder();
+      }));
+      els.codeBuilder.appendChild(codeBuildActions({
+        onRun: codeLaunchSeq,
+        onClear: function () { codeCurrentProgram = []; renderCodeSeqBuilder(); },
+        runDisabled: codeCurrentProgram.length === 0
+      }));
+    }
+
+    function codeLaunchSeq() {
+      if (codeRunning || codeCurrentProgram.length === 0) return;
+      codeSetBuilderDisabled(true);
+      codeRunProgram(codeCurrentProgram.slice(), function (finishedAll) {
+        var target = findCodeCell(codeCurrentGrid, "T");
+        var success = finishedAll && codeFoxState.x === target.x && codeFoxState.y === target.y;
+        if (success) {
+          onCodeLevelComplete("Bravo ! Le renard a trouvé la carotte ! 🥕", startCodeSeqLevel);
+        } else {
+          codeSetBuilderDisabled(false);
+          setGameFeedback(finishedAll ? "Pas encore la carotte, réessaie !" : "Oups, un mur ! Réessaie.", "wrong");
+          window.setTimeout(startCodeSeqLevel, 1200);
+        }
+      }, codeHighlightProgramSlot);
+    }
+
+    // ---------- "Répète avec moi" ----------
+
+    function startCodeLoopLevel() {
+      var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
+      var def = CODELOOP_LEVELS[levelIdx];
+      var grid = def.rows.map(function (r) { return r.split(""); });
+      codeCurrentGrid = grid;
+      codeFoxState = { x: def.start.x, y: def.start.y, dir: def.start.dir };
+      codeLoopPattern = [];
+      codeLoopCount = 2;
+      els.codeInstruction.textContent = "Construis un petit motif et répète-le pour atteindre la carotte !";
+      renderCodeBoard(grid, codeFoxState);
+      renderCodeLoopBuilder();
+    }
+
+    function renderCodeLoopBuilder() {
+      els.codeBuilder.innerHTML = "";
+      els.codeBuilder.appendChild(codeBuildPalette(["F", "L", "R"], function (blk) {
+        if (codeLoopPattern.length >= 3) return;
+        codeLoopPattern.push(blk);
+        renderCodeLoopBuilder();
+      }));
+      els.codeBuilder.appendChild(codeBuildProgramRow(codeLoopPattern, function (idx) {
+        codeLoopPattern.splice(idx, 1);
+        renderCodeLoopBuilder();
+      }));
+      var countRow = document.createElement("div");
+      countRow.className = "code-loop-row";
+      var label = document.createElement("span");
+      label.className = "code-instruction";
+      label.style.margin = "0";
+      label.textContent = "Répéter :";
+      countRow.appendChild(label);
+      var group = document.createElement("div");
+      group.className = "code-count-group";
+      [1, 2, 3, 4, 5].forEach(function (n) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "code-count-btn" + (n === codeLoopCount ? " is-selected" : "");
+        btn.textContent = "×" + n;
+        btn.addEventListener("click", function () { codeLoopCount = n; renderCodeLoopBuilder(); });
+        group.appendChild(btn);
+      });
+      countRow.appendChild(group);
+      els.codeBuilder.appendChild(countRow);
+      els.codeBuilder.appendChild(codeBuildActions({
+        onRun: codeLaunchLoop,
+        onClear: function () { codeLoopPattern = []; codeLoopCount = 2; renderCodeLoopBuilder(); },
+        runDisabled: codeLoopPattern.length === 0
+      }));
+    }
+
+    function codeLaunchLoop() {
+      if (codeRunning || codeLoopPattern.length === 0) return;
+      var steps = [];
+      for (var i = 0; i < codeLoopCount; i++) steps = steps.concat(codeLoopPattern);
+      codeSetBuilderDisabled(true);
+      codeRunProgram(steps, function (finishedAll) {
+        var target = findCodeCell(codeCurrentGrid, "T");
+        var success = finishedAll && codeFoxState.x === target.x && codeFoxState.y === target.y;
+        if (success) {
+          onCodeLevelComplete("Bravo ! Ta boucle a marché ! 🥕", startCodeLoopLevel);
+        } else {
+          codeSetBuilderDisabled(false);
+          setGameFeedback(finishedAll ? "Pas encore la carotte, réessaie !" : "Oups, un mur ! Réessaie.", "wrong");
+          window.setTimeout(startCodeLoopLevel, 1200);
+        }
+      }, function (i) { codeHighlightProgramSlot(i % codeLoopPattern.length); });
+    }
+
+    // ---------- "Trouve le bug" ----------
+
+    function startCodeDebugLevel() {
+      var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
+      var def = CODEDEBUG_LEVELS[levelIdx];
+      var grid = def.rows.map(function (r) { return r.split(""); });
+      codeCurrentGrid = grid;
+      codeFoxState = { x: def.start.x, y: def.start.y, dir: def.start.dir };
+      codeDebugProgram = def.program.slice();
+      codeDebugSelected = -1;
+      els.codeInstruction.textContent = "Ce programme a un bug ! Touche le bloc fautif puis choisis le bon.";
+      renderCodeBoard(grid, codeFoxState);
+      renderCodeDebugBuilder();
+    }
+
+    function renderCodeDebugBuilder() {
+      els.codeBuilder.innerHTML = "";
+      els.codeBuilder.appendChild(codeBuildDebugProgramRow(codeDebugProgram, codeDebugSelected, function (idx) {
+        codeDebugSelected = codeDebugSelected === idx ? -1 : idx;
+        renderCodeDebugBuilder();
+      }));
+      els.codeBuilder.appendChild(codeBuildPalette(CODEDEBUG_PALETTE, function (blk) {
+        if (codeDebugSelected < 0) return;
+        codeDebugProgram[codeDebugSelected] = blk;
+        codeDebugSelected = -1;
+        renderCodeDebugBuilder();
+      }, codeDebugSelected < 0));
+      els.codeBuilder.appendChild(codeBuildActions({
+        onRun: codeLaunchDebug,
+        onClear: function () {
+          var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
+          codeDebugProgram = CODEDEBUG_LEVELS[levelIdx].program.slice();
+          codeDebugSelected = -1;
+          renderCodeDebugBuilder();
+        },
+        runDisabled: false
+      }));
+    }
+
+    function codeLaunchDebug() {
+      if (codeRunning) return;
+      codeSetBuilderDisabled(true);
+      codeRunProgram(codeDebugProgram.slice(), function (finishedAll) {
+        var target = findCodeCell(codeCurrentGrid, "T");
+        var success = finishedAll && codeFoxState.x === target.x && codeFoxState.y === target.y;
+        if (success) {
+          onCodeLevelComplete("Bravo ! Tu as corrigé le bug ! 🐛✅", startCodeDebugLevel);
+        } else {
+          codeSetBuilderDisabled(false);
+          setGameFeedback(finishedAll ? "Pas encore ! Regarde encore les blocs." : "Oups, un mur ! Corrige et réessaie.", "wrong");
+          window.setTimeout(startCodeDebugLevel, 1200);
+        }
+      }, codeHighlightProgramSlot);
+    }
+
+    // ---------- "Si... alors..." ----------
+
+    function startCodeIfLevel() {
+      var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
+      var grid = [CODEIF_LEVELS[levelIdx].split("")];
+      codeCurrentGrid = grid;
+      codeFoxState = { x: 0, y: 0, dir: "E" };
+      codeIfCoinRule = null;
+      codeIfPuddleRule = null;
+      els.codeInstruction.textContent = "Choisis ce que le renard doit faire sur chaque case, puis lance-le !";
+      renderCodeBoard(grid, codeFoxState);
+      renderCodeIfBuilder();
+    }
+
+    function codeBuildIfRule(conditionIcon, selected, onPick) {
+      var card = document.createElement("div");
+      card.className = "code-if-rule";
+      var cond = document.createElement("span");
+      cond.className = "code-if-condition";
+      cond.textContent = "SI " + conditionIcon;
+      card.appendChild(cond);
+      var arrow = document.createElement("span");
+      arrow.className = "code-if-arrow";
+      arrow.textContent = "→";
+      card.appendChild(arrow);
+      CODE_IF_ACTIONS.forEach(function (action) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "code-if-choice" + (selected === action ? " is-selected" : "");
+        btn.textContent = CODE_IF_ACTION_ICON[action];
+        btn.setAttribute("aria-label", CODE_IF_ACTION_LABEL[action]);
+        btn.addEventListener("click", function () { onPick(action); });
+        card.appendChild(btn);
+      });
+      return card;
+    }
+
+    function renderCodeIfBuilder() {
+      els.codeBuilder.innerHTML = "";
+      var rules = document.createElement("div");
+      rules.className = "code-if-rules";
+      rules.appendChild(codeBuildIfRule("🪙", codeIfCoinRule, function (action) { codeIfCoinRule = action; renderCodeIfBuilder(); }));
+      rules.appendChild(codeBuildIfRule("💧", codeIfPuddleRule, function (action) { codeIfPuddleRule = action; renderCodeIfBuilder(); }));
+      els.codeBuilder.appendChild(rules);
+      els.codeBuilder.appendChild(codeBuildActions({
+        onRun: codeLaunchIf,
+        onClear: function () { codeIfCoinRule = null; codeIfPuddleRule = null; renderCodeIfBuilder(); },
+        runDisabled: !codeIfCoinRule || !codeIfPuddleRule
+      }));
+    }
+
+    // Contrairement aux autres jeux, pas de programme bloc par bloc ici :
+    // le renard avance tout seul le long du chemin, et les 2 règles
+    // choisies s'appliquent à chaque case qu'il rencontre.
+    function codeLaunchIf() {
+      if (codeRunning || !codeIfCoinRule || !codeIfPuddleRule) return;
+      codeSetBuilderDisabled(true);
+      codeRunning = true;
+      var row = codeCurrentGrid[0];
+      var i = 1;
+      function step() {
+        if (i >= row.length) {
+          codeRunning = false;
+          codeSetBuilderDisabled(false);
+          onCodeLevelComplete("Bravo ! Les bonnes règles au bon moment ! 🎉", startCodeIfLevel);
+          return;
+        }
+        var ch = row[i];
+        if (ch === "~" && codeIfPuddleRule !== "saute") {
+          codeFoxEl.classList.remove("bump");
+          void codeFoxEl.offsetWidth;
+          codeFoxEl.classList.add("bump");
+          codeRunning = false;
+          codeSetBuilderDisabled(false);
+          setGameFeedback("Oups, dans la flaque ! Réessaie.", "wrong");
+          window.setTimeout(startCodeIfLevel, 1200);
+          return;
+        }
+        if (ch === "o" && codeIfCoinRule !== "ramasse") {
+          codeRunning = false;
+          codeSetBuilderDisabled(false);
+          setGameFeedback("Il manque des pièces ! Réessaie.", "wrong");
+          window.setTimeout(startCodeIfLevel, 1200);
+          return;
+        }
+        codeFoxState = { x: i, y: 0, dir: "E" };
+        placeCodeFox(i, 0, "E", true);
+        i++;
+        window.setTimeout(step, CODE_STEP_MS);
+      }
+      step();
+    }
+
+    // ---------- "Construis le robot" (bac à sable, pas de niveaux) ----------
+
+    function startCodeSandbox() {
+      var grid = CODESANDBOX_GRID.map(function (r) { return r.split(""); });
+      codeCurrentGrid = grid;
+      codeFoxState = { x: 1, y: 1, dir: "E" };
+      codeCurrentProgram = [];
+      els.codeInstruction.textContent = "Assemble des blocs et regarde le renard bouger !";
+      renderCodeBoard(grid, codeFoxState);
+      renderCodeSandboxBuilder();
+    }
+
+    function renderCodeSandboxBuilder() {
+      els.codeBuilder.innerHTML = "";
+      els.codeBuilder.appendChild(codeBuildPalette(["F", "L", "R"], function (blk) {
+        if (codeCurrentProgram.length >= CODE_SANDBOX_MAX_BLOCKS) return;
+        codeCurrentProgram.push(blk);
+        renderCodeSandboxBuilder();
+      }));
+      els.codeBuilder.appendChild(codeBuildProgramRow(codeCurrentProgram, function (idx) {
+        codeCurrentProgram.splice(idx, 1);
+        renderCodeSandboxBuilder();
+      }));
+      els.codeBuilder.appendChild(codeBuildActions({
+        onRun: function () {
+          if (codeRunning || codeCurrentProgram.length === 0) return;
+          codeSetBuilderDisabled(true);
+          codeRunProgram(codeCurrentProgram.slice(), function () {
+            codeSetBuilderDisabled(false);
+            codeFoxState = { x: 1, y: 1, dir: "E" };
+            placeCodeFox(1, 1, "E", true);
+          }, codeHighlightProgramSlot);
+        },
+        onClear: function () { codeCurrentProgram = []; renderCodeSandboxBuilder(); },
+        runDisabled: codeCurrentProgram.length === 0
+      }));
+    }
+
     var CONFETTI_COLORS = ["var(--green-add)", "var(--orange-sub)", "var(--candy-blue)", "var(--candy-pink)", "var(--gold)"];
 
     function spawnConfetti(container, count) {
@@ -10575,6 +11508,7 @@
       if (mode === "mot" || mode === "composesimple" || mode === "composelibre" || mode === "lettreman" || mode === "trace" || mode === "syllordre" || mode === "article") return "ecriture";
       if (mode === "traceforme" || mode === "shapes" || mode === "fillforme" || mode === "intrus" || mode === "puzzle" || mode === "sudokuforme") return "formes";
       if (mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino" || mode === "solitaire" || mode === "contraire") return "jeux";
+      if (mode === "codeseq" || mode === "codeloop" || mode === "codedebug" || mode === "codeif" || mode === "codesandbox") return "code";
       return null;
     }
 
@@ -10592,6 +11526,7 @@
       els.menuEcriture.hidden = screen !== "ecriture";
       els.menuFormes.hidden = screen !== "formes";
       els.menuJeux.hidden = screen !== "jeux";
+      els.menuCode.hidden = screen !== "code";
       if (screen === "lire") fitCasseCardLabel();
     }
 
@@ -10609,7 +11544,8 @@
       memoire: "home",
       ecriture: "home",
       formes: "home",
-      jeux: "home"
+      jeux: "home",
+      code: "home"
     };
 
     function currentMenuScreen() {
@@ -10625,6 +11561,7 @@
       if (!els.menuEcriture.hidden) return "ecriture";
       if (!els.menuFormes.hidden) return "formes";
       if (!els.menuJeux.hidden) return "jeux";
+      if (!els.menuCode.hidden) return "code";
       return "home";
     }
 
@@ -10668,8 +11605,9 @@
       var bataillenavale = mode === "bataillenavale";
       var domino = mode === "domino";
       var solitaire = mode === "solitaire";
-      els.problemZone.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire;
-      els.answers.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire;
+      var code = mode === "codeseq" || mode === "codeloop" || mode === "codedebug" || mode === "codeif" || mode === "codesandbox";
+      els.problemZone.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || code;
+      els.answers.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || code;
       els.paintScreen.hidden = !paint;
       els.musicScreen.hidden = !music;
       els.rhythmScreen.hidden = !rhythm;
@@ -10686,7 +11624,8 @@
       els.bnScreen.hidden = !bataillenavale;
       els.dominoScreen.hidden = !domino;
       els.solScreen.hidden = !solitaire;
-      var noStars = mode === "dessine" || music || isBoardGameMode(mode);
+      els.codeScreen.hidden = !code;
+      var noStars = mode === "dessine" || music || isBoardGameMode(mode) || mode === "codesandbox";
       els.levelPill.hidden = noStars;
       // Pas de .topbar blanche visible sur ces écrans (juste la bulle
       // flottante) : la couleur de la barre de statut du PWA doit alors
@@ -10779,6 +11718,11 @@
         startSudokuProblem();
         return;
       }
+      if (code) {
+        state.problem = null;
+        startCodeProblem();
+        return;
+      }
 
       var savedProblem = saved && saved.problem && Array.isArray(saved.problem.choices) ? saved.problem : null;
       if (savedProblem) {
@@ -10826,6 +11770,11 @@
     els.syllablesCard.addEventListener("click", function () { selectMode("syllables"); });
     els.rhymesCard.addEventListener("click", function () { selectMode("rhymes"); });
     els.contraireCard.addEventListener("click", function () { selectMode("contraire"); });
+    els.codeseqCard.addEventListener("click", function () { selectMode("codeseq"); });
+    els.codeloopCard.addEventListener("click", function () { selectMode("codeloop"); });
+    els.codedebugCard.addEventListener("click", function () { selectMode("codedebug"); });
+    els.codeifCard.addEventListener("click", function () { selectMode("codeif"); });
+    els.codesandboxCard.addEventListener("click", function () { selectMode("codesandbox"); });
     els.soundCard.addEventListener("click", function () { selectMode("sound"); });
     els.wordgridCard.addEventListener("click", function () { selectMode("wordgrid"); });
     els.casseCard.addEventListener("click", function () { selectMode("casse"); });
@@ -10903,6 +11852,7 @@
     els.ecritureBackBtn.addEventListener("click", function () { showMenuScreen("home"); });
     els.formesBackBtn.addEventListener("click", function () { showMenuScreen("home"); });
     els.jeuxBackBtn.addEventListener("click", function () { showMenuScreen("home"); });
+    els.codeBackBtn.addEventListener("click", function () { showMenuScreen("home"); });
 
     els.levelNum.addEventListener("click", function () {
       if (!state.mode) return;
