@@ -1754,6 +1754,8 @@
     transition: transform 0.1s ease;
   }
 
+  .code-block-btn svg { width: 60%; height: 60%; display: block; }
+
   .code-block-btn:active { transform: translateY(2px); }
   .code-block-btn:disabled { opacity: 0.45; cursor: default; }
 
@@ -1791,6 +1793,8 @@
     font-size: clamp(1rem, 4.2vw, 1.3rem);
     box-shadow: 0 4px 10px -6px rgba(31, 42, 60, 0.5);
   }
+
+  .code-program-slot svg { width: 60%; height: 60%; display: block; }
 
   .code-program-slot.selectable { cursor: default; }
   .code-program-slot.is-selected { box-shadow: inset 0 0 0 3px #ffb648; }
@@ -10098,7 +10102,15 @@
     var CODE_LEFT_OF = { N: "O", O: "S", S: "E", E: "N" };
     var CODE_RIGHT_OF = { N: "E", E: "S", S: "O", O: "N" };
     var CODE_STEP_MS = 450;
-    var CODE_BLOCK_ICON = { F: "⬆️", L: "↰", R: "↱" };
+    // Flèches maison (SVG), pas d'emoji : "avance" pointe vers la droite
+    // -- le renard démarre toujours face à l'est dans tous les niveaux --
+    // et les virages reprennent cette même flèche coudée vers le haut ou
+    // le bas plutôt qu'une flèche abstraite qui partirait vers le haut.
+    var CODE_BLOCK_SVG = {
+      F: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12 H18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M12 6 L18 12 L12 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      L: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16 H14 V6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 11 L14 5 L19 11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      R: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8 H14 V18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 13 L14 19 L19 13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    };
     var CODE_BLOCK_LABEL = { F: "avance", L: "tourne à gauche", R: "tourne à droite" };
 
     // "Guide le renard" : de plus en plus de cases/virages, un mur en
@@ -10285,7 +10297,7 @@
         var btn = document.createElement("button");
         btn.type = "button";
         btn.className = "code-block-btn";
-        btn.textContent = CODE_BLOCK_ICON[blk];
+        btn.innerHTML = CODE_BLOCK_SVG[blk];
         btn.setAttribute("aria-label", CODE_BLOCK_LABEL[blk]);
         btn.disabled = !!disableAll;
         btn.addEventListener("click", function () { onTap(blk); });
@@ -10309,7 +10321,7 @@
         var slot = document.createElement("button");
         slot.type = "button";
         slot.className = "code-program-slot";
-        slot.textContent = CODE_BLOCK_ICON[blk];
+        slot.innerHTML = CODE_BLOCK_SVG[blk];
         slot.setAttribute("data-slot-index", String(idx));
         slot.setAttribute("aria-label", "Retirer " + CODE_BLOCK_LABEL[blk]);
         slot.addEventListener("click", function () { onRemove(idx); });
@@ -10327,7 +10339,7 @@
         var slot = document.createElement("button");
         slot.type = "button";
         slot.className = "code-program-slot selectable" + (idx === selectedIndex ? " is-selected" : "");
-        slot.textContent = CODE_BLOCK_ICON[blk];
+        slot.innerHTML = CODE_BLOCK_SVG[blk];
         slot.setAttribute("data-slot-index", String(idx));
         slot.setAttribute("aria-label", "Case " + (idx + 1));
         slot.addEventListener("click", function () { onSelect(idx); });
