@@ -10113,42 +10113,238 @@
     };
     var CODE_BLOCK_LABEL = { F: "avance", L: "tourne à gauche", R: "tourne à droite" };
 
-    // "Guide le renard" : de plus en plus de cases/virages, un mur en
-    // plus aux 2 derniers niveaux.
-    var CODESEQ_LEVELS = [
-      { rows: ["..T"], start: { x: 0, y: 0, dir: "E" } },
-      { rows: ["....T"], start: { x: 0, y: 0, dir: "E" } },
-      { rows: ["...", "...", "..T"], start: { x: 0, y: 0, dir: "E" } },
-      { rows: [".#..", "....", "....", "...T"], start: { x: 0, y: 0, dir: "E" } },
-      { rows: [".#..", "....", "..#.", "...T"], start: { x: 0, y: 0, dir: "E" } }
+    // "Guide le renard"/"Répète avec moi"/"Trouve le bug" : un nouveau
+    // labyrinthe généré à chaque tentative (jamais deux fois le même),
+    // toujours vérifié solvable avant d'être proposé -- voir
+    // codeGenerateMaze/codeGenerateLoopLevel/codeGenerateDebugLevel.
+    var CODE_MAZE_DIFFICULTY = [
+      { width: 4, height: 1, walls: 0 },
+      { width: 6, height: 1, walls: 0 },
+      { width: 4, height: 4, walls: 0 },
+      { width: 4, height: 4, walls: 1 },
+      { width: 5, height: 5, walls: 2 }
     ];
-
-    // "Répète avec moi" : la carotte est toujours placée là où un motif
-    // court (1 à 3 blocs) répété quelques fois amène le renard.
-    var CODELOOP_LEVELS = [
-      { rows: ["..T..."], start: { x: 0, y: 0, dir: "E" } },
-      { rows: ["....T..."], start: { x: 0, y: 0, dir: "E" } },
-      { rows: ["....", "....", "..T.", "...."], start: { x: 0, y: 0, dir: "E" } },
-      { rows: ["....", "....", "T...", "...."], start: { x: 0, y: 0, dir: "E" } },
-      { rows: [".....", ".....", ".....", ".....", "T...."], start: { x: 0, y: 0, dir: "E" } }
-    ];
-
-    // "Trouve le bug" : un programme déjà écrit, un seul bloc n'est pas
-    // le bon (vérifié hors-ligne : échange exactement ce bloc contre un
-    // autre de la palette pour corriger).
-    var CODEDEBUG_LEVELS = [
-      { rows: ["...T"], start: { x: 0, y: 0, dir: "E" }, program: ["F", "F", "R"] },
-      { rows: [".....T"], start: { x: 0, y: 0, dir: "E" }, program: ["F", "F", "F", "F", "L"] },
-      { rows: ["....", "....", "....", "...T"], start: { x: 0, y: 0, dir: "E" }, program: ["F", "F", "F", "L", "F", "F", "F"] },
-      { rows: ["....", "....", "...."], start: { x: 0, y: 2, dir: "E" }, program: ["F", "F", "R", "F", "F"] },
-      { rows: [".....", ".....", ".....", ".....", "....T"], start: { x: 0, y: 0, dir: "E" }, program: ["F", "F", "F", "F", "L", "F", "F", "F", "F"] }
+    var CODE_LOOP_DIFFICULTY = [
+      { width: 6, height: 1 },
+      { width: 8, height: 1 },
+      { width: 4, height: 4 },
+      { width: 4, height: 4 },
+      { width: 5, height: 5 }
     ];
     var CODEDEBUG_PALETTE = ["F", "L", "R"];
 
+    function codeEmptyGrid(width, height) {
+      var grid = [];
+      for (var y = 0; y < height; y++) {
+        var row = [];
+        for (var x = 0; x < width; x++) row.push(".");
+        grid.push(row);
+      }
+      return grid;
+    }
+
+    // Accessibilité (sans tenir compte de l'orientation, qui ne coûte
+    // jamais de case -- tourner sur place est toujours possible).
+    function codeBfsReachable(grid, start, target) {
+      var dims = codeGridDims(grid);
+      var seen = {};
+      var key = function (x, y) { return x + "," + y; };
+      var queue = [{ x: start.x, y: start.y }];
+      seen[key(start.x, start.y)] = true;
+      while (queue.length) {
+        var cur = queue.shift();
+        if (cur.x === target.x && cur.y === target.y) return true;
+        [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
+          var nx = cur.x + d[0];
+          var ny = cur.y + d[1];
+          if (nx < 0 || nx >= dims.width || ny < 0 || ny >= dims.height) return;
+          if (grid[ny][nx] === "#") return;
+          var k = key(nx, ny);
+          if (!seen[k]) {
+            seen[k] = true;
+            queue.push({ x: nx, y: ny });
+          }
+        });
+      }
+      return false;
+    }
+
+    // Plus court programme (F/L/R) menant de "start" à "target", par
+    // parcours en largeur sur les états (x, y, direction).
+    function codeBfsProgram(grid, start, target) {
+      var key = function (p) { return p.x + "," + p.y + "," + p.dir; };
+      var visited = {};
+      var parentMove = {};
+      var startKey = key(start);
+      visited[startKey] = true;
+      var queue = [{ x: start.x, y: start.y, dir: start.dir }];
+      while (queue.length) {
+        var cur = queue.shift();
+        if (cur.x === target.x && cur.y === target.y) {
+          var moves = [];
+          var k = key(cur);
+          while (parentMove[k]) {
+            moves.unshift(parentMove[k].move);
+            k = parentMove[k].fromKey;
+          }
+          return moves;
+        }
+        ["F", "L", "R"].forEach(function (mv) {
+          var next = codeApplyStep(cur, mv);
+          if (mv === "F" && codeCellBlocked(grid, next.x, next.y)) return;
+          var nk = key(next);
+          if (visited[nk] === undefined) {
+            visited[nk] = true;
+            parentMove[nk] = { move: mv, fromKey: key(cur) };
+            queue.push(next);
+          }
+        });
+      }
+      return null;
+    }
+
+    // Simulation muette (sans animation), utilisée uniquement pour
+    // vérifier un programme au moment de générer un niveau.
+    function codeSimulate(grid, start, steps) {
+      var pos = { x: start.x, y: start.y, dir: start.dir };
+      for (var i = 0; i < steps.length; i++) {
+        var next = codeApplyStep(pos, steps[i]);
+        if (steps[i] === "F" && codeCellBlocked(grid, next.x, next.y)) return { ok: false, pos: pos };
+        pos = next;
+      }
+      return { ok: true, pos: pos };
+    }
+
+    function codeGenerateMaze(levelIdx) {
+      var diff = CODE_MAZE_DIFFICULTY[levelIdx];
+      var start = { x: 0, y: 0, dir: "E" };
+      for (var attempt = 0; attempt < 60; attempt++) {
+        var grid = codeEmptyGrid(diff.width, diff.height);
+        var wallsPlaced = 0;
+        var tries = 0;
+        while (wallsPlaced < diff.walls && tries < 40) {
+          tries++;
+          var wx = randInt(0, diff.width - 1);
+          var wy = randInt(0, diff.height - 1);
+          if (wx === 0 && wy === 0) continue;
+          if (grid[wy][wx] === "#") continue;
+          grid[wy][wx] = "#";
+          wallsPlaced++;
+        }
+        var candidates = [];
+        for (var ty = 0; ty < diff.height; ty++) {
+          for (var tx = 0; tx < diff.width; tx++) {
+            if (tx === 0 && ty === 0) continue;
+            if (grid[ty][tx] === "#") continue;
+            candidates.push({ x: tx, y: ty });
+          }
+        }
+        if (!candidates.length) continue;
+        var target = candidates[randInt(0, candidates.length - 1)];
+        if (!codeBfsReachable(grid, start, target)) continue;
+        grid[target.y][target.x] = "T";
+        return { grid: grid, start: start };
+      }
+      var fallback = codeEmptyGrid(diff.width, diff.height);
+      fallback[0][diff.width - 1] = "T";
+      return { grid: fallback, start: start };
+    }
+
+    // Simule un motif tiré au hasard, répété N fois, sur un plateau vide
+    // : là où le renard s'arrête devient la carotte -- garantit qu'un
+    // motif court x un nombre de répétitions suffit toujours à résoudre
+    // le niveau.
+    function codeGenerateLoopLevel(levelIdx) {
+      var diff = CODE_LOOP_DIFFICULTY[levelIdx];
+      var start = { x: 0, y: 0, dir: "E" };
+      var blocks = ["F", "L", "R"];
+      for (var attempt = 0; attempt < 60; attempt++) {
+        var patLen = randInt(1, 3);
+        var pattern = [];
+        var hasForward = false;
+        for (var i = 0; i < patLen; i++) {
+          var b = blocks[randInt(0, 2)];
+          if (b === "F") hasForward = true;
+          pattern.push(b);
+        }
+        if (!hasForward) continue;
+        var count = randInt(2, 5);
+        var steps = [];
+        for (var c = 0; c < count; c++) steps = steps.concat(pattern);
+        var grid = codeEmptyGrid(diff.width, diff.height);
+        var sim = codeSimulate(grid, start, steps);
+        if (!sim.ok) continue;
+        if (sim.pos.x === start.x && sim.pos.y === start.y) continue;
+        grid[sim.pos.y][sim.pos.x] = "T";
+        return { grid: grid, start: start };
+      }
+      var fallback = codeEmptyGrid(diff.width, diff.height);
+      fallback[0][Math.min(2, diff.width - 1)] = "T";
+      return { grid: fallback, start: start };
+    }
+
+    // Génère un labyrinthe solvable (comme codeGenerateMaze), retrouve
+    // son plus court programme par BFS, puis abîme un bloc au hasard --
+    // vérifié pour être bien devenu faux (sinon on retire un autre
+    // niveau).
+    function codeGenerateDebugLevel(levelIdx) {
+      var diff = CODE_MAZE_DIFFICULTY[levelIdx];
+      var start = { x: 0, y: 0, dir: "E" };
+      for (var attempt = 0; attempt < 60; attempt++) {
+        var grid = codeEmptyGrid(diff.width, diff.height);
+        var wallsPlaced = 0;
+        var tries = 0;
+        while (wallsPlaced < diff.walls && tries < 40) {
+          tries++;
+          var wx = randInt(0, diff.width - 1);
+          var wy = randInt(0, diff.height - 1);
+          if (wx === 0 && wy === 0) continue;
+          if (grid[wy][wx] === "#") continue;
+          grid[wy][wx] = "#";
+          wallsPlaced++;
+        }
+        var candidates = [];
+        for (var ty = 0; ty < diff.height; ty++) {
+          for (var tx = 0; tx < diff.width; tx++) {
+            if (tx === 0 && ty === 0) continue;
+            if (grid[ty][tx] === "#") continue;
+            candidates.push({ x: tx, y: ty });
+          }
+        }
+        if (!candidates.length) continue;
+        var target = candidates[randInt(0, candidates.length - 1)];
+        var correctProgram = codeBfsProgram(grid, start, target);
+        if (!correctProgram || correctProgram.length < 2) continue;
+        var bugIndex = randInt(0, correctProgram.length - 1);
+        var originalBlock = correctProgram[bugIndex];
+        var otherBlocks = CODEDEBUG_PALETTE.filter(function (b) { return b !== originalBlock; });
+        var buggyBlock = otherBlocks[randInt(0, otherBlocks.length - 1)];
+        var buggyProgram = correctProgram.slice();
+        buggyProgram[bugIndex] = buggyBlock;
+        var sim = codeSimulate(grid, start, buggyProgram);
+        if (sim.ok && sim.pos.x === target.x && sim.pos.y === target.y) continue;
+        grid[target.y][target.x] = "T";
+        return { grid: grid, start: start, program: buggyProgram };
+      }
+      var fallback = codeEmptyGrid(4, 1);
+      fallback[0][3] = "T";
+      return { grid: fallback, start: start, program: ["F", "F", "R"] };
+    }
+
     // "Si... alors..." : chemin en ligne droite (rangée unique), "o"
-    // pièce à ramasser, "~" flaque à sauter -- les 2 règles choisies
-    // s'appliquent à CHAQUE case de ce type sur tout le chemin.
-    var CODEIF_LEVELS = [".o.T", ".~.T", ".o~T", ".o~oT", ".o~o~T"];
+    // pièce à ramasser, "~" flaque à sauter (tirés au hasard à chaque
+    // tentative) -- les 2 règles choisies s'appliquent à CHAQUE case de
+    // ce type sur tout le chemin.
+    var CODE_IF_EVENT_COUNT = [1, 1, 2, 3, 4];
+
+    function codeGenerateIfRow(levelIdx) {
+      var count = CODE_IF_EVENT_COUNT[levelIdx];
+      var row = ["."];
+      for (var i = 0; i < count; i++) row.push(Math.random() < 0.5 ? "o" : "~");
+      row.push("T");
+      return row.join("");
+    }
+
     var CODE_IF_ACTIONS = ["ramasse", "saute", "avance"];
     var CODE_IF_ACTION_ICON = { ramasse: "✋", saute: "🦘", avance: "➡️" };
     var CODE_IF_ACTION_LABEL = { ramasse: "ramasser", saute: "sauter", avance: "avancer" };
@@ -10168,6 +10364,7 @@
     var codeLoopCount = 2;
     var codeDebugProgram = [];
     var codeDebugSelected = -1;
+    var codeDebugOriginalProgram = [];
     var codeIfCoinRule = null;
     var codeIfPuddleRule = null;
 
@@ -10409,13 +10606,12 @@
 
     function startCodeSeqLevel() {
       var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
-      var def = CODESEQ_LEVELS[levelIdx];
-      var grid = def.rows.map(function (r) { return r.split(""); });
-      codeCurrentGrid = grid;
+      var def = codeGenerateMaze(levelIdx);
+      codeCurrentGrid = def.grid;
       codeFoxState = { x: def.start.x, y: def.start.y, dir: def.start.dir };
       codeCurrentProgram = [];
       els.codeInstruction.textContent = "Guide le renard jusqu'à la carotte !";
-      renderCodeBoard(grid, codeFoxState);
+      renderCodeBoard(codeCurrentGrid, codeFoxState);
       renderCodeSeqBuilder();
     }
 
@@ -10456,14 +10652,13 @@
 
     function startCodeLoopLevel() {
       var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
-      var def = CODELOOP_LEVELS[levelIdx];
-      var grid = def.rows.map(function (r) { return r.split(""); });
-      codeCurrentGrid = grid;
+      var def = codeGenerateLoopLevel(levelIdx);
+      codeCurrentGrid = def.grid;
       codeFoxState = { x: def.start.x, y: def.start.y, dir: def.start.dir };
       codeLoopPattern = [];
       codeLoopCount = 2;
       els.codeInstruction.textContent = "Construis un petit motif et répète-le pour atteindre la carotte !";
-      renderCodeBoard(grid, codeFoxState);
+      renderCodeBoard(codeCurrentGrid, codeFoxState);
       renderCodeLoopBuilder();
     }
 
@@ -10526,14 +10721,14 @@
 
     function startCodeDebugLevel() {
       var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
-      var def = CODEDEBUG_LEVELS[levelIdx];
-      var grid = def.rows.map(function (r) { return r.split(""); });
-      codeCurrentGrid = grid;
+      var def = codeGenerateDebugLevel(levelIdx);
+      codeCurrentGrid = def.grid;
       codeFoxState = { x: def.start.x, y: def.start.y, dir: def.start.dir };
+      codeDebugOriginalProgram = def.program.slice();
       codeDebugProgram = def.program.slice();
       codeDebugSelected = -1;
       els.codeInstruction.textContent = "Ce programme a un bug ! Touche le bloc fautif puis choisis le bon.";
-      renderCodeBoard(grid, codeFoxState);
+      renderCodeBoard(codeCurrentGrid, codeFoxState);
       renderCodeDebugBuilder();
     }
 
@@ -10552,8 +10747,7 @@
       els.codeBuilder.appendChild(codeBuildActions({
         onRun: codeLaunchDebug,
         onClear: function () {
-          var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
-          codeDebugProgram = CODEDEBUG_LEVELS[levelIdx].program.slice();
+          codeDebugProgram = codeDebugOriginalProgram.slice();
           codeDebugSelected = -1;
           renderCodeDebugBuilder();
         },
@@ -10581,13 +10775,13 @@
 
     function startCodeIfLevel() {
       var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
-      var grid = [CODEIF_LEVELS[levelIdx].split("")];
+      var grid = [codeGenerateIfRow(levelIdx).split("")];
       codeCurrentGrid = grid;
       codeFoxState = { x: 0, y: 0, dir: "E" };
       codeIfCoinRule = null;
       codeIfPuddleRule = null;
       els.codeInstruction.textContent = "Choisis ce que le renard doit faire sur chaque case, puis lance-le !";
-      renderCodeBoard(grid, codeFoxState);
+      renderCodeBoard(codeCurrentGrid, codeFoxState);
       renderCodeIfBuilder();
     }
 
@@ -11883,14 +12077,14 @@
       state.locked = false;
       renderLevel();
       saveProgress();
-      if (isPaintMode(state.mode)) { startPaintProblem(); } else if (state.mode === "rythme") { startRhythmProblem(); } else if (isMemoryMode(state.mode)) { startMemoryProblem(); } else if (state.mode === "suitelum") { startSuitelumProblem(); } else if (state.mode === "ordre") { startOrdreProblem(); } else if (isSpellMode(state.mode)) { startSpellProblem(); } else if (isTraceMode(state.mode)) { startTraceProblem(); } else if (state.mode === "fillforme") { startFillFormeProblem(); } else { nextProblem(); }
+      if (isPaintMode(state.mode)) { startPaintProblem(); } else if (state.mode === "rythme") { startRhythmProblem(); } else if (isMemoryMode(state.mode)) { startMemoryProblem(); } else if (state.mode === "suitelum") { startSuitelumProblem(); } else if (state.mode === "ordre") { startOrdreProblem(); } else if (isSpellMode(state.mode)) { startSpellProblem(); } else if (isTraceMode(state.mode)) { startTraceProblem(); } else if (state.mode === "fillforme") { startFillFormeProblem(); } else if (state.mode === "sudokuforme" || state.mode === "sudokuchiffre") { startSudokuProblem(); } else if (state.mode === "codeseq" || state.mode === "codeloop" || state.mode === "codedebug" || state.mode === "codeif" || state.mode === "codesandbox") { startCodeProblem(); } else { nextProblem(); }
     });
 
     els.levelUpContinueBtn.addEventListener("click", function () {
       els.levelUpOverlay.hidden = true;
       setThemeColor(THEME_COLOR_BAR);
       renderLevel();
-      if (isPaintMode(state.mode)) { startPaintProblem(); } else if (state.mode === "rythme") { startRhythmProblem(); } else if (isMemoryMode(state.mode)) { startMemoryProblem(); } else if (state.mode === "suitelum") { startSuitelumProblem(); } else if (state.mode === "ordre") { startOrdreProblem(); } else if (isSpellMode(state.mode)) { startSpellProblem(); } else if (isTraceMode(state.mode)) { startTraceProblem(); } else if (state.mode === "fillforme") { startFillFormeProblem(); } else { nextProblem(); }
+      if (isPaintMode(state.mode)) { startPaintProblem(); } else if (state.mode === "rythme") { startRhythmProblem(); } else if (isMemoryMode(state.mode)) { startMemoryProblem(); } else if (state.mode === "suitelum") { startSuitelumProblem(); } else if (state.mode === "ordre") { startOrdreProblem(); } else if (isSpellMode(state.mode)) { startSpellProblem(); } else if (isTraceMode(state.mode)) { startTraceProblem(); } else if (state.mode === "fillforme") { startFillFormeProblem(); } else if (state.mode === "sudokuforme" || state.mode === "sudokuchiffre") { startSudokuProblem(); } else if (state.mode === "codeseq" || state.mode === "codeloop" || state.mode === "codedebug" || state.mode === "codeif" || state.mode === "codesandbox") { startCodeProblem(); } else { nextProblem(); }
     });
 
     els.winReplayBtn.addEventListener("click", function () {
@@ -11901,7 +12095,7 @@
       state.wrongStreak = 0;
       renderLevel();
       saveProgress();
-      if (isPaintMode(state.mode)) { startPaintProblem(); } else if (state.mode === "rythme") { startRhythmProblem(); } else if (isMemoryMode(state.mode)) { startMemoryProblem(); } else if (state.mode === "suitelum") { startSuitelumProblem(); } else if (state.mode === "ordre") { startOrdreProblem(); } else if (isSpellMode(state.mode)) { startSpellProblem(); } else if (isTraceMode(state.mode)) { startTraceProblem(); } else if (state.mode === "fillforme") { startFillFormeProblem(); } else { nextProblem(); }
+      if (isPaintMode(state.mode)) { startPaintProblem(); } else if (state.mode === "rythme") { startRhythmProblem(); } else if (isMemoryMode(state.mode)) { startMemoryProblem(); } else if (state.mode === "suitelum") { startSuitelumProblem(); } else if (state.mode === "ordre") { startOrdreProblem(); } else if (isSpellMode(state.mode)) { startSpellProblem(); } else if (isTraceMode(state.mode)) { startTraceProblem(); } else if (state.mode === "fillforme") { startFillFormeProblem(); } else if (state.mode === "sudokuforme" || state.mode === "sudokuchiffre") { startSudokuProblem(); } else if (state.mode === "codeseq" || state.mode === "codeloop" || state.mode === "codedebug" || state.mode === "codeif" || state.mode === "codesandbox") { startCodeProblem(); } else { nextProblem(); }
     });
 
     els.winMenuBtn.addEventListener("click", function () {
