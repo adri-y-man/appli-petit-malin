@@ -1706,16 +1706,6 @@
 
   .code-fox svg { display: block; width: 78%; height: 78%; }
 
-  .code-fox-arrow {
-    position: absolute;
-    top: -0.6rem;
-    left: 50%;
-    font-size: clamp(0.9rem, 4vw, 1.2rem);
-    transform-origin: 50% 150%;
-    transform: translateX(-50%) rotate(var(--code-dir-deg, 0deg));
-    transition: transform 0.3s ease;
-  }
-
   .code-fox.bump { animation: shake 0.4s ease; }
 
   .code-builder {
@@ -10091,27 +10081,28 @@
     // ============================================================
     // "Codeur Malin" : 5 mini-jeux d'initiation au code, tous bâtis sur
     // le même moteur -- une grille et un renard qui exécute une suite
-    // d'instructions (avance / tourne à gauche / tourne à droite).
+    // d'instructions, chacune une direction absolue (haut/bas/gauche/
+    // droite), pour ne jamais avoir à deviner "de quel côté" le renard
+    // regarde.
     // Chaque niveau est décrit en texte (une chaîne = une rangée) : "."
     // case libre, "#" mur, "T" carotte (objectif), "~" flaque, "o" pièce
     // (ces 2 derniers seulement pour "Si... alors...").
     // ============================================================
 
+    // Chaque bloc EST une direction absolue (haut/bas/gauche/droite) --
+    // pas de renard qui "regarde" quelque part ni de virage relatif, pour
+    // éviter toute confusion sur le sens d'une flèche.
     var CODE_DIR_DELTA = { N: { dx: 0, dy: -1 }, E: { dx: 1, dy: 0 }, S: { dx: 0, dy: 1 }, O: { dx: -1, dy: 0 } };
-    var CODE_DIR_ANGLE = { N: 0, E: 90, S: 180, O: 270 };
-    var CODE_LEFT_OF = { N: "O", O: "S", S: "E", E: "N" };
-    var CODE_RIGHT_OF = { N: "E", E: "S", S: "O", O: "N" };
     var CODE_STEP_MS = 450;
-    // Flèches maison (SVG), pas d'emoji : "avance" pointe vers la droite
-    // -- le renard démarre toujours face à l'est dans tous les niveaux --
-    // et les virages reprennent cette même flèche coudée vers le haut ou
-    // le bas plutôt qu'une flèche abstraite qui partirait vers le haut.
+    var CODE_BLOCK_ORDER = ["E", "O", "N", "S"];
+    // Flèches maison (SVG), pas d'emoji.
     var CODE_BLOCK_SVG = {
-      F: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12 H18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M12 6 L18 12 L12 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-      L: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16 H14 V6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 11 L14 5 L19 11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-      R: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8 H14 V18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 13 L14 19 L19 13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      E: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 H20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M14 6 L20 12 L14 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      O: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12 H4" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M10 6 L4 12 L10 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      N: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20 V4" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M6 10 L12 4 L18 10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      S: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 V20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M6 14 L12 20 L18 14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>'
     };
-    var CODE_BLOCK_LABEL = { F: "avance", L: "tourne à gauche", R: "tourne à droite" };
+    var CODE_BLOCK_LABEL = { E: "droite", O: "gauche", N: "haut", S: "bas" };
 
     // "Guide le renard"/"Répète avec moi"/"Trouve le bug" : un nouveau
     // labyrinthe généré à chaque tentative (jamais deux fois le même),
@@ -10131,8 +10122,6 @@
       { width: 4, height: 4 },
       { width: 5, height: 5 }
     ];
-    var CODEDEBUG_PALETTE = ["F", "L", "R"];
-
     function codeEmptyGrid(width, height) {
       var grid = [];
       for (var y = 0; y < height; y++) {
@@ -10169,15 +10158,14 @@
       return false;
     }
 
-    // Plus court programme (F/L/R) menant de "start" à "target", par
-    // parcours en largeur sur les états (x, y, direction).
+    // Plus court programme (haut/bas/gauche/droite) menant de "start" à
+    // "target", par parcours en largeur sur les cases (x, y).
     function codeBfsProgram(grid, start, target) {
-      var key = function (p) { return p.x + "," + p.y + "," + p.dir; };
+      var key = function (p) { return p.x + "," + p.y; };
       var visited = {};
       var parentMove = {};
-      var startKey = key(start);
-      visited[startKey] = true;
-      var queue = [{ x: start.x, y: start.y, dir: start.dir }];
+      visited[key(start)] = true;
+      var queue = [{ x: start.x, y: start.y }];
       while (queue.length) {
         var cur = queue.shift();
         if (cur.x === target.x && cur.y === target.y) {
@@ -10189,9 +10177,9 @@
           }
           return moves;
         }
-        ["F", "L", "R"].forEach(function (mv) {
+        CODE_BLOCK_ORDER.forEach(function (mv) {
           var next = codeApplyStep(cur, mv);
-          if (mv === "F" && codeCellBlocked(grid, next.x, next.y)) return;
+          if (codeCellBlocked(grid, next.x, next.y)) return;
           var nk = key(next);
           if (visited[nk] === undefined) {
             visited[nk] = true;
@@ -10206,10 +10194,10 @@
     // Simulation muette (sans animation), utilisée uniquement pour
     // vérifier un programme au moment de générer un niveau.
     function codeSimulate(grid, start, steps) {
-      var pos = { x: start.x, y: start.y, dir: start.dir };
+      var pos = { x: start.x, y: start.y };
       for (var i = 0; i < steps.length; i++) {
         var next = codeApplyStep(pos, steps[i]);
-        if (steps[i] === "F" && codeCellBlocked(grid, next.x, next.y)) return { ok: false, pos: pos };
+        if (codeCellBlocked(grid, next.x, next.y)) return { ok: false, pos: pos };
         pos = next;
       }
       return { ok: true, pos: pos };
@@ -10217,7 +10205,7 @@
 
     function codeGenerateMaze(levelIdx) {
       var diff = CODE_MAZE_DIFFICULTY[levelIdx];
-      var start = { x: 0, y: 0, dir: "E" };
+      var start = { x: 0, y: 0 };
       for (var attempt = 0; attempt < 60; attempt++) {
         var grid = codeEmptyGrid(diff.width, diff.height);
         var wallsPlaced = 0;
@@ -10256,18 +10244,13 @@
     // le niveau.
     function codeGenerateLoopLevel(levelIdx) {
       var diff = CODE_LOOP_DIFFICULTY[levelIdx];
-      var start = { x: 0, y: 0, dir: "E" };
-      var blocks = ["F", "L", "R"];
+      var start = { x: 0, y: 0 };
       for (var attempt = 0; attempt < 60; attempt++) {
         var patLen = randInt(1, 3);
         var pattern = [];
-        var hasForward = false;
         for (var i = 0; i < patLen; i++) {
-          var b = blocks[randInt(0, 2)];
-          if (b === "F") hasForward = true;
-          pattern.push(b);
+          pattern.push(CODE_BLOCK_ORDER[randInt(0, CODE_BLOCK_ORDER.length - 1)]);
         }
-        if (!hasForward) continue;
         var count = randInt(2, 5);
         var steps = [];
         for (var c = 0; c < count; c++) steps = steps.concat(pattern);
@@ -10289,7 +10272,7 @@
     // niveau).
     function codeGenerateDebugLevel(levelIdx) {
       var diff = CODE_MAZE_DIFFICULTY[levelIdx];
-      var start = { x: 0, y: 0, dir: "E" };
+      var start = { x: 0, y: 0 };
       for (var attempt = 0; attempt < 60; attempt++) {
         var grid = codeEmptyGrid(diff.width, diff.height);
         var wallsPlaced = 0;
@@ -10317,7 +10300,7 @@
         if (!correctProgram || correctProgram.length < 2) continue;
         var bugIndex = randInt(0, correctProgram.length - 1);
         var originalBlock = correctProgram[bugIndex];
-        var otherBlocks = CODEDEBUG_PALETTE.filter(function (b) { return b !== originalBlock; });
+        var otherBlocks = CODE_BLOCK_ORDER.filter(function (b) { return b !== originalBlock; });
         var buggyBlock = otherBlocks[randInt(0, otherBlocks.length - 1)];
         var buggyProgram = correctProgram.slice();
         buggyProgram[bugIndex] = buggyBlock;
@@ -10328,7 +10311,7 @@
       }
       var fallback = codeEmptyGrid(4, 1);
       fallback[0][3] = "T";
-      return { grid: fallback, start: start, program: ["F", "F", "R"] };
+      return { grid: fallback, start: start, program: ["E", "E", "N"] };
     }
 
     // "Si... alors..." : chemin en ligne droite (rangée unique), "o"
@@ -10354,7 +10337,7 @@
     var CODESANDBOX_GRID = ["....", "....", "....", "...."];
     var CODE_SANDBOX_MAX_BLOCKS = 12;
 
-    var codeFoxState = { x: 0, y: 0, dir: "E" };
+    var codeFoxState = { x: 0, y: 0 };
     var codeCurrentGrid = null;
     var codeCurrentDims = { width: 1, height: 1 };
     var codeFoxEl = null;
@@ -10382,10 +10365,8 @@
     }
 
     function codeApplyStep(pos, step) {
-      if (step === "L") return { x: pos.x, y: pos.y, dir: CODE_LEFT_OF[pos.dir] };
-      if (step === "R") return { x: pos.x, y: pos.y, dir: CODE_RIGHT_OF[pos.dir] };
-      var delta = CODE_DIR_DELTA[pos.dir];
-      return { x: pos.x + delta.dx, y: pos.y + delta.dy, dir: pos.dir };
+      var delta = CODE_DIR_DELTA[step];
+      return { x: pos.x + delta.dx, y: pos.y + delta.dy };
     }
 
     function codeCellBlocked(grid, x, y) {
@@ -10422,18 +10403,17 @@
       foxEl.className = "code-fox";
       foxEl.style.width = (100 / dims.width) + "%";
       foxEl.style.height = (100 / dims.height) + "%";
-      foxEl.innerHTML = '<svg viewBox="0 0 200 200" aria-hidden="true"><use href="#foxHeadSymbol"></use></svg><span class="code-fox-arrow">▲</span>';
+      foxEl.innerHTML = '<svg viewBox="0 0 200 200" aria-hidden="true"><use href="#foxHeadSymbol"></use></svg>';
       els.codeBoard.appendChild(foxEl);
       codeFoxEl = foxEl;
-      placeCodeFox(fox.x, fox.y, fox.dir, false);
+      placeCodeFox(fox.x, fox.y, false);
     }
 
-    function placeCodeFox(x, y, dir, animate) {
+    function placeCodeFox(x, y, animate) {
       if (!codeFoxEl) return;
       if (!animate) codeFoxEl.style.transition = "none";
       codeFoxEl.style.left = (x / codeCurrentDims.width * 100) + "%";
       codeFoxEl.style.top = (y / codeCurrentDims.height * 100) + "%";
-      codeFoxEl.style.setProperty("--code-dir-deg", CODE_DIR_ANGLE[dir] + "deg");
       if (!animate) {
         void codeFoxEl.offsetWidth;
         codeFoxEl.style.transition = "";
@@ -10455,7 +10435,7 @@
         if (onStepIndex) onStepIndex(i);
         var mv = steps[i];
         var next = codeApplyStep(codeFoxState, mv);
-        var blocked = mv === "F" && codeCellBlocked(codeCurrentGrid, next.x, next.y);
+        var blocked = codeCellBlocked(codeCurrentGrid, next.x, next.y);
         if (blocked) {
           codeFoxEl.classList.remove("bump");
           void codeFoxEl.offsetWidth;
@@ -10465,7 +10445,7 @@
           return;
         }
         codeFoxState = next;
-        placeCodeFox(next.x, next.y, next.dir, true);
+        placeCodeFox(next.x, next.y, true);
         i++;
         window.setTimeout(step, CODE_STEP_MS);
       }
@@ -10484,7 +10464,7 @@
       for (var i = 0; i < btns.length; i++) btns[i].disabled = disabled;
     }
 
-    // Palette de blocs tapotables (avance / tourne...), partagée par
+    // Palette de blocs tapotables (haut/bas/gauche/droite), partagée par
     // "Guide le renard", "Répète avec moi", "Trouve le bug" et "Construis
     // le robot".
     function codeBuildPalette(blocks, onTap, disableAll) {
@@ -10608,7 +10588,7 @@
       var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
       var def = codeGenerateMaze(levelIdx);
       codeCurrentGrid = def.grid;
-      codeFoxState = { x: def.start.x, y: def.start.y, dir: def.start.dir };
+      codeFoxState = { x: def.start.x, y: def.start.y };
       codeCurrentProgram = [];
       els.codeInstruction.textContent = "Guide le renard jusqu'à la carotte !";
       renderCodeBoard(codeCurrentGrid, codeFoxState);
@@ -10617,7 +10597,7 @@
 
     function renderCodeSeqBuilder() {
       els.codeBuilder.innerHTML = "";
-      els.codeBuilder.appendChild(codeBuildPalette(["F", "L", "R"], function (blk) {
+      els.codeBuilder.appendChild(codeBuildPalette(CODE_BLOCK_ORDER, function (blk) {
         codeCurrentProgram.push(blk);
         renderCodeSeqBuilder();
       }));
@@ -10654,7 +10634,7 @@
       var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
       var def = codeGenerateLoopLevel(levelIdx);
       codeCurrentGrid = def.grid;
-      codeFoxState = { x: def.start.x, y: def.start.y, dir: def.start.dir };
+      codeFoxState = { x: def.start.x, y: def.start.y };
       codeLoopPattern = [];
       codeLoopCount = 2;
       els.codeInstruction.textContent = "Construis un petit motif et répète-le pour atteindre la carotte !";
@@ -10664,7 +10644,7 @@
 
     function renderCodeLoopBuilder() {
       els.codeBuilder.innerHTML = "";
-      els.codeBuilder.appendChild(codeBuildPalette(["F", "L", "R"], function (blk) {
+      els.codeBuilder.appendChild(codeBuildPalette(CODE_BLOCK_ORDER, function (blk) {
         if (codeLoopPattern.length >= 3) return;
         codeLoopPattern.push(blk);
         renderCodeLoopBuilder();
@@ -10723,7 +10703,7 @@
       var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
       var def = codeGenerateDebugLevel(levelIdx);
       codeCurrentGrid = def.grid;
-      codeFoxState = { x: def.start.x, y: def.start.y, dir: def.start.dir };
+      codeFoxState = { x: def.start.x, y: def.start.y };
       codeDebugOriginalProgram = def.program.slice();
       codeDebugProgram = def.program.slice();
       codeDebugSelected = -1;
@@ -10738,7 +10718,7 @@
         codeDebugSelected = codeDebugSelected === idx ? -1 : idx;
         renderCodeDebugBuilder();
       }));
-      els.codeBuilder.appendChild(codeBuildPalette(CODEDEBUG_PALETTE, function (blk) {
+      els.codeBuilder.appendChild(codeBuildPalette(CODE_BLOCK_ORDER, function (blk) {
         if (codeDebugSelected < 0) return;
         codeDebugProgram[codeDebugSelected] = blk;
         codeDebugSelected = -1;
@@ -10777,7 +10757,7 @@
       var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
       var grid = [codeGenerateIfRow(levelIdx).split("")];
       codeCurrentGrid = grid;
-      codeFoxState = { x: 0, y: 0, dir: "E" };
+      codeFoxState = { x: 0, y: 0 };
       codeIfCoinRule = null;
       codeIfPuddleRule = null;
       els.codeInstruction.textContent = "Choisis ce que le renard doit faire sur chaque case, puis lance-le !";
@@ -10856,8 +10836,8 @@
           window.setTimeout(startCodeIfLevel, 1200);
           return;
         }
-        codeFoxState = { x: i, y: 0, dir: "E" };
-        placeCodeFox(i, 0, "E", true);
+        codeFoxState = { x: i, y: 0 };
+        placeCodeFox(i, 0, true);
         i++;
         window.setTimeout(step, CODE_STEP_MS);
       }
@@ -10869,7 +10849,7 @@
     function startCodeSandbox() {
       var grid = CODESANDBOX_GRID.map(function (r) { return r.split(""); });
       codeCurrentGrid = grid;
-      codeFoxState = { x: 1, y: 1, dir: "E" };
+      codeFoxState = { x: 1, y: 1 };
       codeCurrentProgram = [];
       els.codeInstruction.textContent = "Assemble des blocs et regarde le renard bouger !";
       renderCodeBoard(grid, codeFoxState);
@@ -10878,7 +10858,7 @@
 
     function renderCodeSandboxBuilder() {
       els.codeBuilder.innerHTML = "";
-      els.codeBuilder.appendChild(codeBuildPalette(["F", "L", "R"], function (blk) {
+      els.codeBuilder.appendChild(codeBuildPalette(CODE_BLOCK_ORDER, function (blk) {
         if (codeCurrentProgram.length >= CODE_SANDBOX_MAX_BLOCKS) return;
         codeCurrentProgram.push(blk);
         renderCodeSandboxBuilder();
@@ -10893,8 +10873,8 @@
           codeSetBuilderDisabled(true);
           codeRunProgram(codeCurrentProgram.slice(), function () {
             codeSetBuilderDisabled(false);
-            codeFoxState = { x: 1, y: 1, dir: "E" };
-            placeCodeFox(1, 1, "E", true);
+            codeFoxState = { x: 1, y: 1 };
+            placeCodeFox(1, 1, true);
           }, codeHighlightProgramSlot);
         },
         onClear: function () { codeCurrentProgram = []; renderCodeSandboxBuilder(); },
