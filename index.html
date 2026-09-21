@@ -1690,7 +1690,17 @@
     font-size: clamp(1.2rem, 6vw, 1.8rem);
   }
 
-  .code-cell.wall { background: #5b6472; }
+  /* Mur en briques (dégradés répétés, pas d'image) : décalage d'un
+     calque sur l'autre pour que les joints alternent d'une rangée à
+     l'autre comme un vrai appareillage de briques. */
+  .code-cell.wall {
+    background-color: #a56a43;
+    background-image:
+      linear-gradient(rgba(0, 0, 0, 0.22) 2px, transparent 2px),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.22) 2px, transparent 2px);
+    background-size: 50% 33%, 50% 33%;
+    background-position: 0 0, 25% 33%;
+  }
   .code-cell.target { background: #ffe8a3; }
   .code-cell.puddle { background: #6fb6e8; }
   .code-cell.coin { background: #8ed6ac; }
@@ -1877,6 +1887,58 @@
   }
 
   .code-if-choice.is-selected { background: var(--candy-blue); }
+
+  /* Badge "Bravo !" affiché par-dessus l'écran de code à chaque case
+     réussie (voir showCodeBravo) -- remplace le texte de #gameFeedback
+     pour ces 4 jeux, apparaît puis disparaît avant que l'écran suivant
+     ne se charge. */
+  .code-bravo-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .code-bravo-overlay[hidden] { display: none; }
+
+  .code-bravo-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--white);
+    border-radius: 999px;
+    padding: 0.9rem 1.8rem;
+    font-weight: 900;
+    font-size: clamp(1.3rem, 5.5vw, 1.8rem);
+    color: var(--correct);
+    box-shadow: 0 16px 32px -14px rgba(31, 42, 60, 0.55);
+    transform: scale(0.4);
+    opacity: 0;
+  }
+
+  .code-bravo-overlay.in .code-bravo-badge {
+    animation: code-bravo-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  .code-bravo-overlay.out .code-bravo-badge {
+    animation: code-bravo-out 0.3s ease forwards;
+  }
+
+  @keyframes code-bravo-in {
+    0% { transform: scale(0.4); opacity: 0; }
+    60% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  @keyframes code-bravo-out {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0.5); opacity: 0; }
+  }
+
+  .code-bravo-emoji { font-size: 1.7em; line-height: 1; }
 
   /* Jeux de société : statut de tour partagé + bouton "Rejouer" partagés
      entre les 4 jeux (Morpion/Puissance 4/Dames/Bataille navale). */
@@ -3652,6 +3714,12 @@
       <div class="code-board" id="codeBoard"></div>
     </div>
     <div class="code-builder" id="codeBuilder"></div>
+    <div class="code-bravo-overlay" id="codeBravoOverlay" hidden>
+      <div class="code-bravo-badge">
+        <span class="code-bravo-emoji" id="codeBravoEmoji">🎉</span>
+        <span>Bravo !</span>
+      </div>
+    </div>
   </section>
 
   <section class="morpion-screen" id="morpionScreen" hidden>
@@ -6935,6 +7003,8 @@
       codeInstruction: document.getElementById("codeInstruction"),
       codeBoard: document.getElementById("codeBoard"),
       codeBuilder: document.getElementById("codeBuilder"),
+      codeBravoOverlay: document.getElementById("codeBravoOverlay"),
+      codeBravoEmoji: document.getElementById("codeBravoEmoji"),
       morpionScreen: document.getElementById("morpionScreen"),
       morpionStatus: document.getElementById("morpionStatus"),
       morpionBoard: document.getElementById("morpionBoard"),
@@ -10112,8 +10182,8 @@
       { width: 4, height: 1, walls: 0 },
       { width: 6, height: 1, walls: 0 },
       { width: 4, height: 4, walls: 0 },
-      { width: 4, height: 4, walls: 1 },
-      { width: 5, height: 5, walls: 2 }
+      { width: 4, height: 4, walls: 2 },
+      { width: 5, height: 5, walls: 4 }
     ];
     var CODE_LOOP_DIFFICULTY = [
       { width: 6, height: 1 },
@@ -10203,18 +10273,21 @@
       return { ok: true, pos: pos };
     }
 
+    // Le départ n'est plus toujours la première case : tiré au hasard
+    // dans la grille à chaque tentative, pour que la carotte se retrouve
+    // tantôt à droite, tantôt à gauche (ou au-dessus/en-dessous).
     function codeGenerateMaze(levelIdx) {
       var diff = CODE_MAZE_DIFFICULTY[levelIdx];
-      var start = { x: 0, y: 0 };
       for (var attempt = 0; attempt < 60; attempt++) {
         var grid = codeEmptyGrid(diff.width, diff.height);
+        var start = { x: randInt(0, diff.width - 1), y: randInt(0, diff.height - 1) };
         var wallsPlaced = 0;
         var tries = 0;
         while (wallsPlaced < diff.walls && tries < 40) {
           tries++;
           var wx = randInt(0, diff.width - 1);
           var wy = randInt(0, diff.height - 1);
-          if (wx === 0 && wy === 0) continue;
+          if (wx === start.x && wy === start.y) continue;
           if (grid[wy][wx] === "#") continue;
           grid[wy][wx] = "#";
           wallsPlaced++;
@@ -10222,7 +10295,7 @@
         var candidates = [];
         for (var ty = 0; ty < diff.height; ty++) {
           for (var tx = 0; tx < diff.width; tx++) {
-            if (tx === 0 && ty === 0) continue;
+            if (tx === start.x && ty === start.y) continue;
             if (grid[ty][tx] === "#") continue;
             candidates.push({ x: tx, y: ty });
           }
@@ -10235,7 +10308,7 @@
       }
       var fallback = codeEmptyGrid(diff.width, diff.height);
       fallback[0][diff.width - 1] = "T";
-      return { grid: fallback, start: start };
+      return { grid: fallback, start: { x: 0, y: 0 } };
     }
 
     // Simule un motif tiré au hasard, répété N fois, sur un plateau vide
@@ -10244,8 +10317,8 @@
     // le niveau.
     function codeGenerateLoopLevel(levelIdx) {
       var diff = CODE_LOOP_DIFFICULTY[levelIdx];
-      var start = { x: 0, y: 0 };
       for (var attempt = 0; attempt < 60; attempt++) {
+        var start = { x: randInt(0, diff.width - 1), y: randInt(0, diff.height - 1) };
         var patLen = randInt(1, 3);
         var pattern = [];
         for (var i = 0; i < patLen; i++) {
@@ -10263,7 +10336,7 @@
       }
       var fallback = codeEmptyGrid(diff.width, diff.height);
       fallback[0][Math.min(2, diff.width - 1)] = "T";
-      return { grid: fallback, start: start };
+      return { grid: fallback, start: { x: 0, y: 0 } };
     }
 
     // Génère un labyrinthe solvable (comme codeGenerateMaze), retrouve
@@ -10272,16 +10345,16 @@
     // niveau).
     function codeGenerateDebugLevel(levelIdx) {
       var diff = CODE_MAZE_DIFFICULTY[levelIdx];
-      var start = { x: 0, y: 0 };
       for (var attempt = 0; attempt < 60; attempt++) {
         var grid = codeEmptyGrid(diff.width, diff.height);
+        var start = { x: randInt(0, diff.width - 1), y: randInt(0, diff.height - 1) };
         var wallsPlaced = 0;
         var tries = 0;
         while (wallsPlaced < diff.walls && tries < 40) {
           tries++;
           var wx = randInt(0, diff.width - 1);
           var wy = randInt(0, diff.height - 1);
-          if (wx === 0 && wy === 0) continue;
+          if (wx === start.x && wy === start.y) continue;
           if (grid[wy][wx] === "#") continue;
           grid[wy][wx] = "#";
           wallsPlaced++;
@@ -10289,7 +10362,7 @@
         var candidates = [];
         for (var ty = 0; ty < diff.height; ty++) {
           for (var tx = 0; tx < diff.width; tx++) {
-            if (tx === 0 && ty === 0) continue;
+            if (tx === start.x && ty === start.y) continue;
             if (grid[ty][tx] === "#") continue;
             candidates.push({ x: tx, y: ty });
           }
@@ -10311,7 +10384,7 @@
       }
       var fallback = codeEmptyGrid(4, 1);
       fallback[0][3] = "T";
-      return { grid: fallback, start: start, program: ["E", "E", "N"] };
+      return { grid: fallback, start: { x: 0, y: 0 }, program: ["E", "E", "N"] };
     }
 
     // "Si... alors..." : chemin en ligne droite (rangée unique), "o"
@@ -10340,6 +10413,8 @@
     var codeFoxState = { x: 0, y: 0 };
     var codeCurrentGrid = null;
     var codeCurrentDims = { width: 1, height: 1 };
+    var CODE_TARGET_TREATS = ["🐭", "🐰", "🐔", "🐦", "🍓", "🍄", "🌰"];
+    var codeCurrentTreat = CODE_TARGET_TREATS[0];
     var codeFoxEl = null;
     var codeRunning = false;
     var codeCurrentProgram = [];
@@ -10393,7 +10468,8 @@
           else if (ch === "~") cls += " puddle";
           else if (ch === "o") cls += " coin";
           cell.className = cls;
-          if (ch === "T") cell.textContent = "🥕";
+          if (ch === "#") cell.textContent = "🧱";
+          else if (ch === "T") cell.textContent = codeCurrentTreat;
           else if (ch === "~") cell.textContent = "💧";
           else if (ch === "o") cell.textContent = "🪙";
           els.codeBoard.appendChild(cell);
@@ -10544,10 +10620,30 @@
       return wrap;
     }
 
+    // Badge "Bravo !" qui s'affiche par-dessus l'écran, puis disparaît --
+    // l'écran suivant (niveau suivant / passage de niveau / victoire) ne
+    // se charge qu'une fois l'animation terminée (voir onDone).
+    function showCodeBravo(onDone) {
+      els.codeBravoEmoji.textContent = codeCurrentTreat;
+      els.codeBravoOverlay.hidden = false;
+      els.codeBravoOverlay.classList.remove("out");
+      void els.codeBravoOverlay.offsetWidth;
+      els.codeBravoOverlay.classList.add("in");
+      window.setTimeout(function () {
+        els.codeBravoOverlay.classList.remove("in");
+        els.codeBravoOverlay.classList.add("out");
+        window.setTimeout(function () {
+          els.codeBravoOverlay.hidden = true;
+          els.codeBravoOverlay.classList.remove("out");
+          onDone();
+        }, 300);
+      }, 900);
+    }
+
     // Même paliers de niveaux/étoiles que les autres jeux "écran dédié"
     // (voir onSudokuComplete) -- juste factorisé ici pour les 4 jeux de
     // code notés (tout sauf le bac à sable).
-    function onCodeLevelComplete(message, restartFn) {
+    function onCodeLevelComplete(restartFn) {
       state.wrongStreak = 0;
       state.correctStreak++;
       var leveledUp = false;
@@ -10563,14 +10659,15 @@
       }
       if (!leveledUp && !justWon) renderLevel();
       saveProgress();
-      setGameFeedback(message, "correct");
-      if (leveledUp) {
-        window.setTimeout(function () { showLevelUp(state.level); }, 900);
-      } else if (justWon) {
-        window.setTimeout(showWin, 900);
-      } else {
-        window.setTimeout(restartFn, 1300);
-      }
+      showCodeBravo(function () {
+        if (leveledUp) {
+          showLevelUp(state.level);
+        } else if (justWon) {
+          showWin();
+        } else {
+          restartFn();
+        }
+      });
     }
 
     function startCodeProblem() {
@@ -10590,7 +10687,8 @@
       codeCurrentGrid = def.grid;
       codeFoxState = { x: def.start.x, y: def.start.y };
       codeCurrentProgram = [];
-      els.codeInstruction.textContent = "Guide le renard jusqu'à la carotte !";
+      codeCurrentTreat = CODE_TARGET_TREATS[randInt(0, CODE_TARGET_TREATS.length - 1)];
+      els.codeInstruction.textContent = "Guide le renard jusqu'à sa friandise !";
       renderCodeBoard(codeCurrentGrid, codeFoxState);
       renderCodeSeqBuilder();
     }
@@ -10619,7 +10717,7 @@
         var target = findCodeCell(codeCurrentGrid, "T");
         var success = finishedAll && codeFoxState.x === target.x && codeFoxState.y === target.y;
         if (success) {
-          onCodeLevelComplete("Bravo ! Le renard a trouvé la carotte ! 🥕", startCodeSeqLevel);
+          onCodeLevelComplete(startCodeSeqLevel);
         } else {
           codeSetBuilderDisabled(false);
           setGameFeedback(finishedAll ? "Pas encore la carotte, réessaie !" : "Oups, un mur ! Réessaie.", "wrong");
@@ -10637,7 +10735,8 @@
       codeFoxState = { x: def.start.x, y: def.start.y };
       codeLoopPattern = [];
       codeLoopCount = 2;
-      els.codeInstruction.textContent = "Construis un petit motif et répète-le pour atteindre la carotte !";
+      codeCurrentTreat = CODE_TARGET_TREATS[randInt(0, CODE_TARGET_TREATS.length - 1)];
+      els.codeInstruction.textContent = "Construis un petit motif et répète-le pour atteindre sa friandise !";
       renderCodeBoard(codeCurrentGrid, codeFoxState);
       renderCodeLoopBuilder();
     }
@@ -10688,7 +10787,7 @@
         var target = findCodeCell(codeCurrentGrid, "T");
         var success = finishedAll && codeFoxState.x === target.x && codeFoxState.y === target.y;
         if (success) {
-          onCodeLevelComplete("Bravo ! Ta boucle a marché ! 🥕", startCodeLoopLevel);
+          onCodeLevelComplete(startCodeLoopLevel);
         } else {
           codeSetBuilderDisabled(false);
           setGameFeedback(finishedAll ? "Pas encore la carotte, réessaie !" : "Oups, un mur ! Réessaie.", "wrong");
@@ -10707,6 +10806,7 @@
       codeDebugOriginalProgram = def.program.slice();
       codeDebugProgram = def.program.slice();
       codeDebugSelected = -1;
+      codeCurrentTreat = CODE_TARGET_TREATS[randInt(0, CODE_TARGET_TREATS.length - 1)];
       els.codeInstruction.textContent = "Ce programme a un bug ! Touche le bloc fautif puis choisis le bon.";
       renderCodeBoard(codeCurrentGrid, codeFoxState);
       renderCodeDebugBuilder();
@@ -10742,7 +10842,7 @@
         var target = findCodeCell(codeCurrentGrid, "T");
         var success = finishedAll && codeFoxState.x === target.x && codeFoxState.y === target.y;
         if (success) {
-          onCodeLevelComplete("Bravo ! Tu as corrigé le bug ! 🐛✅", startCodeDebugLevel);
+          onCodeLevelComplete(startCodeDebugLevel);
         } else {
           codeSetBuilderDisabled(false);
           setGameFeedback(finishedAll ? "Pas encore ! Regarde encore les blocs." : "Oups, un mur ! Corrige et réessaie.", "wrong");
@@ -10760,6 +10860,7 @@
       codeFoxState = { x: 0, y: 0 };
       codeIfCoinRule = null;
       codeIfPuddleRule = null;
+      codeCurrentTreat = CODE_TARGET_TREATS[randInt(0, CODE_TARGET_TREATS.length - 1)];
       els.codeInstruction.textContent = "Choisis ce que le renard doit faire sur chaque case, puis lance-le !";
       renderCodeBoard(codeCurrentGrid, codeFoxState);
       renderCodeIfBuilder();
@@ -10815,7 +10916,7 @@
         if (i >= row.length) {
           codeRunning = false;
           codeSetBuilderDisabled(false);
-          onCodeLevelComplete("Bravo ! Les bonnes règles au bon moment ! 🎉", startCodeIfLevel);
+          onCodeLevelComplete(startCodeIfLevel);
           return;
         }
         var ch = row[i];
