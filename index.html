@@ -1764,7 +1764,7 @@
     align-items: center;
     gap: 0.4rem;
     width: 100%;
-    min-height: clamp(2.6rem, 10vw, 3.2rem);
+    min-height: clamp(2.9rem, calc(8vw + 0.8rem), 3.4rem);
     padding: 0.4rem;
     background: rgba(255, 255, 255, 0.5);
     border-radius: clamp(0.7rem, 2.6vw, 1rem);
@@ -1888,11 +1888,12 @@
 
   .code-if-choice.is-selected { background: var(--candy-blue); }
 
-  /* Badge "Bravo !" affiché par-dessus l'écran de code à chaque case
-     réussie (voir showCodeBravo) -- remplace le texte de #gameFeedback
-     pour ces 4 jeux, apparaît puis disparaît avant que l'écran suivant
-     ne se charge. */
-  .code-bravo-overlay {
+  /* Animation (sans texte) affichée par-dessus l'écran de code après
+     chaque essai -- mains qui applaudissent en cas de réussite, petit
+     singe qui se cache les yeux en cas d'échec (voir showCodeResult).
+     Remplace le texte de #gameFeedback pour ces 4 jeux : apparaît puis
+     disparaît avant que l'écran suivant ne se charge. */
+  .code-result-overlay {
     position: fixed;
     inset: 0;
     z-index: 50;
@@ -1902,43 +1903,63 @@
     pointer-events: none;
   }
 
-  .code-bravo-overlay[hidden] { display: none; }
+  .code-result-overlay[hidden] { display: none; }
 
-  .code-bravo-badge {
+  .code-result-badge {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    justify-content: center;
+    width: clamp(4.6rem, 19vw, 6.2rem);
+    height: clamp(4.6rem, 19vw, 6.2rem);
+    border-radius: 50%;
     background: var(--white);
-    border-radius: 999px;
-    padding: 0.9rem 1.8rem;
-    font-weight: 900;
-    font-size: clamp(1.3rem, 5.5vw, 1.8rem);
-    color: var(--correct);
     box-shadow: 0 16px 32px -14px rgba(31, 42, 60, 0.55);
     transform: scale(0.4);
     opacity: 0;
   }
 
-  .code-bravo-overlay.in .code-bravo-badge {
-    animation: code-bravo-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  .code-result-overlay.success .code-result-badge { background: #e4fbe9; }
+  .code-result-overlay.fail .code-result-badge { background: #ffe4e0; }
+
+  .code-result-overlay.in .code-result-badge {
+    animation: code-result-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   }
 
-  .code-bravo-overlay.out .code-bravo-badge {
-    animation: code-bravo-out 0.3s ease forwards;
+  .code-result-overlay.out .code-result-badge {
+    animation: code-result-out 0.3s ease forwards;
   }
 
-  @keyframes code-bravo-in {
+  @keyframes code-result-in {
     0% { transform: scale(0.4); opacity: 0; }
     60% { transform: scale(1.15); opacity: 1; }
     100% { transform: scale(1); opacity: 1; }
   }
 
-  @keyframes code-bravo-out {
+  @keyframes code-result-out {
     0% { transform: scale(1); opacity: 1; }
     100% { transform: scale(0.5); opacity: 0; }
   }
 
-  .code-bravo-emoji { font-size: 1.7em; line-height: 1; }
+  .code-result-emoji { font-size: clamp(2.3rem, 9.5vw, 3.1rem); line-height: 1; display: block; }
+
+  .code-result-overlay.success.in .code-result-emoji {
+    animation: code-result-clap 0.4s ease-in-out 0.15s 3;
+  }
+
+  @keyframes code-result-clap {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.2) rotate(-10deg); }
+  }
+
+  .code-result-overlay.fail.in .code-result-emoji {
+    animation: code-result-shake 0.4s ease-in-out 0.15s 2;
+  }
+
+  @keyframes code-result-shake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-14deg); }
+    75% { transform: rotate(14deg); }
+  }
 
   /* Jeux de société : statut de tour partagé + bouton "Rejouer" partagés
      entre les 4 jeux (Morpion/Puissance 4/Dames/Bataille navale). */
@@ -3714,10 +3735,9 @@
       <div class="code-board" id="codeBoard"></div>
     </div>
     <div class="code-builder" id="codeBuilder"></div>
-    <div class="code-bravo-overlay" id="codeBravoOverlay" hidden>
-      <div class="code-bravo-badge">
-        <span class="code-bravo-emoji" id="codeBravoEmoji">🎉</span>
-        <span>Bravo !</span>
+    <div class="code-result-overlay" id="codeResultOverlay" hidden>
+      <div class="code-result-badge">
+        <span class="code-result-emoji" id="codeResultEmoji">👏</span>
       </div>
     </div>
   </section>
@@ -7003,8 +7023,8 @@
       codeInstruction: document.getElementById("codeInstruction"),
       codeBoard: document.getElementById("codeBoard"),
       codeBuilder: document.getElementById("codeBuilder"),
-      codeBravoOverlay: document.getElementById("codeBravoOverlay"),
-      codeBravoEmoji: document.getElementById("codeBravoEmoji"),
+      codeResultOverlay: document.getElementById("codeResultOverlay"),
+      codeResultEmoji: document.getElementById("codeResultEmoji"),
       morpionScreen: document.getElementById("morpionScreen"),
       morpionStatus: document.getElementById("morpionStatus"),
       morpionBoard: document.getElementById("morpionBoard"),
@@ -10620,21 +10640,25 @@
       return wrap;
     }
 
-    // Badge "Bravo !" qui s'affiche par-dessus l'écran, puis disparaît --
-    // l'écran suivant (niveau suivant / passage de niveau / victoire) ne
-    // se charge qu'une fois l'animation terminée (voir onDone).
-    function showCodeBravo(onDone) {
-      els.codeBravoEmoji.textContent = codeCurrentTreat;
-      els.codeBravoOverlay.hidden = false;
-      els.codeBravoOverlay.classList.remove("out");
-      void els.codeBravoOverlay.offsetWidth;
-      els.codeBravoOverlay.classList.add("in");
+    // Animation qui s'affiche par-dessus l'écran, puis disparaît -- l'écran
+    // suivant (niveau suivant / nouvel essai / passage de niveau / victoire)
+    // ne se charge qu'une fois l'animation terminée (voir onDone). kind vaut
+    // "success" (mains qui applaudissent) ou "fail" (petit singe qui se
+    // cache les yeux) : pas de texte, juste une émoticône animée.
+    function showCodeResult(kind, onDone) {
+      var overlay = els.codeResultOverlay;
+      els.codeResultEmoji.textContent = kind === "success" ? "👏" : "🙈";
+      overlay.classList.remove("in", "out", "success", "fail");
+      overlay.classList.add(kind === "success" ? "success" : "fail");
+      overlay.hidden = false;
+      void overlay.offsetWidth;
+      overlay.classList.add("in");
       window.setTimeout(function () {
-        els.codeBravoOverlay.classList.remove("in");
-        els.codeBravoOverlay.classList.add("out");
+        overlay.classList.remove("in");
+        overlay.classList.add("out");
         window.setTimeout(function () {
-          els.codeBravoOverlay.hidden = true;
-          els.codeBravoOverlay.classList.remove("out");
+          overlay.hidden = true;
+          overlay.classList.remove("out", "success", "fail");
           onDone();
         }, 300);
       }, 900);
@@ -10659,7 +10683,7 @@
       }
       if (!leveledUp && !justWon) renderLevel();
       saveProgress();
-      showCodeBravo(function () {
+      showCodeResult("success", function () {
         if (leveledUp) {
           showLevelUp(state.level);
         } else if (justWon) {
@@ -10719,9 +10743,7 @@
         if (success) {
           onCodeLevelComplete(startCodeSeqLevel);
         } else {
-          codeSetBuilderDisabled(false);
-          setGameFeedback(finishedAll ? "Pas encore la carotte, réessaie !" : "Oups, un mur ! Réessaie.", "wrong");
-          window.setTimeout(startCodeSeqLevel, 1200);
+          showCodeResult("fail", startCodeSeqLevel);
         }
       }, codeHighlightProgramSlot);
     }
@@ -10789,9 +10811,7 @@
         if (success) {
           onCodeLevelComplete(startCodeLoopLevel);
         } else {
-          codeSetBuilderDisabled(false);
-          setGameFeedback(finishedAll ? "Pas encore la carotte, réessaie !" : "Oups, un mur ! Réessaie.", "wrong");
-          window.setTimeout(startCodeLoopLevel, 1200);
+          showCodeResult("fail", startCodeLoopLevel);
         }
       }, function (i) { codeHighlightProgramSlot(i % codeLoopPattern.length); });
     }
@@ -10844,9 +10864,7 @@
         if (success) {
           onCodeLevelComplete(startCodeDebugLevel);
         } else {
-          codeSetBuilderDisabled(false);
-          setGameFeedback(finishedAll ? "Pas encore ! Regarde encore les blocs." : "Oups, un mur ! Corrige et réessaie.", "wrong");
-          window.setTimeout(startCodeDebugLevel, 1200);
+          showCodeResult("fail", startCodeDebugLevel);
         }
       }, codeHighlightProgramSlot);
     }
@@ -10925,16 +10943,12 @@
           void codeFoxEl.offsetWidth;
           codeFoxEl.classList.add("bump");
           codeRunning = false;
-          codeSetBuilderDisabled(false);
-          setGameFeedback("Oups, dans la flaque ! Réessaie.", "wrong");
-          window.setTimeout(startCodeIfLevel, 1200);
+          showCodeResult("fail", startCodeIfLevel);
           return;
         }
         if (ch === "o" && codeIfCoinRule !== "ramasse") {
           codeRunning = false;
-          codeSetBuilderDisabled(false);
-          setGameFeedback("Il manque des pièces ! Réessaie.", "wrong");
-          window.setTimeout(startCodeIfLevel, 1200);
+          showCodeResult("fail", startCodeIfLevel);
           return;
         }
         codeFoxState = { x: i, y: 0 };
