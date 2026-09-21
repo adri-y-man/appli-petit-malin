@@ -1698,8 +1698,8 @@
     background-image:
       linear-gradient(rgba(0, 0, 0, 0.22) 2px, transparent 2px),
       linear-gradient(90deg, rgba(0, 0, 0, 0.22) 2px, transparent 2px);
-    background-size: 50% 33%, 50% 33%;
-    background-position: 0 0, 25% 33%;
+    background-size: 25% 16.6%, 25% 16.6%;
+    background-position: 0 0, 12.5% 16.6%;
   }
   .code-cell.target { background: #ffe8a3; }
   .code-cell.puddle { background: #6fb6e8; }
@@ -10202,7 +10202,7 @@
       { width: 4, height: 1, walls: 0 },
       { width: 6, height: 1, walls: 0 },
       { width: 4, height: 4, walls: 0 },
-      { width: 4, height: 4, walls: 2 },
+      { width: 4, height: 4, walls: 3 },
       { width: 5, height: 5, walls: 4 }
     ];
     var CODE_LOOP_DIFFICULTY = [
@@ -10293,38 +10293,73 @@
       return { ok: true, pos: pos };
     }
 
+    // Grille sans mur : départ et carotte tirés au hasard n'importe où
+    // (utilisé pour les niveaux sans mur, où seul le trajet compte).
+    function codeGenerateOpenLayout(diff) {
+      var grid = codeEmptyGrid(diff.width, diff.height);
+      var start = { x: randInt(0, diff.width - 1), y: randInt(0, diff.height - 1) };
+      var candidates = [];
+      for (var ty = 0; ty < diff.height; ty++) {
+        for (var tx = 0; tx < diff.width; tx++) {
+          if (tx === start.x && ty === start.y) continue;
+          candidates.push({ x: tx, y: ty });
+        }
+      }
+      if (!candidates.length) return null;
+      var target = candidates[randInt(0, candidates.length - 1)];
+      return { grid: grid, start: start, target: target };
+    }
+
+    // Grille avec un mur qui coupe la grille en deux, une seule case
+    // ouverte servant de "porte" -- le renard démarre d'un côté, la
+    // carotte est toujours de l'autre, donc le mur ne peut JAMAIS être
+    // contourné : il faut forcément passer par la porte. Avec des murs
+    // isolés placés au hasard (l'ancienne méthode), le trajet direct les
+    // évitait presque toujours et le mur ne servait à rien.
+    function codeGenerateBarrierLayout(diff) {
+      var vertical = Math.random() < 0.5;
+      var lineDim = vertical ? diff.width : diff.height;
+      var freeDim = vertical ? diff.height : diff.width;
+      if (lineDim < 3) return null;
+      var linePos = randInt(1, lineDim - 2);
+      var gapIdx = randInt(0, freeDim - 1);
+      var grid = codeEmptyGrid(diff.width, diff.height);
+      for (var i = 0; i < freeDim; i++) {
+        if (i === gapIdx) continue;
+        if (vertical) grid[i][linePos] = "#";
+        else grid[linePos][i] = "#";
+      }
+      function randomCellOnSide(side) {
+        if (vertical) {
+          var xMin = side === 0 ? 0 : linePos + 1;
+          var xMax = side === 0 ? linePos - 1 : diff.width - 1;
+          return { x: randInt(xMin, xMax), y: randInt(0, diff.height - 1) };
+        }
+        var yMin = side === 0 ? 0 : linePos + 1;
+        var yMax = side === 0 ? linePos - 1 : diff.height - 1;
+        return { x: randInt(0, diff.width - 1), y: randInt(yMin, yMax) };
+      }
+      var startSide = Math.random() < 0.5 ? 0 : 1;
+      var start = randomCellOnSide(startSide);
+      var target = randomCellOnSide(1 - startSide);
+      return { grid: grid, start: start, target: target };
+    }
+
+    function codeGenerateLayout(diff) {
+      return diff.walls > 0 ? codeGenerateBarrierLayout(diff) : codeGenerateOpenLayout(diff);
+    }
+
     // Le départ n'est plus toujours la première case : tiré au hasard
     // dans la grille à chaque tentative, pour que la carotte se retrouve
     // tantôt à droite, tantôt à gauche (ou au-dessus/en-dessous).
     function codeGenerateMaze(levelIdx) {
       var diff = CODE_MAZE_DIFFICULTY[levelIdx];
       for (var attempt = 0; attempt < 60; attempt++) {
-        var grid = codeEmptyGrid(diff.width, diff.height);
-        var start = { x: randInt(0, diff.width - 1), y: randInt(0, diff.height - 1) };
-        var wallsPlaced = 0;
-        var tries = 0;
-        while (wallsPlaced < diff.walls && tries < 40) {
-          tries++;
-          var wx = randInt(0, diff.width - 1);
-          var wy = randInt(0, diff.height - 1);
-          if (wx === start.x && wy === start.y) continue;
-          if (grid[wy][wx] === "#") continue;
-          grid[wy][wx] = "#";
-          wallsPlaced++;
-        }
-        var candidates = [];
-        for (var ty = 0; ty < diff.height; ty++) {
-          for (var tx = 0; tx < diff.width; tx++) {
-            if (tx === start.x && ty === start.y) continue;
-            if (grid[ty][tx] === "#") continue;
-            candidates.push({ x: tx, y: ty });
-          }
-        }
-        if (!candidates.length) continue;
-        var target = candidates[randInt(0, candidates.length - 1)];
-        if (!codeBfsReachable(grid, start, target)) continue;
-        grid[target.y][target.x] = "T";
-        return { grid: grid, start: start };
+        var layout = codeGenerateLayout(diff);
+        if (!layout) continue;
+        if (!codeBfsReachable(layout.grid, layout.start, layout.target)) continue;
+        layout.grid[layout.target.y][layout.target.x] = "T";
+        return { grid: layout.grid, start: layout.start };
       }
       var fallback = codeEmptyGrid(diff.width, diff.height);
       fallback[0][diff.width - 1] = "T";
@@ -10366,30 +10401,9 @@
     function codeGenerateDebugLevel(levelIdx) {
       var diff = CODE_MAZE_DIFFICULTY[levelIdx];
       for (var attempt = 0; attempt < 60; attempt++) {
-        var grid = codeEmptyGrid(diff.width, diff.height);
-        var start = { x: randInt(0, diff.width - 1), y: randInt(0, diff.height - 1) };
-        var wallsPlaced = 0;
-        var tries = 0;
-        while (wallsPlaced < diff.walls && tries < 40) {
-          tries++;
-          var wx = randInt(0, diff.width - 1);
-          var wy = randInt(0, diff.height - 1);
-          if (wx === start.x && wy === start.y) continue;
-          if (grid[wy][wx] === "#") continue;
-          grid[wy][wx] = "#";
-          wallsPlaced++;
-        }
-        var candidates = [];
-        for (var ty = 0; ty < diff.height; ty++) {
-          for (var tx = 0; tx < diff.width; tx++) {
-            if (tx === start.x && ty === start.y) continue;
-            if (grid[ty][tx] === "#") continue;
-            candidates.push({ x: tx, y: ty });
-          }
-        }
-        if (!candidates.length) continue;
-        var target = candidates[randInt(0, candidates.length - 1)];
-        var correctProgram = codeBfsProgram(grid, start, target);
+        var layout = codeGenerateLayout(diff);
+        if (!layout) continue;
+        var correctProgram = codeBfsProgram(layout.grid, layout.start, layout.target);
         if (!correctProgram || correctProgram.length < 2) continue;
         var bugIndex = randInt(0, correctProgram.length - 1);
         var originalBlock = correctProgram[bugIndex];
@@ -10397,10 +10411,10 @@
         var buggyBlock = otherBlocks[randInt(0, otherBlocks.length - 1)];
         var buggyProgram = correctProgram.slice();
         buggyProgram[bugIndex] = buggyBlock;
-        var sim = codeSimulate(grid, start, buggyProgram);
-        if (sim.ok && sim.pos.x === target.x && sim.pos.y === target.y) continue;
-        grid[target.y][target.x] = "T";
-        return { grid: grid, start: start, program: buggyProgram };
+        var sim = codeSimulate(layout.grid, layout.start, buggyProgram);
+        if (sim.ok && sim.pos.x === layout.target.x && sim.pos.y === layout.target.y) continue;
+        layout.grid[layout.target.y][layout.target.x] = "T";
+        return { grid: layout.grid, start: layout.start, program: buggyProgram };
       }
       var fallback = codeEmptyGrid(4, 1);
       fallback[0][3] = "T";
@@ -10488,8 +10502,7 @@
           else if (ch === "~") cls += " puddle";
           else if (ch === "o") cls += " coin";
           cell.className = cls;
-          if (ch === "#") cell.textContent = "🧱";
-          else if (ch === "T") cell.textContent = codeCurrentTreat;
+          if (ch === "T") cell.textContent = codeCurrentTreat;
           else if (ch === "~") cell.textContent = "💧";
           else if (ch === "o") cell.textContent = "🪙";
           els.codeBoard.appendChild(cell);
