@@ -1888,12 +1888,14 @@
 
   .code-if-choice.is-selected { background: var(--candy-blue); }
 
-  /* Animation (sans texte) affichée par-dessus l'écran de code après
-     chaque essai -- mains qui applaudissent en cas de réussite, petit
-     singe qui se cache les yeux en cas d'échec (voir showCodeResult).
-     Remplace le texte de #gameFeedback pour ces 4 jeux : apparaît puis
-     disparaît avant que l'écran suivant ne se charge. */
-  .code-result-overlay {
+  /* Animation (sans texte) affichée par-dessus l'écran après chaque essai
+     -- mains qui applaudissent en cas de réussite, petit singe qui se
+     cache les yeux en cas d'échec (voir showResultAnim). Remplace le
+     texte de #gameFeedback pour Codeur Malin et Mémoire Malin : apparaît
+     puis disparaît avant que l'écran suivant ne se charge. Placé en
+     dehors de tout écran de jeu particulier (juste après #gameFeedback)
+     pour rester utilisable depuis n'importe quelle catégorie. */
+  .result-overlay {
     position: fixed;
     inset: 0;
     z-index: 50;
@@ -1903,9 +1905,9 @@
     pointer-events: none;
   }
 
-  .code-result-overlay[hidden] { display: none; }
+  .result-overlay[hidden] { display: none; }
 
-  .code-result-badge {
+  .result-badge {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1918,44 +1920,44 @@
     opacity: 0;
   }
 
-  .code-result-overlay.success .code-result-badge { background: #e4fbe9; }
-  .code-result-overlay.fail .code-result-badge { background: #ffe4e0; }
+  .result-overlay.success .result-badge { background: #e4fbe9; }
+  .result-overlay.fail .result-badge { background: #ffe4e0; }
 
-  .code-result-overlay.in .code-result-badge {
-    animation: code-result-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  .result-overlay.in .result-badge {
+    animation: result-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   }
 
-  .code-result-overlay.out .code-result-badge {
-    animation: code-result-out 0.3s ease forwards;
+  .result-overlay.out .result-badge {
+    animation: result-out 0.3s ease forwards;
   }
 
-  @keyframes code-result-in {
+  @keyframes result-in {
     0% { transform: scale(0.4); opacity: 0; }
     60% { transform: scale(1.15); opacity: 1; }
     100% { transform: scale(1); opacity: 1; }
   }
 
-  @keyframes code-result-out {
+  @keyframes result-out {
     0% { transform: scale(1); opacity: 1; }
     100% { transform: scale(0.5); opacity: 0; }
   }
 
-  .code-result-emoji { font-size: clamp(2.3rem, 9.5vw, 3.1rem); line-height: 1; display: block; }
+  .result-emoji { font-size: clamp(2.3rem, 9.5vw, 3.1rem); line-height: 1; display: block; }
 
-  .code-result-overlay.success.in .code-result-emoji {
-    animation: code-result-clap 0.4s ease-in-out 0.15s 3;
+  .result-overlay.success.in .result-emoji {
+    animation: result-clap 0.4s ease-in-out 0.15s 3;
   }
 
-  @keyframes code-result-clap {
+  @keyframes result-clap {
     0%, 100% { transform: scale(1) rotate(0deg); }
     50% { transform: scale(1.2) rotate(-10deg); }
   }
 
-  .code-result-overlay.fail.in .code-result-emoji {
-    animation: code-result-shake 0.4s ease-in-out 0.15s 2;
+  .result-overlay.fail.in .result-emoji {
+    animation: result-shake 0.4s ease-in-out 0.15s 2;
   }
 
-  @keyframes code-result-shake {
+  @keyframes result-shake {
     0%, 100% { transform: rotate(0deg); }
     25% { transform: rotate(-14deg); }
     75% { transform: rotate(14deg); }
@@ -3649,6 +3651,11 @@
   </button>
   <p class="max-badge" id="maxBadge" hidden><span class="emoji">🌟</span> Niveau maximum atteint</p>
   <p class="game-feedback" id="gameFeedback" aria-live="polite"></p>
+  <div class="result-overlay" id="resultOverlay" hidden>
+    <div class="result-badge">
+      <span class="result-emoji" id="resultEmoji">👏</span>
+    </div>
+  </div>
 
   <main class="problem-zone" id="problemZone">
     <div class="problem" id="problem"></div>
@@ -3735,11 +3742,6 @@
       <div class="code-board" id="codeBoard"></div>
     </div>
     <div class="code-builder" id="codeBuilder"></div>
-    <div class="code-result-overlay" id="codeResultOverlay" hidden>
-      <div class="code-result-badge">
-        <span class="code-result-emoji" id="codeResultEmoji">👏</span>
-      </div>
-    </div>
   </section>
 
   <section class="morpion-screen" id="morpionScreen" hidden>
@@ -7023,8 +7025,8 @@
       codeInstruction: document.getElementById("codeInstruction"),
       codeBoard: document.getElementById("codeBoard"),
       codeBuilder: document.getElementById("codeBuilder"),
-      codeResultOverlay: document.getElementById("codeResultOverlay"),
-      codeResultEmoji: document.getElementById("codeResultEmoji"),
+      resultOverlay: document.getElementById("resultOverlay"),
+      resultEmoji: document.getElementById("resultEmoji"),
       morpionScreen: document.getElementById("morpionScreen"),
       morpionStatus: document.getElementById("morpionStatus"),
       morpionBoard: document.getElementById("morpionBoard"),
@@ -8612,6 +8614,11 @@
       if (!isCorrect) btn.classList.add("shake");
 
       var justWon = false;
+      // "Qu'est-ce qui a disparu ?" et "Qu'est-ce qui a changé ?" (Mémoire
+      // Malin) partagent ce même écran de quiz générique, mais remplacent
+      // le message texte par l'animation mains/singe comme le reste de la
+      // catégorie -- voir showResultAnim.
+      var useResultAnim = state.mode === "disparu" || state.mode === "change";
 
       if (isCorrect) {
         state.wrongStreak = 0;
@@ -8625,7 +8632,7 @@
           }
           state.correctStreak = 0;
         }
-        setFeedback("correct", "Bravo ! 🎉", "");
+        if (!useResultAnim) setFeedback("correct", "Bravo ! 🎉", "");
       } else {
         state.correctStreak = 0;
         state.wrongStreak++;
@@ -8633,13 +8640,26 @@
           if (state.level > MIN_LEVEL) { state.level--; leveledDown = true; }
           state.wrongStreak = 0;
         }
-        setFeedback("wrong", "Essaie encore ! 💪", leveledDown ? "On continue, tu vas y arriver ! 🙂" : "");
+        if (!useResultAnim) setFeedback("wrong", "Essaie encore ! 💪", leveledDown ? "On continue, tu vas y arriver ! 🙂" : "");
       }
 
       // La bulle de niveau/étoiles ne se met à jour qu'une fois l'écran de
       // célébration refermé, pour ne pas montrer le nouveau niveau avant.
       if (!leveledUp && !justWon) renderLevel();
       saveProgress();
+
+      if (useResultAnim) {
+        showResultAnim(isCorrect ? "success" : "fail", function () {
+          if (leveledUp) {
+            showLevelUp(state.level);
+          } else if (justWon) {
+            showWin();
+          } else {
+            nextProblem();
+          }
+        });
+        return;
+      }
 
       if (leveledUp) {
         window.setTimeout(function () { showLevelUp(state.level); }, 1100);
@@ -9199,8 +9219,7 @@
       }
       // Pas de pénalité : on rejoue simplement la même séquence depuis le début.
       state.suitelumLocked = true;
-      setGameFeedback("On regarde encore ! 👀", "wrong");
-      window.setTimeout(playSuitelumSequence, 900);
+      showResultAnim("fail", playSuitelumSequence);
     }
 
     function onSuitelumWin() {
@@ -9220,14 +9239,15 @@
       }
       if (!leveledUp && !justWon) renderLevel();
       saveProgress();
-      setGameFeedback("Bravo ! Bien joué ! 🎉", "correct");
-      if (leveledUp) {
-        window.setTimeout(function () { showLevelUp(state.level); }, 1100);
-      } else if (justWon) {
-        window.setTimeout(showWin, 1100);
-      } else {
-        window.setTimeout(startSuitelumProblem, 1400);
-      }
+      showResultAnim("success", function () {
+        if (leveledUp) {
+          showLevelUp(state.level);
+        } else if (justWon) {
+          showWin();
+        } else {
+          startSuitelumProblem();
+        }
+      });
     }
 
     // Mélange un tableau en s'assurant que le résultat diffère de l'ordre
@@ -9342,14 +9362,15 @@
       }
       if (!leveledUp && !justWon) renderLevel();
       saveProgress();
-      setGameFeedback("Bravo ! Toutes les paires trouvées ! 🎉", "correct");
-      if (leveledUp) {
-        window.setTimeout(function () { showLevelUp(state.level); }, 1100);
-      } else if (justWon) {
-        window.setTimeout(showWin, 1100);
-      } else {
-        window.setTimeout(startMemoryProblem, 1400);
-      }
+      showResultAnim("success", function () {
+        if (leveledUp) {
+          showLevelUp(state.level);
+        } else if (justWon) {
+          showWin();
+        } else {
+          startMemoryProblem();
+        }
+      });
     }
 
     // "Retiens l'ordre" (Mémoire Malin) : des symboles s'allument dans un
@@ -9413,8 +9434,7 @@
       // Pas de pénalité : on rejoue simplement la même séquence depuis le début.
       state.ordreLocked = true;
       btn.classList.add("shake");
-      setGameFeedback("On regarde encore ! 👀", "wrong");
-      window.setTimeout(playOrdreFlash, 900);
+      showResultAnim("fail", playOrdreFlash);
     }
 
     function onOrdreWin() {
@@ -9434,14 +9454,15 @@
       }
       if (!leveledUp && !justWon) renderLevel();
       saveProgress();
-      setGameFeedback("Bravo ! Bien joué ! 🎉", "correct");
-      if (leveledUp) {
-        window.setTimeout(function () { showLevelUp(state.level); }, 1100);
-      } else if (justWon) {
-        window.setTimeout(showWin, 1100);
-      } else {
-        window.setTimeout(startOrdreProblem, 1400);
-      }
+      showResultAnim("success", function () {
+        if (leveledUp) {
+          showLevelUp(state.level);
+        } else if (justWon) {
+          showWin();
+        } else {
+          startOrdreProblem();
+        }
+      });
     }
 
     // "Reforme le mot" / "Remets les syllabes" (Écriture Malin) : une image
@@ -10657,10 +10678,12 @@
     // suivant (niveau suivant / nouvel essai / passage de niveau / victoire)
     // ne se charge qu'une fois l'animation terminée (voir onDone). kind vaut
     // "success" (mains qui applaudissent) ou "fail" (petit singe qui se
-    // cache les yeux) : pas de texte, juste une émoticône animée.
-    function showCodeResult(kind, onDone) {
-      var overlay = els.codeResultOverlay;
-      els.codeResultEmoji.textContent = kind === "success" ? "👏" : "🙈";
+    // cache les yeux) : pas de texte, juste une émoticône animée. Partagé
+    // par Codeur Malin et Mémoire Malin (voir onCodeLevelComplete plus bas
+    // et onMemoryWin/onOrdreWin/onSuitelumWin/onAnswer plus haut).
+    function showResultAnim(kind, onDone) {
+      var overlay = els.resultOverlay;
+      els.resultEmoji.textContent = kind === "success" ? "👏" : "🙈";
       overlay.classList.remove("in", "out", "success", "fail");
       overlay.classList.add(kind === "success" ? "success" : "fail");
       overlay.hidden = false;
@@ -10696,7 +10719,7 @@
       }
       if (!leveledUp && !justWon) renderLevel();
       saveProgress();
-      showCodeResult("success", function () {
+      showResultAnim("success", function () {
         if (leveledUp) {
           showLevelUp(state.level);
         } else if (justWon) {
@@ -10756,7 +10779,7 @@
         if (success) {
           onCodeLevelComplete(startCodeSeqLevel);
         } else {
-          showCodeResult("fail", startCodeSeqLevel);
+          showResultAnim("fail", startCodeSeqLevel);
         }
       }, codeHighlightProgramSlot);
     }
@@ -10824,7 +10847,7 @@
         if (success) {
           onCodeLevelComplete(startCodeLoopLevel);
         } else {
-          showCodeResult("fail", startCodeLoopLevel);
+          showResultAnim("fail", startCodeLoopLevel);
         }
       }, function (i) { codeHighlightProgramSlot(i % codeLoopPattern.length); });
     }
@@ -10877,7 +10900,7 @@
         if (success) {
           onCodeLevelComplete(startCodeDebugLevel);
         } else {
-          showCodeResult("fail", startCodeDebugLevel);
+          showResultAnim("fail", startCodeDebugLevel);
         }
       }, codeHighlightProgramSlot);
     }
@@ -10956,12 +10979,12 @@
           void codeFoxEl.offsetWidth;
           codeFoxEl.classList.add("bump");
           codeRunning = false;
-          showCodeResult("fail", startCodeIfLevel);
+          showResultAnim("fail", startCodeIfLevel);
           return;
         }
         if (ch === "o" && codeIfCoinRule !== "ramasse") {
           codeRunning = false;
-          showCodeResult("fail", startCodeIfLevel);
+          showResultAnim("fail", startCodeIfLevel);
           return;
         }
         codeFoxState = { x: i, y: 0 };
