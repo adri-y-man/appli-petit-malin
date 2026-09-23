@@ -8098,11 +8098,9 @@
       els.feedbackLine2.innerHTML = line2 ? withEmojiSpans(line2) : "";
     }
 
-    // Message bravo/réessaie partagé par les jeux "écran personnalisé"
-    // (rythme, suite lumineuse, retiens l'ordre, paires cachées, trace la
-    // lettre) : calé juste sous le bloc des étoiles plutôt que centré au
-    // milieu de l'écran (position qui variait selon la hauteur du jeu), et
-    // coloré selon la réussite plutôt qu'en vert dans tous les cas.
+    // Ancien message bravo/réessaie des jeux "écran personnalisé", remplacé
+    // partout par l'animation mains/singe (voir showResultAnim) -- ne sert
+    // plus qu'à garder #gameFeedback vide/masqué entre deux essais.
     function setGameFeedback(text, tone) {
       els.gameFeedback.textContent = text || "";
       if (text) {
@@ -8596,7 +8594,6 @@
       listenButtons.forEach(function (lb) { lb.disabled = true; });
       var isCorrect = value === state.problem.answer;
       var leveledUp = false;
-      var leveledDown = false;
 
       buttons.forEach(function (b) {
         b.disabled = true;
@@ -8613,11 +8610,6 @@
       if (!isCorrect) btn.classList.add("shake");
 
       var justWon = false;
-      // "Qu'est-ce qui a disparu ?" et "Qu'est-ce qui a changé ?" (Mémoire
-      // Malin) partagent ce même écran de quiz générique, mais remplacent
-      // le message texte par l'animation mains/singe comme le reste de la
-      // catégorie -- voir showResultAnim.
-      var useResultAnim = state.mode === "disparu" || state.mode === "change";
 
       if (isCorrect) {
         state.wrongStreak = 0;
@@ -8631,15 +8623,13 @@
           }
           state.correctStreak = 0;
         }
-        if (!useResultAnim) setFeedback("correct", "Bravo ! 🎉", "");
       } else {
         state.correctStreak = 0;
         state.wrongStreak++;
         if (state.wrongStreak >= MISTAKES_TO_LEVEL_DOWN) {
-          if (state.level > MIN_LEVEL) { state.level--; leveledDown = true; }
+          if (state.level > MIN_LEVEL) state.level--;
           state.wrongStreak = 0;
         }
-        if (!useResultAnim) setFeedback("wrong", "Essaie encore ! 💪", leveledDown ? "On continue, tu vas y arriver ! 🙂" : "");
       }
 
       // La bulle de niveau/étoiles ne se met à jour qu'une fois l'écran de
@@ -8647,26 +8637,15 @@
       if (!leveledUp && !justWon) renderLevel();
       saveProgress();
 
-      if (useResultAnim) {
-        showResultAnim(isCorrect ? "success" : "fail", function () {
-          if (leveledUp) {
-            showLevelUp(state.level);
-          } else if (justWon) {
-            showWin();
-          } else {
-            nextProblem();
-          }
-        });
-        return;
-      }
-
-      if (leveledUp) {
-        window.setTimeout(function () { showLevelUp(state.level); }, 1100);
-      } else if (justWon) {
-        window.setTimeout(showWin, 1100);
-      } else {
-        window.setTimeout(nextProblem, isCorrect ? 1100 : 1600);
-      }
+      showResultAnim(isCorrect ? "success" : "fail", function () {
+        if (leveledUp) {
+          showLevelUp(state.level);
+        } else if (justWon) {
+          showWin();
+        } else {
+          nextProblem();
+        }
+      });
     }
 
     function nextProblem() {
@@ -8933,14 +8912,15 @@
       }
       if (!leveledUp && !justWon) renderLevel();
       saveProgress();
-      els.paintFeedback.textContent = "Bravo ! Bien joué ! 🎉";
-      if (leveledUp) {
-        window.setTimeout(function () { showLevelUp(state.level); }, 1100);
-      } else if (justWon) {
-        window.setTimeout(showWin, 1100);
-      } else {
-        window.setTimeout(startPaintProblem, 1400);
-      }
+      showResultAnim("success", function () {
+        if (leveledUp) {
+          showLevelUp(state.level);
+        } else if (justWon) {
+          showWin();
+        } else {
+          startPaintProblem();
+        }
+      });
     }
 
     // Musique Malin : un contexte audio unique, créé au premier toucher
@@ -9132,8 +9112,7 @@
       // Pas de pénalité : on réécoute simplement la même séquence depuis le
       // début, dans le même esprit que "Peins comme le modèle".
       state.rhythmLocked = true;
-      setGameFeedback("On réécoute ! 🎧", "wrong");
-      window.setTimeout(playRhythmSequence, 900);
+      showResultAnim("fail", playRhythmSequence);
     }
 
     function onRhythmWin() {
@@ -9153,14 +9132,15 @@
       }
       if (!leveledUp && !justWon) renderLevel();
       saveProgress();
-      setGameFeedback("Bravo ! Bien joué ! 🎉", "correct");
-      if (leveledUp) {
-        window.setTimeout(function () { showLevelUp(state.level); }, 1100);
-      } else if (justWon) {
-        window.setTimeout(showWin, 1100);
-      } else {
-        window.setTimeout(startRhythmProblem, 1400);
-      }
+      showResultAnim("success", function () {
+        if (leveledUp) {
+          showLevelUp(state.level);
+        } else if (justWon) {
+          showWin();
+        } else {
+          startRhythmProblem();
+        }
+      });
     }
 
     // "Suite lumineuse" (Mémoire Malin) : même principe que "Répète le
@@ -9643,13 +9623,15 @@
       }
       if (!leveledUp && !justWon) renderLevel();
       saveProgress();
-      if (leveledUp) {
-        window.setTimeout(function () { showLevelUp(state.level); }, 900);
-      } else if (justWon) {
-        window.setTimeout(showWin, 900);
-      } else {
-        window.setTimeout(startSpellProblem, 1200);
-      }
+      showResultAnim("success", function () {
+        if (leveledUp) {
+          showLevelUp(state.level);
+        } else if (justWon) {
+          showWin();
+        } else {
+          startSpellProblem();
+        }
+      });
     }
 
     // "Compose le mot (libre)" : le mot est complet mais faux -- on
@@ -9667,15 +9649,13 @@
 
       state.correctStreak = 0;
       state.wrongStreak++;
-      var leveledDown = false;
       if (state.wrongStreak >= MISTAKES_TO_LEVEL_DOWN) {
-        if (state.level > MIN_LEVEL) { state.level--; leveledDown = true; }
+        if (state.level > MIN_LEVEL) state.level--;
         state.wrongStreak = 0;
       }
-      setGameFeedback(leveledDown ? "Ce n'était pas le bon mot. On continue, tu vas y arriver ! 🙂" : "Ce n'était pas le bon mot, réessaie ! 💪", "wrong");
       renderLevel();
       saveProgress();
-      window.setTimeout(startSpellProblem, 1600);
+      showResultAnim("fail", startSpellProblem);
     }
 
     // "Trace la lettre" (Écriture Malin) : une grande lettre en pointillés
@@ -9794,7 +9774,9 @@
 
     function onTraceDone() {
       if (!hasTracedLetter()) {
-        setGameFeedback("Essaie encore, en suivant bien les pointillés ! ✏️", "wrong");
+        // Pas de nouvel essai à charger : on laisse l'enfant continuer à
+        // tracer sur le même canevas, l'animation sert juste de retour.
+        showResultAnim("fail", function () {});
         return;
       }
       state.wrongStreak = 0;
@@ -9812,14 +9794,15 @@
       }
       if (!leveledUp && !justWon) renderLevel();
       saveProgress();
-      setGameFeedback("Bravo ! Bien tracé ! 🎉", "correct");
-      if (leveledUp) {
-        window.setTimeout(function () { showLevelUp(state.level); }, 900);
-      } else if (justWon) {
-        window.setTimeout(showWin, 900);
-      } else {
-        window.setTimeout(startTraceProblem, 1100);
-      }
+      showResultAnim("success", function () {
+        if (leveledUp) {
+          showLevelUp(state.level);
+        } else if (justWon) {
+          showWin();
+        } else {
+          startTraceProblem();
+        }
+      });
     }
 
     // "Remplis la forme" : l'enfant colorie directement au doigt, comme dans
@@ -9950,14 +9933,15 @@
       }
       if (!leveledUp && !justWon) renderLevel();
       saveProgress();
-      setGameFeedback("Bravo ! Bien colorié ! 🎉", "correct");
-      if (leveledUp) {
-        window.setTimeout(function () { showLevelUp(state.level); }, 900);
-      } else if (justWon) {
-        window.setTimeout(showWin, 900);
-      } else {
-        window.setTimeout(startFillFormeProblem, 1100);
-      }
+      showResultAnim("success", function () {
+        if (leveledUp) {
+          showLevelUp(state.level);
+        } else if (justWon) {
+          showWin();
+        } else {
+          startFillFormeProblem();
+        }
+      });
     }
 
     // "Mon premier sudoku" (formes / chiffres) : grille 4x4 classique,
@@ -10178,14 +10162,15 @@
       }
       if (!leveledUp && !justWon) renderLevel();
       saveProgress();
-      setGameFeedback("Bravo ! Grille complète ! 🎉", "correct");
-      if (leveledUp) {
-        window.setTimeout(function () { showLevelUp(state.level); }, 900);
-      } else if (justWon) {
-        window.setTimeout(showWin, 900);
-      } else {
-        window.setTimeout(startSudokuProblem, 1100);
-      }
+      showResultAnim("success", function () {
+        if (leveledUp) {
+          showLevelUp(state.level);
+        } else if (justWon) {
+          showWin();
+        } else {
+          startSudokuProblem();
+        }
+      });
     }
 
     // ============================================================
