@@ -3255,7 +3255,21 @@
     padding: clamp(1.1rem, 4.5vw, 1.6rem) clamp(3.4rem, 10vw, 4.2rem) clamp(1.1rem, 4.5vw, 1.6rem) clamp(1.2rem, 4.5vw, 1.6rem);
     border-radius: clamp(1.3rem, 4vw, 1.8rem);
     font-size: clamp(1.15rem, 4.6vw, 1.5rem);
+    /* Reprend le style actuel des tuiles .category-card (plus plat, légère
+       inclinaison façon planche de stickers) à la place de l'ancien bouton
+       3D à liseré épais hérité de .mode-card. */
+    border-bottom: none;
+    box-shadow: 0 8px 16px -8px rgba(31, 42, 60, 0.4);
+    transform: rotate(var(--tilt, 0deg));
   }
+
+  .mode-flat:hover { transform: translateY(-2px) rotate(var(--tilt, 0deg)); }
+  .mode-flat:active { transform: translateY(2px) rotate(var(--tilt, 0deg)); border-bottom-width: 0; }
+
+  .category-grid > .mode-flat:nth-child(4n+1) { --tilt: -1.1deg; }
+  .category-grid > .mode-flat:nth-child(4n+2) { --tilt: 0.9deg; }
+  .category-grid > .mode-flat:nth-child(4n+3) { --tilt: -0.8deg; }
+  .category-grid > .mode-flat:nth-child(4n+4) { --tilt: 1.2deg; }
 
   .mode-flat .icon { font-size: clamp(2.2rem, 8vw, 2.8rem); flex: none; }
 
@@ -4045,26 +4059,28 @@
           <span class="level-badge">CE1-CE2</span>
         </button>
       </div>
-      <button class="mode-card mode-flat" type="button" data-mode="count">
-        <span class="icon emoji">🍎</span>
-        <span>Compte les objets</span>
-        <span class="level-badge">PS-MS</span>
-      </button>
-      <button class="mode-card mode-flat" type="button" data-mode="compare">
-        <span class="icon emoji">⚖️</span>
-        <span>Plus grand ou plus petit ?</span>
-        <span class="level-badge">MS-GS</span>
-      </button>
-      <button class="mode-card mode-flat" type="button" data-mode="sequence">
-        <span class="icon emoji">🔢</span>
-        <span>Complète la suite</span>
-        <span class="level-badge">GS-CE1</span>
-      </button>
-      <button class="mode-card mode-flat" type="button" data-mode="sudokuchiffre">
-        <span class="icon emoji">🔢</span>
-        <span>Mon premier sudoku (chiffres)</span>
-        <span class="level-badge">CP-CE1</span>
-      </button>
+      <div class="category-grid">
+        <button class="mode-card mode-flat" type="button" data-mode="count">
+          <span class="icon emoji">🍎</span>
+          <span>Compte les objets</span>
+          <span class="level-badge">PS-MS</span>
+        </button>
+        <button class="mode-card mode-flat" type="button" data-mode="compare">
+          <span class="icon emoji">⚖️</span>
+          <span>Plus grand ou plus petit ?</span>
+          <span class="level-badge">MS-GS</span>
+        </button>
+        <button class="mode-card mode-flat" type="button" data-mode="sequence">
+          <span class="icon emoji">🔢</span>
+          <span>Complète la suite</span>
+          <span class="level-badge">GS-CE1</span>
+        </button>
+        <button class="mode-card mode-flat" type="button" data-mode="sudokuchiffre">
+          <span class="icon emoji">🔢</span>
+          <span>Mon premier sudoku (chiffres)</span>
+          <span class="level-badge">CP-CE1</span>
+        </button>
+      </div>
     </div>
 
     <div class="menu-panel" id="menuAnglais" hidden>
