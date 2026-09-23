@@ -1704,6 +1704,8 @@
   .code-cell.target { background: #ffe8a3; }
   .code-cell.puddle { background: #6fb6e8; }
   .code-cell.coin { background: #8ed6ac; }
+  .code-cell.rock { background: #c9b18f; }
+  .code-cell.flower { background: #f4b8d6; }
 
   .code-fox {
     position: absolute;
@@ -10442,18 +10444,43 @@
       return { grid: fallback, start: { x: 0, y: 0 }, program: ["E", "E", "N"] };
     }
 
-    // "Si... alors..." : chemin en ligne droite (rangée unique), "o"
-    // pièce à ramasser, "~" flaque à sauter (tirés au hasard à chaque
-    // tentative) -- les 2 règles choisies s'appliquent à CHAQUE case de
-    // ce type sur tout le chemin.
-    var CODE_IF_EVENT_COUNT = [1, 1, 2, 3, 4];
+    // "Si... alors..." : chemin en ligne droite (rangée unique) parsemée
+    // d'événements (pièce, flaque, caillou, fleur...) tirés au hasard.
+    // Contrairement à l'ancienne version où "pièce"/"flaque" étaient fixes
+    // et la bonne réponse toujours la même, le sous-ensemble d'événements
+    // (et donc les règles à définir) change à chaque tentative -- ça évite
+    // de pouvoir résoudre le jeu une fois puis refaire les 2 mêmes gestes
+    // en boucle sans plus réfléchir.
+    var CODE_IF_EVENTS = [
+      { ch: "o", icon: "🪙", cls: "coin", action: "ramasse" },
+      { ch: "~", icon: "💧", cls: "puddle", action: "saute" },
+      { ch: "^", icon: "🪨", cls: "rock", action: "saute" },
+      { ch: "*", icon: "🌼", cls: "flower", action: "avance" }
+    ];
+    var CODE_IF_EVENT_BY_CHAR = {};
+    CODE_IF_EVENTS.forEach(function (ev) { CODE_IF_EVENT_BY_CHAR[ev.ch] = ev; });
+
+    // Nombre de types d'événements différents en jeu ce niveau (2 au
+    // départ, jusqu'à tout le pool à partir du niveau 4).
+    var CODE_IF_TYPE_COUNT = [2, 2, 3, 3, 4];
+    // Nombre total de cases-événements sur le chemin (au moins une par
+    // type choisi, pour être sûr que chaque règle définie soit vraiment
+    // testée).
+    var CODE_IF_EVENT_COUNT = [1, 2, 3, 4, 5];
 
     function codeGenerateIfRow(levelIdx) {
-      var count = CODE_IF_EVENT_COUNT[levelIdx];
+      var typeCount = CODE_IF_TYPE_COUNT[levelIdx];
+      var activeEvents = shuffle(CODE_IF_EVENTS.slice()).slice(0, typeCount);
+      var total = Math.max(CODE_IF_EVENT_COUNT[levelIdx], typeCount);
+      var cells = activeEvents.slice();
+      while (cells.length < total) {
+        cells.push(activeEvents[randInt(0, activeEvents.length - 1)]);
+      }
+      cells = shuffle(cells);
       var row = ["."];
-      for (var i = 0; i < count; i++) row.push(Math.random() < 0.5 ? "o" : "~");
+      cells.forEach(function (ev) { row.push(ev.ch); });
       row.push("T");
-      return row.join("");
+      return { row: row.join(""), events: activeEvents };
     }
 
     var CODE_IF_ACTIONS = ["ramasse", "saute", "avance"];
@@ -10478,8 +10505,8 @@
     var codeDebugProgram = [];
     var codeDebugSelected = -1;
     var codeDebugOriginalProgram = [];
-    var codeIfCoinRule = null;
-    var codeIfPuddleRule = null;
+    var codeIfActiveEvents = [];
+    var codeIfRules = {};
 
     function codeGridDims(grid) {
       return { width: grid[0].length, height: grid.length };
@@ -10522,10 +10549,11 @@
           else if (ch === "T") cls += " target";
           else if (ch === "~") cls += " puddle";
           else if (ch === "o") cls += " coin";
+          else if (ch === "^") cls += " rock";
+          else if (ch === "*") cls += " flower";
           cell.className = cls;
           if (ch === "T") cell.textContent = codeCurrentTreat;
-          else if (ch === "~") cell.textContent = "💧";
-          else if (ch === "o") cell.textContent = "🪙";
+          else if (CODE_IF_EVENT_BY_CHAR[ch]) cell.textContent = CODE_IF_EVENT_BY_CHAR[ch].icon;
           els.codeBoard.appendChild(cell);
         }
       }
@@ -10920,11 +10948,11 @@
 
     function startCodeIfLevel() {
       var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
-      var grid = [codeGenerateIfRow(levelIdx).split("")];
-      codeCurrentGrid = grid;
+      var def = codeGenerateIfRow(levelIdx);
+      codeCurrentGrid = [def.row.split("")];
+      codeIfActiveEvents = def.events;
+      codeIfRules = {};
       codeFoxState = { x: 0, y: 0 };
-      codeIfCoinRule = null;
-      codeIfPuddleRule = null;
       codeCurrentTreat = CODE_TARGET_TREATS[randInt(0, CODE_TARGET_TREATS.length - 1)];
       els.codeInstruction.textContent = "Choisis ce que le renard doit faire sur chaque case, puis lance-le !";
       renderCodeBoard(codeCurrentGrid, codeFoxState);
@@ -10958,21 +10986,27 @@
       els.codeBuilder.innerHTML = "";
       var rules = document.createElement("div");
       rules.className = "code-if-rules";
-      rules.appendChild(codeBuildIfRule("🪙", codeIfCoinRule, function (action) { codeIfCoinRule = action; renderCodeIfBuilder(); }));
-      rules.appendChild(codeBuildIfRule("💧", codeIfPuddleRule, function (action) { codeIfPuddleRule = action; renderCodeIfBuilder(); }));
+      codeIfActiveEvents.forEach(function (ev) {
+        rules.appendChild(codeBuildIfRule(ev.icon, codeIfRules[ev.ch], function (action) {
+          codeIfRules[ev.ch] = action;
+          renderCodeIfBuilder();
+        }));
+      });
       els.codeBuilder.appendChild(rules);
+      var allSet = codeIfActiveEvents.every(function (ev) { return !!codeIfRules[ev.ch]; });
       els.codeBuilder.appendChild(codeBuildActions({
         onRun: codeLaunchIf,
-        onClear: function () { codeIfCoinRule = null; codeIfPuddleRule = null; renderCodeIfBuilder(); },
-        runDisabled: !codeIfCoinRule || !codeIfPuddleRule
+        onClear: function () { codeIfRules = {}; renderCodeIfBuilder(); },
+        runDisabled: !allSet
       }));
     }
 
     // Contrairement aux autres jeux, pas de programme bloc par bloc ici :
-    // le renard avance tout seul le long du chemin, et les 2 règles
-    // choisies s'appliquent à chaque case qu'il rencontre.
+    // le renard avance tout seul le long du chemin, et les règles choisies
+    // s'appliquent à chaque case qu'il rencontre.
     function codeLaunchIf() {
-      if (codeRunning || !codeIfCoinRule || !codeIfPuddleRule) return;
+      var allSet = codeIfActiveEvents.every(function (ev) { return !!codeIfRules[ev.ch]; });
+      if (codeRunning || !allSet) return;
       codeSetBuilderDisabled(true);
       codeRunning = true;
       var row = codeCurrentGrid[0];
@@ -10985,15 +11019,11 @@
           return;
         }
         var ch = row[i];
-        if (ch === "~" && codeIfPuddleRule !== "saute") {
+        var ev = CODE_IF_EVENT_BY_CHAR[ch];
+        if (ev && codeIfRules[ch] !== ev.action) {
           codeFoxEl.classList.remove("bump");
           void codeFoxEl.offsetWidth;
           codeFoxEl.classList.add("bump");
-          codeRunning = false;
-          showResultAnim("fail", startCodeIfLevel);
-          return;
-        }
-        if (ch === "o" && codeIfCoinRule !== "ramasse") {
           codeRunning = false;
           showResultAnim("fail", startCodeIfLevel);
           return;
