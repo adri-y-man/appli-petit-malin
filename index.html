@@ -2250,6 +2250,114 @@
     .sol-board { width: min(calc(100vh - 14.5rem), 40rem); }
   }
 
+  /* ---------- "Tir aux buts" ---------- */
+
+  .penalty-screen {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.8rem, 3.5vh, 1.4rem);
+    min-height: 0;
+    width: 100%;
+  }
+
+  .penalty-screen[hidden] { display: none; }
+
+  .penalty-field {
+    position: relative;
+    width: min(85vw, 26rem);
+    aspect-ratio: 4 / 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .penalty-goal {
+    position: relative;
+    width: 100%;
+    height: 62%;
+    display: flex;
+    border: clamp(4px, 1.5vw, 6px) solid var(--white);
+    border-bottom: none;
+    border-radius: 0.7rem 0.7rem 0 0;
+    overflow: hidden;
+    background:
+      repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.35) 0 2px, transparent 2px 14px),
+      repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.35) 0 2px, transparent 2px 14px),
+      linear-gradient(180deg, #4fb3e8, #3d7fe0);
+  }
+
+  .penalty-zone {
+    flex: 1;
+    appearance: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .penalty-zone:not(:last-child) { border-right: clamp(2px, 1vw, 3px) dashed rgba(255, 255, 255, 0.45); }
+  .penalty-zone:active:not(:disabled) { background: rgba(255, 255, 255, 0.16); }
+  .penalty-zone:disabled { cursor: default; }
+
+  .penalty-keeper {
+    position: absolute;
+    bottom: 6%;
+    left: 50%;
+    font-size: clamp(1.8rem, 8vw, 2.6rem);
+    line-height: 1;
+    transform: translateX(-50%);
+    transition: left 0.35s cubic-bezier(0.3, 1.4, 0.6, 1);
+    pointer-events: none;
+  }
+
+  .penalty-ball {
+    position: absolute;
+    bottom: 12%;
+    left: 50%;
+    font-size: clamp(1.6rem, 7vw, 2.2rem);
+    line-height: 1;
+    transform: translateX(-50%);
+    transition: left 0.4s ease, bottom 0.4s ease;
+    pointer-events: none;
+  }
+
+  /* ---------- "Casse-briques" ---------- */
+
+  .breakout-screen {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.8rem, 3.5vh, 1.4rem);
+    min-height: 0;
+    width: 100%;
+  }
+
+  .breakout-screen[hidden] { display: none; }
+
+  .breakout-stage {
+    position: relative;
+    width: min(78vw, 55vh, 22rem);
+    aspect-ratio: 300 / 420;
+    background: #eaf4ff;
+    border-radius: clamp(0.7rem, 2.5vw, 1.1rem);
+    box-shadow: 0 12px 24px -12px rgba(31, 42, 60, 0.55);
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  .breakout-stage canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
   .bn-screen {
     flex: 1 1 0;
     display: flex;
@@ -3388,6 +3496,8 @@
   .category-card-bataille { background: linear-gradient(135deg, #7ee8d0, #45c7a8); }
   .category-card-domino { background: linear-gradient(135deg, #ffd68a, #ffb648); }
   .category-card-solitaire { background: linear-gradient(135deg, #ffb199, #f77f5c); }
+  .category-card-penalty { background: linear-gradient(135deg, #8ed6ac, #43b98a); }
+  .category-card-breakout { background: linear-gradient(135deg, #a8b8f0, #598ce6); }
 
   /* 3 colonnes fixes (plutôt qu'un auto-fill dont le nombre de colonnes
      dépend de la largeur) : garantit que les 12 icônes (4 rangées de 3)
@@ -3809,6 +3919,28 @@
     <p class="boardgame-status" id="solStatus"></p>
     <div class="sol-board" id="solBoard"></div>
     <button type="button" class="boardgame-replay-btn" id="solReplayBtn">Rejouer ↻</button>
+  </section>
+
+  <section class="penalty-screen" id="penaltyScreen" hidden>
+    <p class="boardgame-status" id="penaltyStatus"></p>
+    <div class="penalty-field">
+      <div class="penalty-goal" id="penaltyGoal">
+        <button class="penalty-zone" type="button" data-zone="0" aria-label="Tirer à gauche"></button>
+        <button class="penalty-zone" type="button" data-zone="1" aria-label="Tirer au centre"></button>
+        <button class="penalty-zone" type="button" data-zone="2" aria-label="Tirer à droite"></button>
+        <div class="penalty-keeper" id="penaltyKeeper">🧤</div>
+      </div>
+      <div class="penalty-ball" id="penaltyBall">⚽</div>
+    </div>
+    <button type="button" class="boardgame-replay-btn" id="penaltyReplayBtn" hidden>Rejouer ↻</button>
+  </section>
+
+  <section class="breakout-screen" id="breakoutScreen" hidden>
+    <p class="boardgame-status" id="breakoutStatus"></p>
+    <div class="breakout-stage" id="breakoutStage">
+      <canvas id="breakoutCanvas" width="300" height="420"></canvas>
+    </div>
+    <button type="button" class="boardgame-replay-btn" id="breakoutReplayBtn" hidden>Rejouer ↻</button>
   </section>
 
   <div class="menu-overlay" id="menuOverlay">
@@ -4446,6 +4578,16 @@
         <button class="category-card category-card-solitaire" type="button" id="solCard">
           <span class="icon emoji">🟤</span>
           <span>Solitaire</span>
+          <span class="level-badge">1 joueur</span>
+        </button>
+        <button class="category-card category-card-penalty" type="button" id="penaltyCard">
+          <span class="icon emoji">⚽</span>
+          <span>Tir aux buts</span>
+          <span class="level-badge">1 joueur</span>
+        </button>
+        <button class="category-card category-card-breakout" type="button" id="breakoutCard">
+          <span class="icon emoji">🧱</span>
+          <span>Casse-briques</span>
           <span class="level-badge">1 joueur</span>
         </button>
         <button class="category-card category-card-contraire" type="button" id="contraireCard">
@@ -5906,7 +6048,19 @@
       solBoard: [],
       solSelected: null,
       solPegCount: 32,
-      solStatus: "playing"
+      solStatus: "playing",
+      penaltyShots: 0,
+      penaltyGoals: 0,
+      penaltyLocked: false,
+      brkPaddleX: 0,
+      brkBallX: 0,
+      brkBallY: 0,
+      brkBallVX: 0,
+      brkBallVY: 0,
+      brkBricks: [],
+      brkLives: 3,
+      brkScore: 0,
+      brkStatus: "ready"
     };
 
     var PROGRESS_KEY = "calculMalinProgress";
@@ -7080,6 +7234,16 @@
       solStatus: document.getElementById("solStatus"),
       solBoard: document.getElementById("solBoard"),
       solReplayBtn: document.getElementById("solReplayBtn"),
+      penaltyScreen: document.getElementById("penaltyScreen"),
+      penaltyStatus: document.getElementById("penaltyStatus"),
+      penaltyGoal: document.getElementById("penaltyGoal"),
+      penaltyKeeper: document.getElementById("penaltyKeeper"),
+      penaltyBall: document.getElementById("penaltyBall"),
+      penaltyReplayBtn: document.getElementById("penaltyReplayBtn"),
+      breakoutScreen: document.getElementById("breakoutScreen"),
+      breakoutStatus: document.getElementById("breakoutStatus"),
+      breakoutCanvas: document.getElementById("breakoutCanvas"),
+      breakoutReplayBtn: document.getElementById("breakoutReplayBtn"),
       categoryCards: document.querySelectorAll(".category-card"),
       calcBackBtn: document.getElementById("calcBackBtn"),
       terms2BackBtn: document.getElementById("terms2BackBtn"),
@@ -7099,6 +7263,8 @@
       bataillenavaleCard: document.getElementById("bataillenavaleCard"),
       dominoCard: document.getElementById("dominoCard"),
       solCard: document.getElementById("solCard"),
+      penaltyCard: document.getElementById("penaltyCard"),
+      breakoutCard: document.getElementById("breakoutCard"),
       colorsCard: document.getElementById("colorsCard"),
       animalsCard: document.getElementById("animalsCard"),
       bodyCard: document.getElementById("bodyCard"),
@@ -8695,7 +8861,7 @@
 
     // Jeux de société : parties à 2 joueurs en local (pas de niveaux/étoiles).
     function isBoardGameMode(mode) {
-      return mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino" || mode === "solitaire";
+      return mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino" || mode === "solitaire" || mode === "penalty" || mode === "breakout";
     }
 
     // "Paires cachées" et "Paires cachées (drapeaux)" partagent le même
@@ -11517,6 +11683,236 @@
       }
     }
 
+    // Jeux de société — "Tir aux buts" : 5 penalties, le gardien plonge au
+    // hasard vers l'une des 3 zones juste après le tir -- but si sa zone
+    // diffère de celle visée, arrêt sinon. Réutilise showResultAnim (mains
+    // qui applaudissent / singe qui se cache les yeux) pour le retour de
+    // chaque tir, comme pour Codeur Malin et Mémoire Malin.
+    var PENALTY_ZONE_LEFT = [16.6, 50, 83.4];
+    var PENALTY_SHOTS_TOTAL = 5;
+
+    function startPenalty() {
+      state.penaltyShots = 0;
+      state.penaltyGoals = 0;
+      state.penaltyLocked = false;
+      els.penaltyKeeper.style.left = "50%";
+      els.penaltyBall.style.left = "50%";
+      els.penaltyBall.style.bottom = "12%";
+      renderPenaltyScreen();
+    }
+
+    function renderPenaltyScreen() {
+      var done = state.penaltyShots >= PENALTY_SHOTS_TOTAL;
+      if (done) {
+        els.penaltyStatus.textContent = "Score final : " + state.penaltyGoals + " but" + (state.penaltyGoals > 1 ? "s" : "") + " sur " + PENALTY_SHOTS_TOTAL + " !";
+      } else {
+        els.penaltyStatus.textContent = "Tir " + (state.penaltyShots + 1) + " / " + PENALTY_SHOTS_TOTAL + " — Buts : " + state.penaltyGoals;
+      }
+      els.penaltyReplayBtn.hidden = !done;
+      var zones = els.penaltyGoal.querySelectorAll(".penalty-zone");
+      zones.forEach(function (z) { z.disabled = done || state.penaltyLocked; });
+    }
+
+    function onPenaltyZoneTap(zone) {
+      if (state.penaltyLocked || state.penaltyShots >= PENALTY_SHOTS_TOTAL) return;
+      state.penaltyLocked = true;
+      renderPenaltyScreen();
+      var keeperZone = randInt(0, 2);
+      els.penaltyBall.style.left = PENALTY_ZONE_LEFT[zone] + "%";
+      els.penaltyBall.style.bottom = "55%";
+      window.setTimeout(function () {
+        els.penaltyKeeper.style.left = PENALTY_ZONE_LEFT[keeperZone] + "%";
+      }, 60);
+      window.setTimeout(function () {
+        var scored = zone !== keeperZone;
+        if (scored) state.penaltyGoals++;
+        state.penaltyShots++;
+        showResultAnim(scored ? "success" : "fail", function () {
+          state.penaltyLocked = false;
+          els.penaltyBall.style.left = "50%";
+          els.penaltyBall.style.bottom = "12%";
+          els.penaltyKeeper.style.left = "50%";
+          renderPenaltyScreen();
+        });
+      }, 420);
+    }
+
+    // Jeux de société — "Casse-briques" : casse-briques classique, la
+    // raquette suit le doigt/la souris sur le canevas, la balle se lance
+    // au premier contact. 3 vies, victoire quand toutes les briques sont
+    // cassées. La boucle d'animation (requestAnimationFrame) s'arrête
+    // d'elle-même dès qu'on quitte l'écran (voir le garde-fou en tête de
+    // breakoutStep), plutôt que de dépendre d'un nettoyage externe.
+    var BRK_W = 300;
+    var BRK_H = 420;
+    var BRK_PADDLE_W = 64;
+    var BRK_PADDLE_H = 12;
+    var BRK_PADDLE_Y = BRK_H - 30;
+    var BRK_BALL_R = 6;
+    var BRK_ROWS = 4;
+    var BRK_COLS = 6;
+    var BRK_BRICK_W = 44;
+    var BRK_BRICK_H = 16;
+    var BRK_BRICK_GAP = 4;
+    var BRK_BRICK_TOP = 40;
+    var BRK_BRICK_LEFT = (BRK_W - (BRK_COLS * BRK_BRICK_W + (BRK_COLS - 1) * BRK_BRICK_GAP)) / 2;
+    var BRK_ROW_COLORS = ["#ef5da8", "#ffb648", "#43b98a", "#598ce6"];
+    var brkCtx = null;
+    var brkLoopId = null;
+
+    function brkBrickX(col) { return BRK_BRICK_LEFT + col * (BRK_BRICK_W + BRK_BRICK_GAP); }
+    function brkBrickY(row) { return BRK_BRICK_TOP + row * (BRK_BRICK_H + BRK_BRICK_GAP); }
+
+    function brkResetBall() {
+      state.brkBallX = state.brkPaddleX + BRK_PADDLE_W / 2;
+      state.brkBallY = BRK_PADDLE_Y - BRK_BALL_R - 1;
+      state.brkBallVX = 0;
+      state.brkBallVY = 0;
+    }
+
+    function startBreakout() {
+      var bricks = [];
+      for (var r = 0; r < BRK_ROWS; r++) {
+        var row = [];
+        for (var c = 0; c < BRK_COLS; c++) row.push(true);
+        bricks.push(row);
+      }
+      state.brkBricks = bricks;
+      state.brkPaddleX = BRK_W / 2 - BRK_PADDLE_W / 2;
+      state.brkLives = 3;
+      state.brkScore = 0;
+      state.brkStatus = "ready";
+      brkResetBall();
+      brkCtx = els.breakoutCanvas && els.breakoutCanvas.getContext && els.breakoutCanvas.getContext("2d");
+      updateBreakoutStatus();
+      drawBreakout();
+      if (brkLoopId === null) brkLoopId = window.requestAnimationFrame(breakoutStep);
+    }
+
+    function updateBreakoutStatus() {
+      els.breakoutReplayBtn.hidden = state.brkStatus !== "won" && state.brkStatus !== "lost";
+      if (state.brkStatus === "won") {
+        els.breakoutStatus.textContent = "🎉 Bravo, toutes les briques sont cassées ! Score : " + state.brkScore;
+      } else if (state.brkStatus === "lost") {
+        els.breakoutStatus.textContent = "Perdu ! Score : " + state.brkScore + " brique(s) cassée(s).";
+      } else if (state.brkStatus === "ready") {
+        els.breakoutStatus.textContent = "Touche l'écran pour lancer la balle — Vies : " + state.brkLives + " — Score : " + state.brkScore;
+      } else {
+        els.breakoutStatus.textContent = "Vies : " + state.brkLives + " — Score : " + state.brkScore;
+      }
+    }
+
+    function brkAllCleared() {
+      return state.brkBricks.every(function (row) { return row.every(function (v) { return !v; }); });
+    }
+
+    function brkCheckBrickCollision() {
+      for (var r = 0; r < BRK_ROWS; r++) {
+        for (var c = 0; c < BRK_COLS; c++) {
+          if (!state.brkBricks[r][c]) continue;
+          var bx = brkBrickX(c), by = brkBrickY(r);
+          if (state.brkBallX + BRK_BALL_R > bx && state.brkBallX - BRK_BALL_R < bx + BRK_BRICK_W &&
+              state.brkBallY + BRK_BALL_R > by && state.brkBallY - BRK_BALL_R < by + BRK_BRICK_H) {
+            state.brkBricks[r][c] = false;
+            state.brkScore++;
+            state.brkBallVY *= -1;
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function breakoutTick() {
+      if (state.brkStatus !== "playing") return;
+      state.brkBallX += state.brkBallVX;
+      state.brkBallY += state.brkBallVY;
+      if (state.brkBallX - BRK_BALL_R <= 0) { state.brkBallX = BRK_BALL_R; state.brkBallVX *= -1; }
+      if (state.brkBallX + BRK_BALL_R >= BRK_W) { state.brkBallX = BRK_W - BRK_BALL_R; state.brkBallVX *= -1; }
+      if (state.brkBallY - BRK_BALL_R <= 0) { state.brkBallY = BRK_BALL_R; state.brkBallVY *= -1; }
+      if (state.brkBallY + BRK_BALL_R >= BRK_PADDLE_Y && state.brkBallY + BRK_BALL_R <= BRK_PADDLE_Y + BRK_PADDLE_H + 8 &&
+          state.brkBallX >= state.brkPaddleX - BRK_BALL_R && state.brkBallX <= state.brkPaddleX + BRK_PADDLE_W + BRK_BALL_R && state.brkBallVY > 0) {
+        state.brkBallVY = -Math.abs(state.brkBallVY);
+        var hitPos = (state.brkBallX - (state.brkPaddleX + BRK_PADDLE_W / 2)) / (BRK_PADDLE_W / 2);
+        hitPos = Math.max(-1, Math.min(1, hitPos));
+        state.brkBallVX = hitPos * 3.4;
+      }
+      brkCheckBrickCollision();
+      if (brkAllCleared()) {
+        state.brkStatus = "won";
+        updateBreakoutStatus();
+        return;
+      }
+      if (state.brkBallY - BRK_BALL_R > BRK_H) {
+        state.brkLives--;
+        if (state.brkLives <= 0) {
+          state.brkStatus = "lost";
+        } else {
+          state.brkStatus = "ready";
+          brkResetBall();
+        }
+        updateBreakoutStatus();
+      }
+    }
+
+    function drawBreakout() {
+      if (!brkCtx) return;
+      brkCtx.clearRect(0, 0, BRK_W, BRK_H);
+      brkCtx.fillStyle = "#eaf4ff";
+      brkCtx.fillRect(0, 0, BRK_W, BRK_H);
+      for (var r = 0; r < BRK_ROWS; r++) {
+        for (var c = 0; c < BRK_COLS; c++) {
+          if (!state.brkBricks[r][c]) continue;
+          brkCtx.fillStyle = BRK_ROW_COLORS[r % BRK_ROW_COLORS.length];
+          var bx = brkBrickX(c), by = brkBrickY(r);
+          brkCtx.beginPath();
+          if (brkCtx.roundRect) brkCtx.roundRect(bx, by, BRK_BRICK_W, BRK_BRICK_H, 4);
+          else brkCtx.rect(bx, by, BRK_BRICK_W, BRK_BRICK_H);
+          brkCtx.fill();
+        }
+      }
+      brkCtx.fillStyle = "#1f2a3c";
+      brkCtx.beginPath();
+      if (brkCtx.roundRect) brkCtx.roundRect(state.brkPaddleX, BRK_PADDLE_Y, BRK_PADDLE_W, BRK_PADDLE_H, 6);
+      else brkCtx.rect(state.brkPaddleX, BRK_PADDLE_Y, BRK_PADDLE_W, BRK_PADDLE_H);
+      brkCtx.fill();
+      brkCtx.fillStyle = "#ffb648";
+      brkCtx.beginPath();
+      brkCtx.arc(state.brkBallX, state.brkBallY, BRK_BALL_R, 0, Math.PI * 2);
+      brkCtx.fill();
+    }
+
+    function breakoutStep() {
+      // S'arrête aussi si le menu est rouvert (bouton retour) : le mode ne
+      // change qu'au choix d'un nouveau jeu, mais l'écran n'est alors plus
+      // réellement visible sous l'overlay du menu.
+      if (state.mode !== "breakout" || els.breakoutScreen.hidden || !els.menuOverlay.hidden) { brkLoopId = null; return; }
+      breakoutTick();
+      drawBreakout();
+      brkLoopId = window.requestAnimationFrame(breakoutStep);
+    }
+
+    function brkCanvasX(e) {
+      var rect = els.breakoutCanvas.getBoundingClientRect();
+      return (e.clientX - rect.left) * (BRK_W / rect.width);
+    }
+
+    function onBreakoutPointerMove(e) {
+      var x = brkCanvasX(e) - BRK_PADDLE_W / 2;
+      state.brkPaddleX = Math.max(0, Math.min(BRK_W - BRK_PADDLE_W, x));
+      if (state.brkStatus === "ready") brkResetBall();
+    }
+
+    function onBreakoutPointerDown(e) {
+      onBreakoutPointerMove(e);
+      if (state.brkStatus === "ready") {
+        state.brkStatus = "playing";
+        state.brkBallVX = (Math.random() < 0.5 ? -1 : 1) * 1.6;
+        state.brkBallVY = -3.2;
+        updateBreakoutStatus();
+      }
+    }
+
     // Jeux de société — "Bataille navale simplifiée" : grille réduite 6x6,
     // 3 bateaux par joueur (tailles 3/2/2) placés au hasard automatiquement
     // (pas de phase de placement manuel, pour rester simple). Les 2 joueurs
@@ -11990,9 +12386,11 @@
       var bataillenavale = mode === "bataillenavale";
       var domino = mode === "domino";
       var solitaire = mode === "solitaire";
+      var penalty = mode === "penalty";
+      var breakout = mode === "breakout";
       var code = mode === "codeseq" || mode === "codeloop" || mode === "codedebug" || mode === "codeif" || mode === "codesandbox";
-      els.problemZone.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || code;
-      els.answers.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || code;
+      els.problemZone.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || penalty || breakout || code;
+      els.answers.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || penalty || breakout || code;
       els.paintScreen.hidden = !paint;
       els.musicScreen.hidden = !music;
       els.rhythmScreen.hidden = !rhythm;
@@ -12009,6 +12407,8 @@
       els.bnScreen.hidden = !bataillenavale;
       els.dominoScreen.hidden = !domino;
       els.solScreen.hidden = !solitaire;
+      els.penaltyScreen.hidden = !penalty;
+      els.breakoutScreen.hidden = !breakout;
       els.codeScreen.hidden = !code;
       var noStars = mode === "dessine" || music || isBoardGameMode(mode) || mode === "codesandbox";
       els.levelPill.hidden = noStars;
@@ -12050,6 +12450,16 @@
       if (solitaire) {
         state.problem = null;
         startSolitaire();
+        return;
+      }
+      if (penalty) {
+        state.problem = null;
+        startPenalty();
+        return;
+      }
+      if (breakout) {
+        state.problem = null;
+        startBreakout();
         return;
       }
       if (paint) {
@@ -12201,6 +12611,8 @@
     els.bataillenavaleCard.addEventListener("click", function () { selectMode("bataillenavale"); });
     els.dominoCard.addEventListener("click", function () { selectMode("domino"); });
     els.solCard.addEventListener("click", function () { selectMode("solitaire"); });
+    els.penaltyCard.addEventListener("click", function () { selectMode("penalty"); });
+    els.breakoutCard.addEventListener("click", function () { selectMode("breakout"); });
     els.morpionReplayBtn.addEventListener("click", startMorpion);
     els.p4ReplayBtn.addEventListener("click", startPuissance4);
     els.damesReplayBtn.addEventListener("click", startDames);
@@ -12212,6 +12624,15 @@
     els.dominoPassBtn.addEventListener("click", onDominoPass);
     els.dominoReplayBtn.addEventListener("click", startDomino);
     els.solReplayBtn.addEventListener("click", startSolitaire);
+    els.penaltyReplayBtn.addEventListener("click", startPenalty);
+    els.penaltyGoal.addEventListener("click", function (e) {
+      var zoneBtn = e.target.closest(".penalty-zone");
+      if (!zoneBtn) return;
+      onPenaltyZoneTap(Number(zoneBtn.getAttribute("data-zone")));
+    });
+    els.breakoutReplayBtn.addEventListener("click", startBreakout);
+    els.breakoutCanvas.addEventListener("pointermove", onBreakoutPointerMove);
+    els.breakoutCanvas.addEventListener("pointerdown", onBreakoutPointerDown);
     els.fillFormeCanvas.addEventListener("pointerdown", onFillFormeStrokeStart);
     els.fillFormeCanvas.addEventListener("pointermove", onFillFormeStrokeMove);
     els.fillFormeCanvas.addEventListener("pointerup", onFillFormeStrokeEnd);
