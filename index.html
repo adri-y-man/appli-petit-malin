@@ -10490,13 +10490,14 @@
     }
 
     var CODE_IF_ACTIONS = ["ramasse", "saute", "avance"];
-    // "Ramasser" utilise un panier dessiné (SVG) plutôt qu'un emoji main
-    // -- la main levée ✋ était comprise comme "stop" ou "tape m'en cinq",
-    // pas "ramasser". Le panier lève l'ambiguïté sans dépendre d'un geste.
+    // Les 3 actions sont dessinées en SVG maison (pas d'emoji) avec le
+    // même style de traits arrondis, pour rester cohérentes entre elles :
+    // panier (ramasser), arc qui passe par-dessus une bosse (sauter),
+    // flèche (avancer).
     var CODE_IF_ACTION_ICON = {
-      ramasse: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 11 L6.5 19 Q6.7 20 8 20 L16 20 Q17.3 20 17.5 19 L18.5 11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 11 H20 M7 11 V14 M12 11 V15 M17 11 V14" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/><path d="M8.5 7 Q8.5 3.2 12 3.2 Q15.5 3.2 15.5 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
-      saute: "🦘",
-      avance: "➡️"
+      ramasse: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 11 L6.5 19 Q6.7 20 8 20 L16 20 Q17.3 20 17.5 19 L18.5 11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 11 H20 M7 11 V14 M12 11 V15 M17 11 V14" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/><path d="M8.5 7 Q8.5 3.2 12 3.2 Q15.5 3.2 15.5 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+      saute: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 20 Q8.5 15.5 12 15.5 Q15.5 15.5 15.5 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M4 20 Q12 4 20 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>',
+      avance: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 H18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M13 6.5 L19 12 L13 17.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
     };
     var CODE_IF_ACTION_LABEL = { ramasse: "ramasser", saute: "sauter", avance: "avancer" };
 
