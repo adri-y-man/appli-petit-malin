@@ -9485,6 +9485,29 @@
       osc.stop(now + 0.9);
     }
 
+    // Petit "clic" synthétisé (pas de fichier audio) pour la navigation
+    // dans les menus -- cartes de catégorie/mode, retour, logo -- jamais
+    // sur les réponses de jeu, qui ont déjà leur propre retour (couleur,
+    // secousse, animation bravo/raté). Réutilise le même AudioContext que
+    // Musique Malin.
+    function playNavClickSound() {
+      var ctx = ensureMusicCtx();
+      if (!ctx) return;
+      var now = ctx.currentTime;
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(660, now + 0.08);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.18, now + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.1);
+    }
+
     // "Quel instrument ?" : de vrais échantillons audio (note C4 du
     // soundfont FluidR3 GM, licence Creative Commons Attribution 3.0 —
     // https://github.com/gleitz/midi-js-soundfonts), plutôt qu'un timbre
@@ -12927,6 +12950,16 @@
         nextProblem();
       }
     }
+
+    // Petit clic sonore sur la navigation des menus (cartes de catégorie/
+    // mode, retour, logo) -- un seul écouteur délégué plutôt qu'un par
+    // bouton, vu le nombre de boutons "retour" (un par sous-menu). Jamais
+    // sur les réponses de jeu (voir playNavClickSound).
+    document.addEventListener("click", function (e) {
+      if (e.target.closest(".category-card, .mode-card, .menu-back, .menu-brand, #menuBtn, #gameBackBtn")) {
+        playNavClickSound();
+      }
+    });
 
     updateMenuMusicBtn();
     document.addEventListener("pointerdown", function () { playMenuMusic(); }, { once: true });
