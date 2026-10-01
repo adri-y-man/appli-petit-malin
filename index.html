@@ -8546,18 +8546,25 @@
     function appendCenteredEmoji(btn, symbol) {
       btn.textContent = symbol;
       var size = parseFloat(getComputedStyle(btn).fontSize) || 40;
+      // Les emoji couleur débordent souvent de la boîte "em" théorique de
+      // la police (ascent/descent ne collent pas à l'encre réelle du
+      // glyphe, ça varie selon la plateforme) -- une toile pile à la
+      // taille de la police rognait le haut/le bas du dessin sur
+      // certains appareils. On dessine le texte à la même taille mais
+      // dans une toile plus grande, avec de la marge tout autour.
+      var canvasSize = size * 1.4;
       var dpr = window.devicePixelRatio || 1;
       var canvas = document.createElement("canvas");
-      canvas.width = Math.round(size * dpr);
-      canvas.height = Math.round(size * dpr);
-      canvas.style.width = size + "px";
-      canvas.style.height = size + "px";
+      canvas.width = Math.round(canvasSize * dpr);
+      canvas.height = Math.round(canvasSize * dpr);
+      canvas.style.width = canvasSize + "px";
+      canvas.style.height = canvasSize + "px";
       var ctx = canvas.getContext("2d");
       ctx.scale(dpr, dpr);
       ctx.font = size + 'px "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif';
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(symbol, size / 2, size / 2);
+      ctx.fillText(symbol, canvasSize / 2, canvasSize / 2);
       btn.textContent = "";
       btn.appendChild(canvas);
     }
