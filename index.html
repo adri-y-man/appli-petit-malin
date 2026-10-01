@@ -9523,12 +9523,10 @@
       osc.stop(now + 0.9);
     }
 
-    // Petit "clic" synthétisé (pas de fichier audio) pour la navigation
-    // dans les menus -- cartes de catégorie/mode, retour, logo -- jamais
-    // sur les réponses de jeu, qui ont déjà leur propre retour (couleur,
-    // secousse, animation bravo/raté). Réutilise le même AudioContext que
-    // Musique Malin.
-    function playNavClickSound() {
+    // Petit "clic" synthétisé (pas de fichier audio) sur la navigation
+    // (cartes de catégorie/mode, retour, logo) et sur les boutons réponse
+    // des jeux. Réutilise le même AudioContext que Musique Malin.
+    function playClickSound() {
       var ctx = ensureMusicCtx();
       if (!ctx) return;
       var now = ctx.currentTime;
@@ -9538,7 +9536,7 @@
       osc.frequency.setValueAtTime(880, now);
       osc.frequency.exponentialRampToValueAtTime(660, now + 0.08);
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.5, now + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.62, now + 0.008);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -9546,65 +9544,62 @@
       osc.stop(now + 0.1);
     }
 
-    // Petit arpège montant joyeux pour la réussite d'un niveau (passage au
-    // niveau supérieur). Réutilise le même AudioContext que la navigation.
+    // Note "fanfare" : dent de scie passée dans un filtre passe-bas pour un
+    // grain plus proche d'un cuivre que d'une dent de scie brute. Utilisée
+    // par playLevelUpSound() et playWinSound() ci-dessous (thème "fanfare
+    // de cirque", choisi parmi 5 propositions).
+    function playFanfareNote(ctx, freq, start, dur, peak) {
+      var osc = ctx.createOscillator();
+      var filt = ctx.createBiquadFilter();
+      var gain = ctx.createGain();
+      osc.type = "sawtooth";
+      filt.type = "lowpass";
+      filt.frequency.value = 2500;
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(peak, start + Math.min(0.02, dur * 0.3));
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      osc.connect(filt);
+      filt.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + dur + 0.02);
+    }
+
+    // Fanfare de cirque pour la réussite d'un niveau (passage au niveau
+    // supérieur) : rythme pointé "ta-ta-TAAA" qui résout sur un accord.
     function playLevelUpSound() {
       var ctx = ensureMusicCtx();
       if (!ctx) return;
       var now = ctx.currentTime;
-      var notes = [523.25, 659.25, 783.99]; // Do5-Mi5-Sol5
-      notes.forEach(function (freq, i) {
-        var start = now + i * 0.09;
-        var osc = ctx.createOscillator();
-        var gain = ctx.createGain();
-        osc.type = "triangle";
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.0001, start);
-        gain.gain.exponentialRampToValueAtTime(0.3, start + 0.015);
-        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.25);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(start);
-        osc.stop(start + 0.25);
-      });
+      playFanfareNote(ctx, 392, now, 0.13, 0.6); // Sol4
+      playFanfareNote(ctx, 392, now + 0.16, 0.13, 0.6); // Sol4
+      playFanfareNote(ctx, 523.25, now + 0.34, 0.15, 0.62); // Do5 (élan)
+      var chordStart = now + 0.52;
+      playFanfareNote(ctx, 261.63, chordStart, 0.8, 0.4); // Do4 (basse)
+      playFanfareNote(ctx, 523.25, chordStart, 0.8, 0.55); // Do5
+      playFanfareNote(ctx, 659.25, chordStart, 0.8, 0.55); // Mi5
     }
 
-    // Petite fanfare pour la victoire finale (niveau maximum, coupe 🏆) :
-    // un arpège plus long que playLevelUpSound(), terminé par un accord
-    // tenu pour marquer le coup.
+    // Fanfare de cirque pour la victoire finale (niveau maximum, coupe 🏆) :
+    // la même idée que playLevelUpSound() mais nettement plus longue et
+    // plus riche (triple pickup, élan ascendant, grand accord tenu avec
+    // basse) pour marquer le coup.
     function playWinSound() {
       var ctx = ensureMusicCtx();
       if (!ctx) return;
       var now = ctx.currentTime;
-      var notes = [523.25, 659.25, 783.99, 1046.5]; // Do5-Mi5-Sol5-Do6
-      notes.forEach(function (freq, i) {
-        var start = now + i * 0.1;
-        var osc = ctx.createOscillator();
-        var gain = ctx.createGain();
-        osc.type = "triangle";
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.0001, start);
-        gain.gain.exponentialRampToValueAtTime(0.32, start + 0.015);
-        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.35);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(start);
-        osc.stop(start + 0.35);
+      [0, 0.16, 0.32].forEach(function (t) {
+        playFanfareNote(ctx, 392, now + t, 0.13, 0.62); // Sol4 x3
       });
-      var chordStart = now + notes.length * 0.1;
-      [1046.5, 1318.5].forEach(function (freq) {
-        var osc = ctx.createOscillator();
-        var gain = ctx.createGain();
-        osc.type = "triangle";
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.0001, chordStart);
-        gain.gain.exponentialRampToValueAtTime(0.25, chordStart + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, chordStart + 0.6);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(chordStart);
-        osc.stop(chordStart + 0.6);
-      });
+      playFanfareNote(ctx, 523.25, now + 0.54, 0.16, 0.64); // Do5 (élan)
+      playFanfareNote(ctx, 659.25, now + 0.7, 0.16, 0.66); // Mi5 (élan)
+      var chordStart = now + 0.88;
+      playFanfareNote(ctx, 196, chordStart, 1.5, 0.32); // Sol3 (basse)
+      playFanfareNote(ctx, 261.63, chordStart, 1.5, 0.42); // Do4 (basse)
+      playFanfareNote(ctx, 523.25, chordStart, 1.5, 0.58); // Do5
+      playFanfareNote(ctx, 659.25, chordStart, 1.5, 0.58); // Mi5
+      playFanfareNote(ctx, 783.99, chordStart, 1.5, 0.58); // Sol5
     }
 
     // "Quel instrument ?" : de vrais échantillons audio (note C4 du
@@ -13053,13 +13048,21 @@
     }
 
     // Petit clic sonore sur la navigation des menus (cartes de catégorie/
-    // mode, retour, logo) -- un seul écouteur délégué plutôt qu'un par
-    // bouton, vu le nombre de boutons "retour" (un par sous-menu). Jamais
-    // sur les réponses de jeu (voir playNavClickSound).
+    // mode, retour, logo) et sur les boutons réponse des jeux -- un seul
+    // écouteur délégué plutôt qu'un par bouton, vu le nombre de boutons
+    // concernés (voir playClickSound).
     document.addEventListener("click", function (e) {
-      if (e.target.closest(".category-card, .mode-card, .menu-back, .menu-brand, #menuBtn, #gameBackBtn")) {
-        playNavClickSound();
+      if (e.target.closest(".category-card, .mode-card, .menu-back, .menu-brand, #menuBtn, #gameBackBtn, .answer-btn")) {
+        playClickSound();
       }
+    });
+
+    // Coupe la musique de fond quand l'appli passe en arrière-plan (onglet
+    // caché, appli minimisée sur mobile) ; la relance au retour au premier
+    // plan si elle devrait jouer à ce moment-là (playMenuMusic() revérifie
+    // déjà la sourdine et si on est sur un écran de menu).
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) pauseMenuMusic(); else playMenuMusic();
     });
 
     updateMenuMusicBtn();
