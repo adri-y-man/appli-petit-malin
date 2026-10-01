@@ -21,6 +21,12 @@ téléphone) — c'est une page autonome, sans dépendance ni installation.
 - Interface adaptative : gros chiffres et gros boutons, optimisée pour
   mobile en portrait comme en paysage, tablette et ordinateur.
 
+## Crédits
+
+Musique de fond des écrans de menu : *Kids* par Sub_Clair, via
+[Pixabay Music](https://pixabay.com/music/) (licence Pixabay Content
+License, libre d'utilisation).
+
 ## Héberger en ligne
 
 Ce dépôt ne contient qu'un seul fichier HTML autonome. Pour que ton enfant y

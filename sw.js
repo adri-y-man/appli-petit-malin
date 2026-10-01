@@ -1,10 +1,11 @@
-const CACHE_NAME = "calcul-malin-v2";
+const CACHE_NAME = "calcul-malin-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./icons/icon-512.png",
+  "./audio/menu-kids.mp3"
 ];
 
 self.addEventListener("install", (event) => {

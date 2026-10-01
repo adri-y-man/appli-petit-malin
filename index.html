@@ -3225,6 +3225,28 @@
     text-shadow: 0 2px 0 rgba(31, 42, 60, 0.25);
   }
 
+  /* Bouton couper/remettre la musique de fond des écrans de menu -- posé
+     à droite de .menu-brand (flex, margin-left: auto) plutôt que dans sa
+     propre barre, pour rester visible sur tous les écrans de menu sans
+     prendre de place supplémentaire. */
+  .menu-music-btn {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    margin-left: auto;
+    flex: none;
+    width: clamp(2.2rem, 8vw, 2.6rem);
+    height: clamp(2.2rem, 8vw, 2.6rem);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.22);
+    font-size: clamp(1rem, 4vw, 1.25rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .menu-music-btn:active { transform: translateY(1px); }
+
   .menu-panel {
     width: 100%;
     max-width: 32rem;
@@ -4038,7 +4060,9 @@
         <path d="M104.2 126.9 Q112.7 135.4 121.2 126.9" stroke="#3A2418" stroke-width="5" fill="none" stroke-linecap="round"/>
       </svg>
       <span class="menu-brand-text">Petit Malin</span>
+      <button type="button" class="menu-music-btn" id="menuMusicBtn" aria-label="Couper la musique">🔊</button>
     </div>
+    <audio id="menuMusic" src="audio/menu-kids.mp3" loop preload="auto"></audio>
     <div class="menu-panel" id="menuHome">
       <div class="category-grid">
         <button class="category-card category-card-app" type="button" data-category="calc">
@@ -7352,6 +7376,8 @@
       foxWalker: document.getElementById("foxWalker"),
       menuBrand: document.getElementById("menuBrand"),
       menuOverlay: document.getElementById("menuOverlay"),
+      menuMusic: document.getElementById("menuMusic"),
+      menuMusicBtn: document.getElementById("menuMusicBtn"),
       menuHome: document.getElementById("menuHome"),
       menuCalc: document.getElementById("menuCalc"),
       menuTerms2: document.getElementById("menuTerms2"),
@@ -12664,14 +12690,59 @@
       return "home";
     }
 
+    // Musique d'ambiance des écrans de menu (pas pendant les jeux, qui ont
+    // parfois leur propre son) : les navigateurs bloquent la lecture avec
+    // son tant qu'il n'y a pas eu de geste de l'utilisateur sur la page,
+    // donc le tout premier geste (n'importe où) sert à "débloquer" la
+    // lecture -- ensuite, openMenu/closeMenu suffisent à la relancer/
+    // couper normalement.
+    var MENU_MUSIC_MUTED_KEY = "calculMalinMusicMuted";
+
+    function loadMenuMusicMuted() {
+      try {
+        return window.localStorage.getItem(MENU_MUSIC_MUTED_KEY) === "1";
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function saveMenuMusicMuted(muted) {
+      try {
+        window.localStorage.setItem(MENU_MUSIC_MUTED_KEY, muted ? "1" : "0");
+      } catch (e) {
+        // localStorage indisponible : on ignore, juste pas de mémorisation.
+      }
+    }
+
+    var menuMusicMuted = loadMenuMusicMuted();
+
+    function updateMenuMusicBtn() {
+      els.menuMusicBtn.textContent = menuMusicMuted ? "🔇" : "🔊";
+      els.menuMusicBtn.setAttribute("aria-label", menuMusicMuted ? "Remettre la musique" : "Couper la musique");
+    }
+
+    function playMenuMusic() {
+      if (menuMusicMuted || els.menuOverlay.hidden) return;
+      els.menuMusic.play().catch(function () {
+        // Lecture refusée (pas encore de geste sur la page) : le premier
+        // pointerdown global (voir plus bas) relancera la lecture.
+      });
+    }
+
+    function pauseMenuMusic() {
+      els.menuMusic.pause();
+    }
+
     function openMenu() {
       showMenuScreen(categoryOfMode(state.mode) || "home");
       els.menuOverlay.hidden = false;
       setThemeColor(THEME_COLOR_DEFAULT);
+      playMenuMusic();
     }
 
     function closeMenu() {
       els.menuOverlay.hidden = true;
+      pauseMenuMusic();
     }
 
     function selectMode(mode) {
@@ -12857,6 +12928,15 @@
       }
     }
 
+    updateMenuMusicBtn();
+    document.addEventListener("pointerdown", function () { playMenuMusic(); }, { once: true });
+    els.menuMusicBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      menuMusicMuted = !menuMusicMuted;
+      saveMenuMusicMuted(menuMusicMuted);
+      updateMenuMusicBtn();
+      if (menuMusicMuted) pauseMenuMusic(); else playMenuMusic();
+    });
     els.menuBtn.addEventListener("click", openMenu);
     els.menuBrand.addEventListener("click", function () { showMenuScreen("home"); });
     els.menuBrand.addEventListener("keydown", function (e) {
