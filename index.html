@@ -3401,6 +3401,16 @@
   .mode-card:hover { transform: translateY(-2px); }
   .mode-card:active { transform: translateY(2px); border-bottom-width: 3px; }
 
+  /* Même léger flottement que .category-card (voir plus bas) -- pas de
+     --tilt défini ici, rotate(var(--tilt, 0deg)) retombe simplement à 0. */
+  .mode-card { animation: gentle-float 3.4s ease-in-out infinite; }
+  .mode-card:hover, .mode-card:active { animation-play-state: paused; }
+
+  .mode-grid > .mode-card:nth-child(4n+1) { animation-delay: -0.2s; }
+  .mode-grid > .mode-card:nth-child(4n+2) { animation-delay: -1.1s; }
+  .mode-grid > .mode-card:nth-child(4n+3) { animation-delay: -1.9s; }
+  .mode-grid > .mode-card:nth-child(4n+4) { animation-delay: -2.7s; }
+
   .mode-card:focus-visible {
     outline: 4px solid var(--ink);
     outline-offset: 3px;
@@ -3515,6 +3525,27 @@
 
   .category-card:hover { transform: translateY(-2px) rotate(var(--tilt, 0deg)); }
   .category-card:active { transform: translateY(2px) rotate(var(--tilt, 0deg)); }
+
+  /* Très léger flottement permanent des icônes/boutons des menus et
+     sous-menus -- juste assez pour que l'écran paraisse vivant, sans
+     distraire. En pause au survol/appui pour laisser la main aux
+     transitions hover/active ci-dessus plutôt que de les concurrencer. */
+  @keyframes gentle-float {
+    0%, 100% { transform: translateY(0) rotate(var(--tilt, 0deg)); }
+    50% { transform: translateY(-3px) rotate(var(--tilt, 0deg)); }
+  }
+
+  .category-card { animation: gentle-float 3.4s ease-in-out infinite; }
+  .category-card:hover, .category-card:active { animation-play-state: paused; }
+
+  .category-grid > .category-card:nth-child(4n+1) { animation-delay: -0.2s; }
+  .category-grid > .category-card:nth-child(4n+2) { animation-delay: -1.1s; }
+  .category-grid > .category-card:nth-child(4n+3) { animation-delay: -1.9s; }
+  .category-grid > .category-card:nth-child(4n+4) { animation-delay: -2.7s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .category-card, .mode-card { animation: none; }
+  }
 
   .category-card:focus-visible {
     outline: 4px solid var(--ink);
