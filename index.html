@@ -1095,6 +1095,77 @@
 
   .brush-size-btn .dot { background: var(--ink); border-radius: 50%; }
 
+  /* ---------- Peinture Malin : "Coloriage par numéros" ---------- */
+
+  .paintnum-screen {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.6rem, 2.2vw, 1rem);
+    min-height: 0;
+    width: 100%;
+  }
+
+  .paintnum-screen[hidden] { display: none; }
+
+  /* Numéro affiché au centre de chaque région non encore coloriée --
+     masqué "à la main" (style.display) une fois la région remplie, voir
+     renderPaintNumStage/onPaintNumRegionTap : un <text> ne peut pas être
+     l'enfant d'une forme <circle>/<rect>/etc. en SVG (pas un conteneur),
+     donc il n'est jamais vraiment "dans" sa région pour un sélecteur CSS
+     descendant -- juste positionné au même endroit. */
+  .paintnum-number {
+    font-family: inherit;
+    font-weight: 800;
+    font-size: 15px;
+    fill: #1f2a3c;
+    text-anchor: middle;
+    dominant-baseline: central;
+    pointer-events: none;
+    paint-order: stroke;
+    stroke: #fff8ee;
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
+
+  .paintnum-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.4rem, 1.8vw, 0.8rem);
+    max-width: 30rem;
+  }
+
+  .paintnum-swatch {
+    appearance: none;
+    border: 3px solid rgba(31, 42, 60, 0.25);
+    cursor: pointer;
+    flex: none;
+    width: clamp(2.2rem, 8.5vw, 3.3rem);
+    height: clamp(2.2rem, 8.5vw, 3.3rem);
+    border-radius: 50%;
+    box-shadow: 0 6px 14px -8px rgba(31, 42, 60, 0.5);
+    transition: transform 0.12s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: clamp(0.95rem, 3.6vw, 1.2rem);
+    color: var(--white);
+    text-shadow: 0 1px 2px rgba(31, 42, 60, 0.45);
+  }
+
+  .paintnum-swatch.selected {
+    border-color: var(--ink);
+    transform: scale(1.18);
+    box-shadow: 0 0 0 3px var(--white), 0 6px 14px -8px rgba(31, 42, 60, 0.6);
+  }
+
+  .paintnum-swatch.done { opacity: 0.4; }
+
   /* ---------- Musique Malin : xylophone en libre jeu ---------- */
 
   .music-screen {
@@ -3451,6 +3522,7 @@
   .category-card-coloriage { background: linear-gradient(135deg, #ff8fa3, #ff6b81); }
   .category-card-modele { background: linear-gradient(135deg, #b8a4e3, #8b6fc9); }
   .category-card-dessine { background: linear-gradient(135deg, #7ee8d0, #45c7a8); }
+  .category-card-paintnum { background: linear-gradient(135deg, #ffb199, #f77f5c); }
   .category-card-musiquelibre { background: linear-gradient(135deg, #f7a8d8, #e879c2); }
   .category-card-instruments { background: linear-gradient(135deg, #7ec8f7, #4a90d9); }
   .category-card-rythme { background: linear-gradient(135deg, #ffb199, #f77f5c); }
@@ -3809,6 +3881,13 @@
     <p class="paint-feedback" id="paintFeedback" aria-live="polite"></p>
     <div class="paint-palette" id="paintPalette"></div>
     <div class="paint-tools" id="paintTools" hidden></div>
+  </section>
+
+  <section class="paintnum-screen" id="paintnumScreen" hidden>
+    <div class="paint-stage-wrap">
+      <div class="paint-stage" id="paintnumStage"></div>
+    </div>
+    <div class="paintnum-legend" id="paintnumLegend"></div>
   </section>
 
   <section class="music-screen" id="musicScreen" hidden>
@@ -4331,6 +4410,11 @@
           <span class="icon emoji">✏️</span>
           <span>Dessin libre</span>
           <span class="level-badge">Dès 3 ans</span>
+        </button>
+        <button class="category-card category-card-paintnum" type="button" id="paintnumCard">
+          <span class="icon emoji">🔢</span>
+          <span>Coloriage par numéros</span>
+          <span class="level-badge">MS-CP</span>
         </button>
       </div>
     </div>
@@ -5594,6 +5678,96 @@
       ]
     ];
 
+    // "Coloriage par numéros" (Peinture Malin) : contrairement aux
+    // templates ci-dessus (une couleur cible par région, jamais répétée),
+    // ici plusieurs régions PARTAGENT la même couleur cible -- exactement
+    // comme un vrai coloriage magique. Le numéro affiché dans chaque zone
+    // est déduit du rang de sa couleur dans targetColors (1re couleur
+    // rencontrée = n°1, etc.) : deux régions de même couleur portent donc
+    // automatiquement le même numéro. "labels" donne la position (x, y)
+    // du numéro à l'intérieur de chaque région, dans le même ordre que
+    // les régions/targetColors.
+    var PAINTNUM_TEMPLATES = [
+      {
+        name: "Le poisson",
+        targetColors: ["#3d7fe0", "#ffd400", "#ffd400", "#1f2a3c"],
+        labels: [{ x: 90, y: 100 }, { x: 158, y: 100 }, { x: 90, y: 60 }, { x: 65, y: 92 }],
+        svg: '<ellipse class="paint-region" data-region="0" cx="90" cy="100" rx="50" ry="32" fill="#fff8ee" stroke="#1f2a3c" stroke-width="4"/>' +
+          '<polygon class="paint-region" data-region="1" points="140,100 175,75 175,125" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<path class="paint-region" data-region="2" d="M72 70 Q90 45 108 70 Q90 80 72 70 Z" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<circle class="paint-region" data-region="3" cx="65" cy="92" r="7" fill="#fff8ee" stroke="#1f2a3c" stroke-width="2.5"/>'
+      },
+      {
+        name: "Le papillon",
+        targetColors: ["#e63946", "#e63946", "#8e5ce6", "#8e5ce6", "#1f2a3c", "#1f2a3c", "#1f2a3c"],
+        labels: [{ x: 60, y: 75 }, { x: 140, y: 75 }, { x: 65, y: 122 }, { x: 135, y: 122 }, { x: 100, y: 100 }, { x: 85, y: 33 }, { x: 115, y: 33 }],
+        svg: '<path d="M100 55 Q90 40 85 33" fill="none" stroke="#1f2a3c" stroke-width="2.2" stroke-linecap="round"/>' +
+          '<path d="M100 55 Q110 40 115 33" fill="none" stroke="#1f2a3c" stroke-width="2.2" stroke-linecap="round"/>' +
+          '<ellipse class="paint-region" data-region="0" cx="65" cy="78" rx="32" ry="27" transform="rotate(-15 65 78)" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<ellipse class="paint-region" data-region="1" cx="135" cy="78" rx="32" ry="27" transform="rotate(15 135 78)" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<ellipse class="paint-region" data-region="2" cx="70" cy="120" rx="25" ry="21" transform="rotate(-10 70 120)" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<ellipse class="paint-region" data-region="3" cx="130" cy="120" rx="25" ry="21" transform="rotate(10 130 120)" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<rect class="paint-region" data-region="4" x="95" y="58" width="10" height="86" rx="5" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<circle class="paint-region" data-region="5" cx="85" cy="33" r="5" fill="#fff8ee" stroke="#1f2a3c" stroke-width="2.5"/>' +
+          '<circle class="paint-region" data-region="6" cx="115" cy="33" r="5" fill="#fff8ee" stroke="#1f2a3c" stroke-width="2.5"/>'
+      },
+      {
+        name: "La maison",
+        targetColors: ["#e63946", "#ffd400", "#ff8c3d", "#3d7fe0", "#3d7fe0", "#ff8c3d", "#43b98a", "#43b98a", "#43b98a"],
+        labels: [{ x: 100, y: 78 }, { x: 70, y: 165 }, { x: 103, y: 160 }, { x: 72, y: 122 }, { x: 128, y: 122 }, { x: 132, y: 75 }, { x: 30, y: 183 }, { x: 100, y: 188 }, { x: 170, y: 183 }],
+        svg: '<polygon class="paint-region" data-region="0" points="40,95 100,45 160,95" fill="#fff8ee" stroke="#1f2a3c" stroke-width="4"/>' +
+          '<rect class="paint-region" data-region="1" x="50" y="95" width="100" height="80" fill="#fff8ee" stroke="#1f2a3c" stroke-width="4"/>' +
+          '<rect class="paint-region" data-region="5" x="125" y="58" width="14" height="32" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<rect class="paint-region" data-region="2" x="90" y="135" width="26" height="40" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<rect class="paint-region" data-region="3" x="60" y="110" width="24" height="24" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<rect class="paint-region" data-region="4" x="116" y="110" width="24" height="24" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<ellipse class="paint-region" data-region="6" cx="30" cy="183" rx="18" ry="8" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<ellipse class="paint-region" data-region="7" cx="100" cy="188" rx="18" ry="8" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<ellipse class="paint-region" data-region="8" cx="170" cy="183" rx="18" ry="8" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>'
+      },
+      {
+        name: "La fleur",
+        targetColors: ["#ef5da8", "#ef5da8", "#ef5da8", "#ef5da8", "#ef5da8", "#ffd400", "#43b98a", "#33c2c2", "#33c2c2", "#8e5ce6", "#8e5ce6", "#8e5ce6"],
+        labels: [{ x: 100, y: 60 }, { x: 128, y: 81 }, { x: 118, y: 114 }, { x: 82, y: 114 }, { x: 72, y: 81 }, { x: 100, y: 90 }, { x: 100, y: 135 }, { x: 85, y: 150 }, { x: 115, y: 150 }, { x: 60, y: 188 }, { x: 100, y: 188 }, { x: 140, y: 188 }],
+        svg: '<rect class="paint-region" data-region="6" x="95" y="108" width="10" height="55" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<path class="paint-region" data-region="7" d="M70 162 Q75 142 100 140 Q90 158 70 162 Z" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<path class="paint-region" data-region="8" d="M130 162 Q125 142 100 140 Q110 158 130 162 Z" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<ellipse class="paint-region" data-region="0" cx="100" cy="60" rx="18" ry="30" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<ellipse class="paint-region" data-region="1" cx="100" cy="60" rx="18" ry="30" transform="rotate(72 100 90)" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<ellipse class="paint-region" data-region="2" cx="100" cy="60" rx="18" ry="30" transform="rotate(144 100 90)" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<ellipse class="paint-region" data-region="3" cx="100" cy="60" rx="18" ry="30" transform="rotate(216 100 90)" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<ellipse class="paint-region" data-region="4" cx="100" cy="60" rx="18" ry="30" transform="rotate(288 100 90)" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<circle class="paint-region" data-region="5" cx="100" cy="90" r="18" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<circle class="paint-region" data-region="9" cx="60" cy="188" r="7" fill="#fff8ee" stroke="#1f2a3c" stroke-width="2.5"/>' +
+          '<circle class="paint-region" data-region="10" cx="100" cy="188" r="7" fill="#fff8ee" stroke="#1f2a3c" stroke-width="2.5"/>' +
+          '<circle class="paint-region" data-region="11" cx="140" cy="188" r="7" fill="#fff8ee" stroke="#1f2a3c" stroke-width="2.5"/>'
+      },
+      {
+        name: "Le jardin",
+        targetColors: ["#ffd400", "#c9d9f5", "#c9d9f5", "#c9d9f5", "#43b98a", "#43b98a", "#ff8c3d", "#2f9e63", "#ff8c3d", "#2f9e63", "#ef5da8", "#ef5da8", "#ef5da8"],
+        labels: [{ x: 160, y: 35 }, { x: 40, y: 28 }, { x: 95, y: 20 }, { x: 130, y: 64 }, { x: 18, y: 183 }, { x: 196, y: 186 }, { x: 51, y: 167 }, { x: 51, y: 140 }, { x: 149, y: 167 }, { x: 149, y: 140 }, { x: 85, y: 186 }, { x: 120, y: 190 }, { x: 60, y: 190 }],
+        svg: '<ellipse class="paint-region" data-region="4" cx="60" cy="195" rx="90" ry="35" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<ellipse class="paint-region" data-region="5" cx="160" cy="198" rx="90" ry="35" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<circle class="paint-region" data-region="0" cx="160" cy="35" r="20" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3.5"/>' +
+          '<g class="paint-region" data-region="1" fill="#fff8ee" stroke="#1f2a3c" stroke-width="2.5">' +
+          '<circle cx="25" cy="32" r="10"/><circle cx="40" cy="24" r="13"/><circle cx="55" cy="32" r="10"/>' +
+          '</g>' +
+          '<g class="paint-region" data-region="2" fill="#fff8ee" stroke="#1f2a3c" stroke-width="2.5">' +
+          '<circle cx="80" cy="25" r="9"/><circle cx="95" cy="16" r="11"/><circle cx="110" cy="25" r="9"/>' +
+          '</g>' +
+          '<g class="paint-region" data-region="3" fill="#fff8ee" stroke="#1f2a3c" stroke-width="2.5">' +
+          '<circle cx="115" cy="68" r="8"/><circle cx="130" cy="60" r="10"/><circle cx="145" cy="68" r="8"/>' +
+          '</g>' +
+          '<rect class="paint-region" data-region="6" x="46" y="150" width="10" height="35" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<rect class="paint-region" data-region="8" x="144" y="150" width="10" height="35" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3"/>' +
+          '<circle class="paint-region" data-region="7" cx="51" cy="140" r="22" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3.5"/>' +
+          '<circle class="paint-region" data-region="9" cx="149" cy="140" r="22" fill="#fff8ee" stroke="#1f2a3c" stroke-width="3.5"/>' +
+          '<circle class="paint-region" data-region="10" cx="85" cy="186" r="8" fill="#fff8ee" stroke="#1f2a3c" stroke-width="2.5"/>' +
+          '<circle class="paint-region" data-region="11" cx="120" cy="190" r="8" fill="#fff8ee" stroke="#1f2a3c" stroke-width="2.5"/>' +
+          '<circle class="paint-region" data-region="12" cx="60" cy="190" r="8" fill="#fff8ee" stroke="#1f2a3c" stroke-width="2.5"/>'
+      }
+    ];
+
     // Musique Malin : gamme de do majeur, une octave complète (do ré mi fa
     // sol la si), les 7 notes que l'enfant connaît par leur nom.
     var MUSIC_NOTES = [
@@ -6060,7 +6234,9 @@
       brkBricks: [],
       brkLives: 3,
       brkScore: 0,
-      brkStatus: "ready"
+      brkStatus: "ready",
+      paintNumFilled: [],
+      paintNumActive: null
     };
 
     var PROGRESS_KEY = "calculMalinProgress";
@@ -7281,6 +7457,7 @@
       coloriageCard: document.getElementById("coloriageCard"),
       modeleCard: document.getElementById("modeleCard"),
       dessineCard: document.getElementById("dessineCard"),
+      paintnumCard: document.getElementById("paintnumCard"),
       musiqueLibreCard: document.getElementById("musiqueLibreCard"),
       instrumentsCard: document.getElementById("instrumentsCard"),
       rythmeCard: document.getElementById("rythmeCard"),
@@ -7328,6 +7505,9 @@
       paintFeedback: document.getElementById("paintFeedback"),
       paintPalette: document.getElementById("paintPalette"),
       paintTools: document.getElementById("paintTools"),
+      paintnumScreen: document.getElementById("paintnumScreen"),
+      paintnumStage: document.getElementById("paintnumStage"),
+      paintnumLegend: document.getElementById("paintnumLegend"),
       musicScreen: document.getElementById("musicScreen"),
       musicInstrumentPicker: document.getElementById("musicInstrumentPicker"),
       musicStage: document.getElementById("musicStage"),
@@ -9107,6 +9287,144 @@
           showWin();
         } else {
           startPaintProblem();
+        }
+      });
+    }
+
+    // "Coloriage par numéros" (Peinture Malin) : un numéro par couleur,
+    // déduit du rang de première apparition de cette couleur dans
+    // targetColors -- donc deux régions de même couleur partagent
+    // automatiquement le même numéro (voir PAINTNUM_TEMPLATES plus haut).
+    // On touche d'abord un numéro dans la légende, puis les régions qui
+    // portent ce numéro ; toucher une région avec le mauvais numéro actif
+    // la secoue sans pénalité (comme les autres jeux de l'appli pour cet
+    // âge), plutôt que de la colorier avec la mauvaise couleur.
+    function paintNumTemplate() {
+      var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
+      return PAINTNUM_TEMPLATES[levelIdx];
+    }
+
+    function paintNumUniqueColors(template) {
+      var seen = [];
+      template.targetColors.forEach(function (c) {
+        if (seen.indexOf(c) === -1) seen.push(c);
+      });
+      return seen;
+    }
+
+    function paintNumNumberForRegion(template, idx) {
+      return paintNumUniqueColors(template).indexOf(template.targetColors[idx]) + 1;
+    }
+
+    function startPaintNumProblem() {
+      var template = paintNumTemplate();
+      state.paintNumFilled = template.targetColors.map(function () { return false; });
+      state.paintNumActive = 1;
+      renderPaintNumStage();
+      renderPaintNumLegend();
+      saveProgress();
+    }
+
+    function renderPaintNumStage() {
+      var template = paintNumTemplate();
+      els.paintnumStage.innerHTML = '<svg viewBox="0 0 200 200" aria-label="' + template.name + '">' + template.svg + "</svg>";
+      var regions = els.paintnumStage.querySelectorAll(".paint-region");
+      for (var i = 0; i < regions.length; i++) {
+        (function (region) {
+          var idx = Number(region.getAttribute("data-region"));
+          if (state.paintNumFilled[idx]) {
+            region.style.fill = template.targetColors[idx];
+            region.classList.add("filled");
+          }
+          var label = template.labels[idx];
+          if (label) {
+            var text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute("x", label.x);
+            text.setAttribute("y", label.y);
+            text.setAttribute("class", "paintnum-number");
+            text.setAttribute("data-region", String(idx));
+            text.textContent = String(paintNumNumberForRegion(template, idx));
+            // Un <text> ne peut pas être l'enfant d'une forme <circle>/<rect>/
+            // etc. (pas un conteneur SVG) : il est donc ajouté à côté, pas
+            // dedans -- masqué "à la main" via son propre data-region plutôt
+            // que par un sélecteur CSS descendant de .paint-region.filled.
+            if (state.paintNumFilled[idx]) text.style.display = "none";
+            els.paintnumStage.firstChild.appendChild(text);
+          }
+          region.addEventListener("click", function () { onPaintNumRegionTap(idx); });
+        })(regions[i]);
+      }
+    }
+
+    function onPaintNumRegionTap(idx) {
+      var template = paintNumTemplate();
+      if (state.paintNumFilled[idx]) return;
+      var region = els.paintnumStage.querySelector('.paint-region[data-region="' + idx + '"]');
+      if (paintNumNumberForRegion(template, idx) !== state.paintNumActive) {
+        if (region) {
+          region.classList.remove("shake");
+          void region.offsetWidth;
+          region.classList.add("shake");
+        }
+        return;
+      }
+      state.paintNumFilled[idx] = true;
+      if (region) {
+        region.style.fill = template.targetColors[idx];
+        region.classList.add("filled");
+      }
+      var text = els.paintnumStage.querySelector('.paintnum-number[data-region="' + idx + '"]');
+      if (text) text.style.display = "none";
+      renderPaintNumLegend();
+      if (state.paintNumFilled.every(function (f) { return f; })) onPaintNumWin();
+    }
+
+    function renderPaintNumLegend() {
+      var template = paintNumTemplate();
+      var colors = paintNumUniqueColors(template);
+      els.paintnumLegend.innerHTML = "";
+      colors.forEach(function (color, i) {
+        var number = i + 1;
+        var done = template.targetColors.every(function (c, idx) {
+          return c !== color || state.paintNumFilled[idx];
+        });
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "paintnum-swatch" + (state.paintNumActive === number ? " selected" : "") + (done ? " done" : "");
+        btn.style.background = color;
+        btn.textContent = String(number);
+        btn.setAttribute("aria-label", "Couleur numéro " + number);
+        btn.addEventListener("click", function () {
+          state.paintNumActive = number;
+          renderPaintNumLegend();
+        });
+        els.paintnumLegend.appendChild(btn);
+      });
+    }
+
+    function onPaintNumWin() {
+      state.wrongStreak = 0;
+      state.correctStreak++;
+      var leveledUp = false;
+      var justWon = false;
+      if (state.correctStreak >= starsToLevelUp(state.mode)) {
+        if (state.level < MAX_LEVEL) {
+          state.level++;
+          leveledUp = true;
+        } else {
+          justWon = true;
+        }
+        state.correctStreak = 0;
+      }
+      if (!leveledUp && !justWon) renderLevel();
+      saveProgress();
+      showResultAnim("success", function () {
+        if (leveledUp) {
+          showLevelUp(state.level);
+        } else if (justWon) {
+          showWin();
+        } else {
+          startPaintNumProblem();
         }
       });
     }
@@ -12371,6 +12689,7 @@
       setGameFeedback("");
 
       var paint = isPaintMode(mode);
+      var paintnum = mode === "paintnum";
       var music = mode === "musiquelibre";
       var rhythm = mode === "rythme";
       var memory = isMemoryMode(mode);
@@ -12389,9 +12708,10 @@
       var penalty = mode === "penalty";
       var breakout = mode === "breakout";
       var code = mode === "codeseq" || mode === "codeloop" || mode === "codedebug" || mode === "codeif" || mode === "codesandbox";
-      els.problemZone.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || penalty || breakout || code;
-      els.answers.hidden = paint || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || penalty || breakout || code;
+      els.problemZone.hidden = paint || paintnum || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || penalty || breakout || code;
+      els.answers.hidden = paint || paintnum || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || penalty || breakout || code;
       els.paintScreen.hidden = !paint;
+      els.paintnumScreen.hidden = !paintnum;
       els.musicScreen.hidden = !music;
       els.rhythmScreen.hidden = !rhythm;
       els.memoryScreen.hidden = !memory;
@@ -12466,6 +12786,11 @@
         state.problem = null;
         state.eraserOn = false;
         startPaintProblem();
+        return;
+      }
+      if (paintnum) {
+        state.problem = null;
+        startPaintNumProblem();
         return;
       }
       if (music) {
@@ -12576,6 +12901,7 @@
     els.coloriageCard.addEventListener("click", function () { selectMode("coloriage"); });
     els.modeleCard.addEventListener("click", function () { selectMode("modele"); });
     els.dessineCard.addEventListener("click", function () { selectMode("dessine"); });
+    els.paintnumCard.addEventListener("click", function () { selectMode("paintnum"); });
     els.musiqueLibreCard.addEventListener("click", function () { selectMode("musiquelibre"); });
     els.instrumentsCard.addEventListener("click", function () { selectMode("instruments"); });
     els.rythmeCard.addEventListener("click", function () { selectMode("rythme"); });
