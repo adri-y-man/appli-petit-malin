@@ -9539,6 +9539,67 @@
       osc.stop(now + 0.1);
     }
 
+    // Petit arpège montant joyeux pour la réussite d'un niveau (passage au
+    // niveau supérieur). Réutilise le même AudioContext que la navigation.
+    function playLevelUpSound() {
+      var ctx = ensureMusicCtx();
+      if (!ctx) return;
+      var now = ctx.currentTime;
+      var notes = [523.25, 659.25, 783.99]; // Do5-Mi5-Sol5
+      notes.forEach(function (freq, i) {
+        var start = now + i * 0.09;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.3, start + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.25);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.25);
+      });
+    }
+
+    // Petite fanfare pour la victoire finale (niveau maximum, coupe 🏆) :
+    // un arpège plus long que playLevelUpSound(), terminé par un accord
+    // tenu pour marquer le coup.
+    function playWinSound() {
+      var ctx = ensureMusicCtx();
+      if (!ctx) return;
+      var now = ctx.currentTime;
+      var notes = [523.25, 659.25, 783.99, 1046.5]; // Do5-Mi5-Sol5-Do6
+      notes.forEach(function (freq, i) {
+        var start = now + i * 0.1;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.32, start + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.35);
+      });
+      var chordStart = now + notes.length * 0.1;
+      [1046.5, 1318.5].forEach(function (freq) {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, chordStart);
+        gain.gain.exponentialRampToValueAtTime(0.25, chordStart + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, chordStart + 0.6);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(chordStart);
+        osc.stop(chordStart + 0.6);
+      });
+    }
+
     // "Quel instrument ?" : de vrais échantillons audio (note C4 du
     // soundfont FluidR3 GM, licence Creative Commons Attribution 3.0 —
     // https://github.com/gleitz/midi-js-soundfonts), plutôt qu'un timbre
@@ -12666,12 +12727,14 @@
       spawnConfetti(els.levelUpConfetti, 26);
       els.levelUpOverlay.hidden = false;
       setThemeColor(THEME_COLOR_CELEBRATE);
+      playLevelUpSound();
     }
 
     function showWin() {
       spawnConfetti(els.winConfetti, 34);
       els.winOverlay.hidden = false;
       setThemeColor(THEME_COLOR_CELEBRATE);
+      playWinSound();
     }
 
     function categoryOfMode(mode) {
