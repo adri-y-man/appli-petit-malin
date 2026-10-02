@@ -1775,6 +1775,12 @@
     font-size: clamp(1.2rem, 6vw, 1.8rem);
   }
 
+  /* Même plafond élargi que .code-board : sans ça les emoji des cases
+     restaient minuscules dans un plateau devenu bien plus grand. */
+  @media (min-width: 640px) {
+    .code-cell { font-size: clamp(1.2rem, 6vw, 3.2rem); }
+  }
+
   /* Mur en briques (dégradés répétés, pas d'image) : décalage d'un
      calque sur l'autre pour que les joints alternent d'une rangée à
      l'autre comme un vrai appareillage de briques. */
