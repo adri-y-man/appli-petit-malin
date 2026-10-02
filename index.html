@@ -2346,6 +2346,17 @@
     justify-content: flex-start;
   }
 
+  /* Sur tablette, le plafond pensé pour téléphone (26rem) laissait la cage
+     minuscule au milieu de tout l'espace libre (écran sans barre du haut,
+     voir noStars) -- même principe que .sol-board juste au-dessus. */
+  @media (min-width: 640px) and (orientation: portrait) {
+    .penalty-field { width: min(82vw, 40rem); }
+  }
+
+  @media (min-width: 640px) and (orientation: landscape) {
+    .penalty-field { width: min(calc(100vh - 9rem), 40rem); }
+  }
+
   .penalty-goal {
     position: relative;
     width: 100%;
@@ -2393,6 +2404,14 @@
     transform: translateX(-50%);
     transition: left 0.4s ease, bottom 0.4s ease;
     pointer-events: none;
+  }
+
+  /* Le gardien/ballon sont dimensionnés en vw, plafonné pour téléphone --
+     sur la cage agrandie ci-dessus (tablette), ce plafond les laissait
+     minuscules au milieu d'une cage bien plus grande. */
+  @media (min-width: 640px) {
+    .penalty-keeper { font-size: clamp(2.4rem, 6vw, 3.6rem); }
+    .penalty-ball { font-size: clamp(2rem, 5vw, 3rem); }
   }
 
   /* ---------- "Casse-briques" ---------- */
