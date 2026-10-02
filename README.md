@@ -27,6 +27,8 @@ Musique de fond des écrans de menu : *Kids* par Sub_Clair, via
 [Pixabay Music](https://pixabay.com/music/) (licence Pixabay Content
 License, libre d'utilisation).
 
+Son de passage de niveau : fourni directement par l'utilisateur.
+
 ## Héberger en ligne
 
 Ce dépôt ne contient qu'un seul fichier HTML autonome. Pour que ton enfant y

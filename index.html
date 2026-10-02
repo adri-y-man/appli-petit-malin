@@ -9566,19 +9566,19 @@
       osc.stop(start + dur + 0.02);
     }
 
-    // Fanfare de cirque pour la réussite d'un niveau (passage au niveau
-    // supérieur) : rythme pointé "ta-ta-TAAA" qui résout sur un accord.
+    // Réussite d'un niveau (passage au niveau supérieur) : vrai
+    // enregistrement plutôt qu'un son synthétisé (fourni par l'utilisateur).
+    var levelUpAudio = null;
     function playLevelUpSound() {
-      var ctx = ensureMusicCtx();
-      if (!ctx) return;
-      var now = ctx.currentTime;
-      playFanfareNote(ctx, 392, now, 0.13, 0.6); // Sol4
-      playFanfareNote(ctx, 392, now + 0.16, 0.13, 0.6); // Sol4
-      playFanfareNote(ctx, 523.25, now + 0.34, 0.15, 0.62); // Do5 (élan)
-      var chordStart = now + 0.52;
-      playFanfareNote(ctx, 261.63, chordStart, 0.8, 0.4); // Do4 (basse)
-      playFanfareNote(ctx, 523.25, chordStart, 0.8, 0.55); // Do5
-      playFanfareNote(ctx, 659.25, chordStart, 0.8, 0.55); // Mi5
+      if (typeof Audio === "undefined") return;
+      if (!levelUpAudio) levelUpAudio = new Audio("audio/level-up.mp3");
+      try {
+        levelUpAudio.currentTime = 0;
+      } catch (e) {
+        // ignore : arrive seulement si la source n'est pas encore prête
+      }
+      var playPromise = levelUpAudio.play();
+      if (playPromise && playPromise.catch) playPromise.catch(function () {});
     }
 
     // Fanfare de cirque pour la victoire finale (niveau maximum, coupe 🏆) :
