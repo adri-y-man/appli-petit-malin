@@ -1752,6 +1752,20 @@
     box-shadow: 0 12px 24px -12px rgba(31, 42, 60, 0.55);
   }
 
+  /* Sur tablette, les plafonds pensés pour téléphone (20rem pour le
+     plateau, 26rem pour la zone de construction du programme) laissaient
+     les jeux de code minuscules au milieu de tout l'espace libre -- même
+     principe que .sol-board/.penalty-field/.breakout-stage. La barre du
+     haut (étoiles) reste visible ici (contrairement à ces jeux-là), donc
+     la réserve verticale en paysage est plus généreuse. */
+  @media (min-width: 640px) and (orientation: portrait) {
+    .code-board { width: min(70vw, 62vh, 34rem); }
+  }
+
+  @media (min-width: 640px) and (orientation: landscape) {
+    .code-board { width: min(50vw, calc(100vh - 17rem), 34rem); }
+  }
+
   .code-cell {
     background: #8ed6ac;
     border: 1px solid rgba(31, 42, 60, 0.12);
@@ -1798,6 +1812,11 @@
     gap: clamp(0.5rem, 2vh, 0.8rem);
     width: 100%;
     max-width: 26rem;
+  }
+
+  /* Même plafond élargi que .code-board ci-dessus, sur tablette. */
+  @media (min-width: 640px) {
+    .code-instruction, .code-builder { max-width: 38rem; }
   }
 
   .code-palette {
