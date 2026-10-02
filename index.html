@@ -12788,13 +12788,13 @@
       if (mode === "count" || mode === "compare" || mode === "sequence" || mode === "sudokuchiffre") return "calc";
       if (mode === "colors" || mode === "animals" || mode === "numbers" || mode === "body" || mode === "food") return "anglais";
       if (mode === "reading" || mode === "letters" || mode === "syllables" || mode === "rhymes" || mode === "wordgrid" || mode === "casse" || mode === "sound") return "lire";
-      if (isPaintMode(mode)) return "peinture";
+      if (isPaintMode(mode) || mode === "paintnum") return "peinture";
       if (mode === "musiquelibre" || mode === "instruments" || mode === "pitch" || mode === "rythme") return "musique";
       if (mode === "animalname" || mode === "babies" || mode === "habitat" || mode === "diet" || mode === "animalsound") return "animaux";
       if (isMemoryMode(mode) || mode === "disparu" || mode === "ordre" || mode === "change" || mode === "suitelum") return "memoire";
       if (mode === "mot" || mode === "composesimple" || mode === "composelibre" || mode === "lettreman" || mode === "trace" || mode === "syllordre" || mode === "article") return "ecriture";
       if (mode === "traceforme" || mode === "shapes" || mode === "fillforme" || mode === "intrus" || mode === "puzzle" || mode === "sudokuforme") return "formes";
-      if (mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino" || mode === "solitaire" || mode === "contraire") return "jeux";
+      if (mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino" || mode === "solitaire" || mode === "contraire" || mode === "penalty" || mode === "breakout") return "jeux";
       if (mode === "codeseq" || mode === "codeloop" || mode === "codedebug" || mode === "codeif" || mode === "codesandbox") return "code";
       return null;
     }
