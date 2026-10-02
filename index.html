@@ -2440,6 +2440,17 @@
     touch-action: none;
   }
 
+  /* Sur tablette, le plafond pensé pour téléphone (22rem) laissait le
+     plateau minuscule au milieu de tout l'espace libre (écran sans barre
+     du haut, voir noStars) -- même principe que .sol-board/.penalty-field. */
+  @media (min-width: 640px) and (orientation: portrait) {
+    .breakout-stage { width: min(70vw, 62vh, 34rem); }
+  }
+
+  @media (min-width: 640px) and (orientation: landscape) {
+    .breakout-stage { width: min(55vw, calc(100vh - 9rem), 34rem); }
+  }
+
   .breakout-stage canvas {
     position: absolute;
     inset: 0;
@@ -12264,6 +12275,19 @@
       state.brkStatus = "ready";
       brkResetBall();
       brkCtx = els.breakoutCanvas && els.breakoutCanvas.getContext && els.breakoutCanvas.getContext("2d");
+      // Le plateau logique reste 300x420 (toute la physique du jeu s'appuie
+      // dessus), mais sur tablette .breakout-stage l'étire bien plus grand
+      // qu'avant (voir CSS) -- sans ceci le canvas serait flou (bitmap
+      // 300x420 agrandi par le navigateur). On augmente la résolution réelle
+      // du bitmap selon le pixel ratio de l'écran, puis on redessine à
+      // l'échelle dpr : tout le code de dessin continue d'utiliser les
+      // coordonnées logiques 0-300/0-420 sans changement.
+      if (brkCtx) {
+        var brkDpr = window.devicePixelRatio || 1;
+        els.breakoutCanvas.width = BRK_W * brkDpr;
+        els.breakoutCanvas.height = BRK_H * brkDpr;
+        brkCtx.setTransform(brkDpr, 0, 0, brkDpr, 0, 0);
+      }
       updateBreakoutStatus();
       drawBreakout();
       if (brkLoopId === null) brkLoopId = window.requestAnimationFrame(breakoutStep);
