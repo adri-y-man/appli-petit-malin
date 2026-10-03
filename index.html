@@ -5009,6 +5009,14 @@
 
     var MIN_LEVEL = 1;
     var MAX_LEVEL = 5;
+    // "Trouve le bug" a 2 niveaux de plus que tous les autres jeux (voir
+    // codeGenerateDebugLevel) -- cas particulier isolé via cette fonction
+    // plutôt qu'en touchant MAX_LEVEL, qui dimensionne le tableau de
+    // niveaux de TOUS les autres jeux de l'appli.
+    var CODEDEBUG_MAX_LEVEL = 7;
+    function maxLevelForMode(mode) {
+      return mode === "codedebug" ? CODEDEBUG_MAX_LEVEL : MAX_LEVEL;
+    }
     var STARS_TO_LEVEL_UP = 5;
     var MISTAKES_TO_LEVEL_DOWN = 3;
     var CANDY_COLORS = ["candy-pink", "candy-teal", "candy-blue", "candy-tangerine"];
@@ -7707,7 +7715,7 @@
       for (var i = 0; i < starEls.length; i++) {
         starEls[i].classList.toggle("filled", i < state.correctStreak);
       }
-      els.maxBadge.hidden = state.level !== MAX_LEVEL;
+      els.maxBadge.hidden = state.level !== maxLevelForMode(state.mode);
     }
 
     // Multiplication/division sont prioritaires sur addition/soustraction :
@@ -10907,12 +10915,19 @@
     // labyrinthe généré à chaque tentative (jamais deux fois le même),
     // toujours vérifié solvable avant d'être proposé -- voir
     // codeGenerateMaze/codeGenerateLoopLevel/codeGenerateDebugLevel.
+    // Indices 5 et 6 (niveaux 6 et 7) : uniquement lus par "Trouve le bug"
+    // (CODEDEBUG_MAX_LEVEL va jusqu'à 7, voir plus haut) -- "Guide le
+    // renard"/"Répète avec moi" restent plafonnés à MAX_LEVEL (5) et ne
+    // les atteignent donc jamais. "barriers: 2" : plusieurs murs séparés
+    // plutôt qu'un seul (voir codeGenerateMultiBarrierLayout).
     var CODE_MAZE_DIFFICULTY = [
       { width: 4, height: 1, walls: 0 },
       { width: 6, height: 1, walls: 0 },
       { width: 4, height: 4, walls: 0 },
       { width: 4, height: 4, walls: 3 },
-      { width: 5, height: 5, walls: 4 }
+      { width: 5, height: 5, walls: 4 },
+      { width: 6, height: 6, walls: 1, barriers: 2 },
+      { width: 6, height: 6, walls: 1, barriers: 2 }
     ];
     var CODE_LOOP_DIFFICULTY = [
       { width: 6, height: 1 },
@@ -11054,7 +11069,49 @@
       return { grid: grid, start: start, target: target };
     }
 
+    // Comme codeGenerateBarrierLayout, mais avec plusieurs murs séparés
+    // (diff.barriers) au lieu d'un seul -- chacun une ligne complète avec
+    // sa propre porte, à une position/orientation différente des autres.
+    // Contrairement au mur unique, rien ne garantit ici que départ et
+    // carotte restent reliés (plusieurs murs peuvent isoler une zone) :
+    // comme pour la grille ouverte, c'est l'appelant qui revérifie la
+    // solvabilité et retire un autre niveau sinon (voir codeGenerateMaze/
+    // codeGenerateDebugLevel, boucle "for attempt").
+    function codeGenerateMultiBarrierLayout(diff) {
+      var grid = codeEmptyGrid(diff.width, diff.height);
+      var usedLines = [];
+      for (var b = 0; b < diff.barriers; b++) {
+        var vertical = Math.random() < 0.5;
+        var lineDim = vertical ? diff.width : diff.height;
+        var freeDim = vertical ? diff.height : diff.width;
+        if (lineDim < 3) return null;
+        var linePos = randInt(1, lineDim - 2);
+        if (usedLines.some(function (u) { return u.vertical === vertical && u.pos === linePos; })) return null;
+        usedLines.push({ vertical: vertical, pos: linePos });
+        var gapIdx = randInt(0, freeDim - 1);
+        for (var i = 0; i < freeDim; i++) {
+          if (i === gapIdx) continue;
+          if (vertical) grid[i][linePos] = "#";
+          else grid[linePos][i] = "#";
+        }
+      }
+      var start = { x: randInt(0, diff.width - 1), y: randInt(0, diff.height - 1) };
+      if (grid[start.y][start.x] === "#") return null;
+      var candidates = [];
+      for (var ty = 0; ty < diff.height; ty++) {
+        for (var tx = 0; tx < diff.width; tx++) {
+          if (tx === start.x && ty === start.y) continue;
+          if (grid[ty][tx] === "#") continue;
+          candidates.push({ x: tx, y: ty });
+        }
+      }
+      if (!candidates.length) return null;
+      var target = candidates[randInt(0, candidates.length - 1)];
+      return { grid: grid, start: start, target: target };
+    }
+
     function codeGenerateLayout(diff) {
+      if (diff.barriers > 1) return codeGenerateMultiBarrierLayout(diff);
       return diff.walls > 0 ? codeGenerateBarrierLayout(diff) : codeGenerateOpenLayout(diff);
     }
 
@@ -11109,25 +11166,32 @@
     // niveau).
     function codeGenerateDebugLevel(levelIdx) {
       var diff = CODE_MAZE_DIFFICULTY[levelIdx];
+      // Niveau 7 (indice 6) : 2 blocs fautifs au lieu d'un seul -- rien
+      // n'empêche l'enfant de corriger les deux avant de lancer (voir
+      // renderCodeDebugBuilder, aucune limite au nombre de cases
+      // sélectionnées/corrigées).
+      var bugCount = levelIdx >= 6 ? 2 : 1;
       for (var attempt = 0; attempt < 60; attempt++) {
         var layout = codeGenerateLayout(diff);
         if (!layout) continue;
         var correctProgram = codeBfsProgram(layout.grid, layout.start, layout.target);
-        if (!correctProgram || correctProgram.length < 2) continue;
-        var bugIndex = randInt(0, correctProgram.length - 1);
-        var originalBlock = correctProgram[bugIndex];
-        var otherBlocks = CODE_BLOCK_ORDER.filter(function (b) { return b !== originalBlock; });
-        var buggyBlock = otherBlocks[randInt(0, otherBlocks.length - 1)];
+        if (!correctProgram || correctProgram.length < Math.max(2, bugCount)) continue;
+        var bugIndices = shuffle(correctProgram.map(function (_, i) { return i; })).slice(0, bugCount);
         var buggyProgram = correctProgram.slice();
-        buggyProgram[bugIndex] = buggyBlock;
+        bugIndices.forEach(function (bugIndex) {
+          var originalBlock = correctProgram[bugIndex];
+          var otherBlocks = CODE_BLOCK_ORDER.filter(function (b) { return b !== originalBlock; });
+          buggyProgram[bugIndex] = otherBlocks[randInt(0, otherBlocks.length - 1)];
+        });
         var sim = codeSimulate(layout.grid, layout.start, buggyProgram);
         if (sim.ok && sim.pos.x === layout.target.x && sim.pos.y === layout.target.y) continue;
         layout.grid[layout.target.y][layout.target.x] = "T";
-        return { grid: layout.grid, start: layout.start, program: buggyProgram };
+        return { grid: layout.grid, start: layout.start, program: buggyProgram, bugCount: bugCount };
       }
       var fallback = codeEmptyGrid(4, 1);
+      var fallbackProgram = bugCount >= 2 ? ["E", "E", "N", "N"] : ["E", "E", "N"];
       fallback[0][3] = "T";
-      return { grid: fallback, start: { x: 0, y: 0 }, program: ["E", "E", "N"] };
+      return { grid: fallback, start: { x: 0, y: 0 }, program: fallbackProgram, bugCount: bugCount };
     }
 
     // "Si... alors..." : chemin en ligne droite (rangée unique) parsemée
@@ -11437,7 +11501,7 @@
       var leveledUp = false;
       var justWon = false;
       if (state.correctStreak >= starsToLevelUp(state.mode)) {
-        if (state.level < MAX_LEVEL) {
+        if (state.level < maxLevelForMode(state.mode)) {
           state.level++;
           leveledUp = true;
         } else {
@@ -11583,7 +11647,7 @@
     // ---------- "Trouve le bug" ----------
 
     function startCodeDebugLevel() {
-      var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
+      var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), maxLevelForMode("codedebug")) - 1;
       var def = codeGenerateDebugLevel(levelIdx);
       codeCurrentGrid = def.grid;
       codeFoxState = { x: def.start.x, y: def.start.y };
@@ -11591,7 +11655,9 @@
       codeDebugProgram = def.program.slice();
       codeDebugSelected = -1;
       codeCurrentTreat = CODE_TARGET_TREATS[randInt(0, CODE_TARGET_TREATS.length - 1)];
-      els.codeInstruction.textContent = "Ce programme a un bug ! Touche le bloc fautif puis choisis le bon.";
+      els.codeInstruction.textContent = def.bugCount >= 2
+        ? "Ce programme a 2 bugs ! Touche les blocs fautifs puis choisis les bons."
+        : "Ce programme a un bug ! Touche le bloc fautif puis choisis le bon.";
       renderCodeBoard(codeCurrentGrid, codeFoxState);
       renderCodeDebugBuilder();
     }
@@ -12939,7 +13005,7 @@
       if (typeof saved === "number") saved = { level: saved, stars: 0 };
       var savedLevel = saved && typeof saved.level === "number" ? saved.level : NaN;
       var savedStars = saved && typeof saved.stars === "number" ? saved.stars : NaN;
-      state.level = (savedLevel >= MIN_LEVEL && savedLevel <= MAX_LEVEL) ? savedLevel : MIN_LEVEL;
+      state.level = (savedLevel >= MIN_LEVEL && savedLevel <= maxLevelForMode(mode)) ? savedLevel : MIN_LEVEL;
       state.correctStreak = (savedStars >= 0 && savedStars < starsToLevelUp(mode)) ? savedStars : 0;
       state.wrongStreak = 0;
       state.locked = false;
