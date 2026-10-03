@@ -582,6 +582,72 @@
     line-height: 1;
   }
 
+  /* ---------- jeu "Trouve le bon article" (Écriture Malin) ----------
+     Même habillage que .letterman-word (classe partagée avec "Trouve le
+     mot manquant"/"Trouve le contraire", voir renderProblem) mais en
+     majuscules -- propre à ce jeu, donc sur une classe à part plutôt que
+     sur .letterman-word pour ne pas changer la casse des 2 autres jeux. */
+  .article-word { text-transform: uppercase; }
+
+  /* Écran de choix "mot ou image ?" affiché juste avant de rentrer dans
+     le jeu (voir startArticleChoice/confirmArticleChoice). */
+  .article-choice-screen {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(1.2rem, 4vh, 2rem);
+    min-height: 0;
+    width: 100%;
+    padding: 0 1rem;
+  }
+
+  .article-choice-screen[hidden] { display: none; }
+
+  .article-choice-title {
+    margin: 0;
+    text-align: center;
+    font-weight: 800;
+    font-size: clamp(1.2rem, 4.5vw, 1.6rem);
+    color: var(--white);
+    text-shadow: 0 3px 0 rgba(31, 42, 60, 0.25);
+  }
+
+  .article-choice-row {
+    display: flex;
+    gap: clamp(0.9rem, 3vw, 1.4rem);
+    width: 100%;
+    max-width: 30rem;
+  }
+
+  .article-choice-btn {
+    flex: 1;
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: clamp(1.4rem, 5vw, 2rem) 1rem;
+    border-radius: clamp(1.2rem, 4vw, 1.8rem);
+    color: var(--white);
+    font-weight: 800;
+    font-size: clamp(1.05rem, 4vw, 1.3rem);
+    border-bottom: clamp(5px, 1.4vw, 8px) solid rgba(0, 0, 0, 0.22);
+    box-shadow: 0 10px 20px -10px rgba(31, 42, 60, 0.5);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+
+  .article-choice-btn .icon { font-size: clamp(2.4rem, 10vw, 3.4rem); }
+  .article-choice-btn:hover { transform: translateY(-2px); }
+  .article-choice-btn:active { transform: translateY(2px); border-bottom-width: 3px; }
+  .article-choice-word { background: var(--candy-blue); }
+  .article-choice-image { background: var(--candy-pink); }
+
   /* ---------- jeu "qu'est-ce qui a changé ?" (Mémoire Malin) ---------- */
 
   .change-prompt {
@@ -736,7 +802,7 @@
     gap: clamp(0.25rem, 1vw, 0.5rem);
   }
 
-  /* ---------- "Aigu ou grave ?" (Musique Malin) : les 3 boutons son
+  /* ---------- "Quel est ce son ?" (Lecture Malin) : les 3 boutons son
      restent côte à côte même en portrait mobile, avec "Valider" en
      dessous (voir .pitch-confirm-btn) -- align-items: center plutôt que
      le stretch par défaut, sinon les boutons s'étirent sur toute la
@@ -753,6 +819,27 @@
     font-size: clamp(0.8rem, 4vw, 1.2rem);
     padding: 0.3rem 0.2rem;
     min-height: 4rem;
+  }
+
+  /* ---------- "Aigu ou grave ?" (Musique Malin) : réponses empilées
+     (comme les autres jeux) plutôt qu'en rangée serrée, pour des
+     boutons bien plus grands -- sauf en paysage étroit (petit
+     téléphone), où empiler 3 gros boutons + "Valider" ne tient plus :
+     on retombe alors sur la même rangée compacte que .answers-row
+     ci-dessus. ---------- */
+  @media (max-width: 639px) and (orientation: landscape) {
+    .answers.pitch-answers {
+      flex-direction: row;
+      align-items: center;
+      width: 92%;
+      gap: clamp(0.4rem, 2vw, 0.8rem);
+    }
+
+    .answer-btn.pitch-stack-btn {
+      font-size: clamp(0.8rem, 4vw, 1.2rem);
+      padding: 0.3rem 0.2rem;
+      min-height: 4rem;
+    }
   }
 
   /* "Trouve le mot" (Lecture Malin) : jusqu'à 7 mots affichés à la fois
@@ -4039,6 +4126,20 @@
     </div>
   </section>
 
+  <section class="article-choice-screen" id="articleChoiceScreen" hidden>
+    <p class="article-choice-title">Tu veux voir :</p>
+    <div class="article-choice-row">
+      <button class="article-choice-btn article-choice-word" type="button" id="articleChoiceWordBtn">
+        <span class="icon emoji">🔤</span>
+        <span>Le mot</span>
+      </button>
+      <button class="article-choice-btn article-choice-image" type="button" id="articleChoiceImageBtn">
+        <span class="icon emoji">🖼️</span>
+        <span>L'image</span>
+      </button>
+    </div>
+  </section>
+
   <section class="fillforme-screen" id="fillFormeScreen" hidden>
     <div class="fillforme-stage" id="fillFormeStage" aria-label="Touche et glisse le doigt pour colorier la forme">
       <canvas id="fillFormeCanvas" width="600" height="600"></canvas>
@@ -6250,6 +6351,7 @@
       wrongStreak: 0,
       problem: null,
       locked: false,
+      articleDisplayMode: null,
       paintColor: PAINT_PALETTE[0],
       paintFills: [],
       paintTouched: [],
@@ -7114,7 +7216,37 @@
       crayon: { word: "crayon", emoji: "✏️", gender: "m" },
       couronne: { word: "couronne", emoji: "👑", gender: "f" },
       cochon: { word: "cochon", emoji: "🐷", gender: "m" },
-      licorne: { word: "licorne", emoji: "🦄", gender: "f" }
+      licorne: { word: "licorne", emoji: "🦄", gender: "f" },
+      gateau: { word: "gâteau", emoji: "🎂", gender: "m" },
+      bateau: { word: "bateau", emoji: "⛵", gender: "m" },
+      papillon: { word: "papillon", emoji: "🦋", gender: "m" },
+      hibou: { word: "hibou", emoji: "🦉", gender: "m" },
+      tigre: { word: "tigre", emoji: "🐯", gender: "m" },
+      panda: { word: "panda", emoji: "🐼", gender: "m" },
+      requin: { word: "requin", emoji: "🦈", gender: "m" },
+      zebre: { word: "zèbre", emoji: "🦓", gender: "m" },
+      kangourou: { word: "kangourou", emoji: "🦘", gender: "m" },
+      robot: { word: "robot", emoji: "🤖", gender: "m" },
+      telephone: { word: "téléphone", emoji: "📱", gender: "m" },
+      parapluie: { word: "parapluie", emoji: "☂️", gender: "m" },
+      manteau: { word: "manteau", emoji: "🧥", gender: "m" },
+      nuage: { word: "nuage", emoji: "☁️", gender: "m" },
+      chapeau: { word: "chapeau", emoji: "🎩", gender: "m" },
+      fenetre: { word: "fenêtre", emoji: "🪟", gender: "f" },
+      porte: { word: "porte", emoji: "🚪", gender: "f" },
+      chaise: { word: "chaise", emoji: "🪑", gender: "f" },
+      cle: { word: "clé", emoji: "🔑", gender: "f" },
+      montre: { word: "montre", emoji: "⌚", gender: "f" },
+      valise: { word: "valise", emoji: "🧳", gender: "f" },
+      pizza: { word: "pizza", emoji: "🍕", gender: "f" },
+      glace: { word: "glace", emoji: "🍦", gender: "f" },
+      fourchette: { word: "fourchette", emoji: "🍴", gender: "f" },
+      cuillere: { word: "cuillère", emoji: "🥄", gender: "f" },
+      cerise: { word: "cerise", emoji: "🍒", gender: "f" },
+      pasteque: { word: "pastèque", emoji: "🍉", gender: "f" },
+      citrouille: { word: "citrouille", emoji: "🎃", gender: "f" },
+      bougie: { word: "bougie", emoji: "🕯️", gender: "f" },
+      trompette: { word: "trompette", emoji: "🎺", gender: "f" }
     };
     var ARTICLE_LEVEL_POOL = [
       ["chat", "pomme", "chien", "lune", "velo", "fleur"],
@@ -7126,7 +7258,11 @@
       ["chat", "pomme", "chien", "lune", "velo", "fleur", "maison", "ballon", "soleil", "voiture", "canard", "tortue",
         "cheval", "souris", "lion", "vache", "poule", "singe", "renard", "chevre", "loup", "grenouille", "mouton", "fourmi",
         "poisson", "coccinelle", "serpent", "banane", "dauphin", "fraise", "livre", "carotte", "train", "tomate",
-        "camion", "guitare", "crayon", "couronne", "cochon", "licorne"]
+        "camion", "guitare", "crayon", "couronne", "cochon", "licorne",
+        "gateau", "bateau", "papillon", "hibou", "tigre", "panda", "requin", "zebre", "kangourou", "robot",
+        "telephone", "parapluie", "manteau", "nuage", "chapeau",
+        "fenetre", "porte", "chaise", "cle", "montre", "valise", "pizza", "glace", "fourchette", "cuillere",
+        "cerise", "pasteque", "citrouille", "bougie", "trompette"]
     ];
 
     function generateArticleProblem(levelIdx) {
@@ -7141,6 +7277,18 @@
         choices: shuffle(["le", "la"]),
         wordKey: key
       };
+    }
+
+    // Validée par le choix mot/image affiché avant "Trouve le bon
+    // article" (voir selectMode, branche "article") -- state.articleDisplayMode
+    // est relu par renderProblem() pour n'afficher que le mot ou que
+    // l'image selon le choix.
+    function confirmArticleChoice(choice) {
+      state.articleDisplayMode = choice;
+      els.articleChoiceScreen.hidden = true;
+      els.problemZone.hidden = false;
+      els.answers.hidden = false;
+      nextProblem();
     }
 
     // "Majuscule ou minuscule ?" (Lecture Malin) : une lettre s'affiche
@@ -7650,6 +7798,9 @@
       traceCanvas: document.getElementById("traceCanvas"),
       traceClearBtn: document.getElementById("traceClearBtn"),
       traceDoneBtn: document.getElementById("traceDoneBtn"),
+      articleChoiceScreen: document.getElementById("articleChoiceScreen"),
+      articleChoiceWordBtn: document.getElementById("articleChoiceWordBtn"),
+      articleChoiceImageBtn: document.getElementById("articleChoiceImageBtn"),
       fillFormeScreen: document.getElementById("fillFormeScreen"),
       fillFormeStage: document.getElementById("fillFormeStage"),
       fillFormeCanvas: document.getElementById("fillFormeCanvas"),
@@ -8242,14 +8393,21 @@
         els.problem.removeAttribute("data-terms");
         var artWrap = document.createElement("div");
         artWrap.className = "letterman-prompt";
-        var artPic = document.createElement("span");
-        artPic.className = "picture-prompt emoji letterman-pic";
-        artPic.textContent = p.emoji;
-        var artWord = document.createElement("span");
-        artWord.className = "letterman-word";
-        artWord.textContent = p.word;
-        artWrap.appendChild(artPic);
-        artWrap.appendChild(artWord);
+        // Choix fait sur l'écran juste avant le jeu (voir
+        // confirmArticleChoice) : "mot" -> seulement le mot, "image" ->
+        // seulement l'image.
+        if (state.articleDisplayMode !== "mot") {
+          var artPic = document.createElement("span");
+          artPic.className = "picture-prompt emoji letterman-pic";
+          artPic.textContent = p.emoji;
+          artWrap.appendChild(artPic);
+        }
+        if (state.articleDisplayMode !== "image") {
+          var artWord = document.createElement("span");
+          artWord.className = "letterman-word article-word";
+          artWord.textContent = p.word;
+          artWrap.appendChild(artWord);
+        }
         els.problem.appendChild(artWrap);
         els.problem.classList.remove("pop");
         void els.problem.offsetWidth;
@@ -8637,6 +8795,7 @@
       els.answers.classList.remove("answers-grid-2");
       els.answers.classList.remove("answers-grid-3");
       els.answers.classList.remove("answers-row");
+      els.answers.classList.remove("pitch-answers");
       els.answers.classList.remove("wordgrid-grid");
       els.answers.classList.remove("intrus-grid");
       els.answers.classList.remove("intrus-count-4", "intrus-count-6", "intrus-count-9", "intrus-count-12");
@@ -8902,16 +9061,18 @@
         // Un seul bouton par son : taper joue le son ET le sélectionne (au
         // lieu d'une rangée à écouter séparée de la rangée à répondre,
         // difficile à relier pour un enfant). "Valider" confirme le choix,
-        // pour pouvoir ré-écouter/comparer sans répondre par accident. Les
-        // 3 boutons restent côte à côte même en portrait mobile (au lieu
-        // d'empiler comme les autres réponses, plus longues) : le texte
-        // "Son N" est court, ça tient bien sur une seule rangée.
-        els.answers.classList.add("answers-row");
+        // pour pouvoir ré-écouter/comparer sans répondre par accident.
+        // Empilés en colonne comme les autres réponses (plutôt qu'en
+        // rangée serrée) : plus grands et plus faciles à toucher. Repasse
+        // en rangée compacte uniquement sur téléphone en paysage (écran
+        // bas et étroit, voir .pitch-answers) pour ne pas pousser le
+        // bouton "Valider" hors de l'écran.
+        els.answers.classList.add("pitch-answers");
         var pitchPalette = shuffle(CANDY_COLORS.slice());
         state.problem.choices.forEach(function (idx, i) {
           var btn = document.createElement("button");
           btn.type = "button";
-          btn.className = "answer-btn pitch-answer-btn " + pitchPalette[i % pitchPalette.length];
+          btn.className = "answer-btn pitch-stack-btn " + pitchPalette[i % pitchPalette.length];
           btn.textContent = "🔊 Son " + (idx + 1);
           btn.setAttribute("data-value", idx);
           btn.setAttribute("aria-label", "Écouter et choisir le son " + (idx + 1));
@@ -13033,8 +13194,13 @@
       var penalty = mode === "penalty";
       var breakout = mode === "breakout";
       var code = mode === "codeseq" || mode === "codeloop" || mode === "codedebug" || mode === "codeif" || mode === "codesandbox";
-      els.problemZone.hidden = paint || paintnum || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || penalty || breakout || code;
-      els.answers.hidden = paint || paintnum || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || penalty || breakout || code;
+      // "Trouve le bon article" : écran de choix mot/image affiché avant
+      // d'entrer dans le jeu -- la question elle-même réutilise ensuite
+      // l'écran générique (problemZone/answers), voir confirmArticleChoice.
+      var article = mode === "article";
+      els.problemZone.hidden = paint || paintnum || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || penalty || breakout || code || article;
+      els.answers.hidden = paint || paintnum || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || penalty || breakout || code || article;
+      els.articleChoiceScreen.hidden = !article;
       els.paintScreen.hidden = !paint;
       els.paintnumScreen.hidden = !paintnum;
       els.musicScreen.hidden = !music;
@@ -13067,6 +13233,11 @@
       // flottante suffit et libère l'écran (voir .game-back-bubble).
       els.topbar.hidden = noStars;
       els.gameBackBtn.hidden = !noStars;
+      if (article) {
+        state.problem = null;
+        state.articleDisplayMode = null;
+        return;
+      }
       if (morpion) {
         state.problem = null;
         startMorpion();
@@ -13275,6 +13446,8 @@
     els.spellEraseBtn.addEventListener("click", onSpellErase);
     els.lettremanCard.addEventListener("click", function () { selectMode("lettreman"); });
     els.articleCard.addEventListener("click", function () { selectMode("article"); });
+    els.articleChoiceWordBtn.addEventListener("click", function () { confirmArticleChoice("mot"); });
+    els.articleChoiceImageBtn.addEventListener("click", function () { confirmArticleChoice("image"); });
     els.traceCard.addEventListener("click", function () { selectMode("trace"); });
     els.syllordreCard.addEventListener("click", function () { selectMode("syllordre"); });
     els.traceformeCard.addEventListener("click", function () { selectMode("traceforme"); });
