@@ -11271,8 +11271,49 @@
       return { grid: grid, start: start, target: target };
     }
 
+    // Autre "texture" de labyrinthe à plusieurs murs : des petits blocs de
+    // 1 ou 2 cases dispersés un peu partout, plutôt que des lignes
+    // complètes (codeGenerateMultiBarrierLayout) -- piochée au hasard avec
+    // l'autre dans codeGenerateLayout, pour varier l'allure des niveaux.
+    function codeGenerateScatteredWallsLayout(diff) {
+      var grid = codeEmptyGrid(diff.width, diff.height);
+      var blockCount = diff.barriers + randInt(1, 2);
+      var placed = [];
+      for (var b = 0; b < blockCount; b++) {
+        var size = randInt(1, 2);
+        var vertical = Math.random() < 0.5;
+        var x = randInt(0, diff.width - (size > 1 && !vertical ? 2 : 1));
+        var y = randInt(0, diff.height - (size > 1 && vertical ? 2 : 1));
+        var cells = [{ x: x, y: y }];
+        if (size > 1) cells.push(vertical ? { x: x, y: y + 1 } : { x: x + 1, y: y });
+        var overlap = cells.some(function (c) {
+          return placed.some(function (p) { return p.x === c.x && p.y === c.y; });
+        });
+        if (overlap) continue;
+        cells.forEach(function (c) {
+          grid[c.y][c.x] = "#";
+          placed.push(c);
+        });
+      }
+      var start = { x: randInt(0, diff.width - 1), y: randInt(0, diff.height - 1) };
+      if (grid[start.y][start.x] === "#") return null;
+      var candidates = [];
+      for (var ty = 0; ty < diff.height; ty++) {
+        for (var tx = 0; tx < diff.width; tx++) {
+          if (tx === start.x && ty === start.y) continue;
+          if (grid[ty][tx] === "#") continue;
+          candidates.push({ x: tx, y: ty });
+        }
+      }
+      if (!candidates.length) return null;
+      var target = candidates[randInt(0, candidates.length - 1)];
+      return { grid: grid, start: start, target: target };
+    }
+
     function codeGenerateLayout(diff) {
-      if (diff.barriers > 1) return codeGenerateMultiBarrierLayout(diff);
+      if (diff.barriers > 1) {
+        return Math.random() < 0.5 ? codeGenerateMultiBarrierLayout(diff) : codeGenerateScatteredWallsLayout(diff);
+      }
       return diff.walls > 0 ? codeGenerateBarrierLayout(diff) : codeGenerateOpenLayout(diff);
     }
 
