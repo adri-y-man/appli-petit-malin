@@ -1298,6 +1298,14 @@
     gap: clamp(0.4rem, 2vw, 0.8rem);
     width: min(94vw, 40rem);
     flex: 1 1 0;
+    /* Sans plafond, flex:1 étire les touches sur toute la hauteur dispo
+       (quasi tout l'écran en portrait) : des barres hautes et maigres au
+       lieu de touches de piano, et ça repousse .music-instrument-picker
+       tout en haut de l'écran -- au point de chevaucher .game-back-bubble
+       (le picker centré horizontalement finissait alors pile dans son
+       coin). Plafonner la hauteur laisse .music-screen (centré) ajouter
+       de la marge au-dessus, ce qui résout les 2 au passage. */
+    max-height: min(52vh, 26rem);
     min-height: 0;
   }
 
