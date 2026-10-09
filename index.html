@@ -1789,6 +1789,17 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    /* "Si... alors..." peut empiler jusqu'à 4 règles (contrairement aux
+       autres jeux de code, qui restent sur 1 rangée) : avec un plateau +
+       une consigne en plus, ça peut dépasser la hauteur dispo en paysage.
+       Un centrage classique déborderait alors des 2 côtés -- y compris
+       vers le haut, par-dessus .topbar. "safe center" bascule sur un
+       alignement en haut dès que ça déborde (ignoré par les navigateurs
+       qui ne le connaissent pas, qui gardent le "center" classique
+       juste au-dessus) ; overflow-y en secours pour pouvoir quand même
+       tout faire défiler dans ce cas. */
+    justify-content: safe center;
+    overflow-y: auto;
     gap: clamp(0.6rem, 3vh, 1.2rem);
     min-height: 0;
     width: 100%;
