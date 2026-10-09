@@ -239,7 +239,7 @@
     margin: 0 auto;
     background: rgba(255, 255, 255, 0.9);
     border-radius: 999px;
-    padding: 0 1.1rem 0 0.7rem;
+    padding: 0 1.1rem 0 0.95rem;
     /* Même hauteur que .game-back-bubble, pour qu'elles s'alignent (voir
        .topbar) au lieu de 2 formes posées à des hauteurs différentes. */
     height: var(--header-bubble-size);
@@ -313,8 +313,14 @@
 
   .max-badge {
     flex: 0 0 auto;
+    box-sizing: border-box;
     text-align: center;
-    font-size: var(--fs-eyebrow);
+    /* Même réserve à gauche que .topbar (voir plus haut) pour que le texte,
+       centré dans cette boîte, tombe pile sous la pilule -- qui elle est
+       centrée dans la largeur restante après cette réserve, pas dans toute
+       la largeur de .scene. */
+    padding-left: calc(var(--header-bubble-size) + 0.9rem);
+    font-size: clamp(0.7rem, 2.6vw, 0.85rem);
     font-weight: 800;
     color: var(--white);
     text-shadow: 0 2px 0 rgba(31, 42, 60, 0.25);
@@ -1792,7 +1798,7 @@
     margin: 0;
     text-align: center;
     font-weight: 800;
-    font-size: clamp(0.95rem, 3.8vw, 1.15rem);
+    font-size: clamp(1.1rem, 4.2vw, 1.5rem);
     color: var(--white);
     text-shadow: 0 3px 0 rgba(31, 42, 60, 0.25);
     max-width: 26rem;
@@ -3828,6 +3834,12 @@
       padding-left: calc(var(--header-bubble-size) + 0.9rem);
     }
 
+    /* .max-badge doit reprendre le même padding-right que .topbar ici (mis
+       par le raccourci "padding" ci-dessus), sinon son texte centré ne
+       tombe plus pile sous la pilule (boîtes de largeurs "utiles"
+       différentes). */
+    .max-badge { padding-right: clamp(0.8rem, 3vw, 1.2rem); }
+
     .game-feedback { font-size: clamp(0.85rem, 6vh, 1.15rem); padding: 0.3rem 0.9rem; }
 
     .answer-btn { min-height: 2.6rem; }
@@ -3999,10 +4011,11 @@
     }
 
     .topbar { padding-left: calc(var(--header-bubble-size) + 0.5rem); }
+    .max-badge { padding-left: calc(var(--header-bubble-size) + 0.5rem); }
 
     .level-pill {
       gap: 0.4rem;
-      padding: 0 0.8rem 0 0.55rem;
+      padding: 0 0.8rem 0 0.7rem;
     }
 
     .stars { gap: 0.2rem; }
@@ -4029,7 +4042,7 @@
       <path d="M15 4 L7 12 L15 20" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
     </svg>
   </button>
-  <p class="max-badge" id="maxBadge" hidden><span class="emoji">🌟</span> Niveau maximum atteint</p>
+  <p class="max-badge" id="maxBadge" hidden><span class="emoji">🌟</span> Niveau Max atteint</p>
   <p class="game-feedback" id="gameFeedback" aria-live="polite"></p>
   <div class="result-overlay" id="resultOverlay" hidden>
     <div class="result-badge">
