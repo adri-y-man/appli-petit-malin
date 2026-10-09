@@ -60,9 +60,9 @@
     --fs-op: clamp(2.9rem, 14.5vw, 6rem);
     --fs-button: clamp(2.3rem, 12vw, 3.8rem);
     --fs-feedback: clamp(1.3rem, 5vw, 2.05rem);
-    --pill-num-size: clamp(2.05rem, 6.4vw, 2.7rem);
-    --pill-num-fs: clamp(1rem, 3.4vw, 1.3rem);
-    --star-size: clamp(1.75rem, 5.8vw, 2.4rem);
+    --pill-num-size: clamp(2.2rem, 6.9vw, 2.9rem);
+    --pill-num-fs: clamp(1.08rem, 3.7vw, 1.4rem);
+    --star-size: clamp(1.9rem, 6.3vw, 2.6rem);
     /* Taille partagée par .game-back-bubble et la hauteur de .level-pill,
        pour qu'elles s'alignent toujours pile l'une sur l'autre (voir les
        deux règles) plutôt que 2 tailles à ajuster séparément à la main. */
@@ -2788,9 +2788,9 @@
       --fs-problem: clamp(4.6rem, 25vw, 7rem);
       --fs-op: clamp(3.5rem, 19vw, 5.4rem);
       --fs-button: clamp(2.8rem, 15vw, 4.2rem);
-      --pill-num-size: clamp(2.5rem, 9.4vw, 3.1rem);
-      --pill-num-fs: clamp(1.3rem, 4.8vw, 1.6rem);
-      --star-size: clamp(1.95rem, 7.3vw, 2.5rem);
+      --pill-num-size: clamp(2.7rem, 10.1vw, 3.35rem);
+      --pill-num-fs: clamp(1.4rem, 5.2vw, 1.75rem);
+      --star-size: clamp(2.1rem, 7.9vw, 2.7rem);
     }
 
     /* addition / soustraction / multiplication / division : 2 termes,
@@ -3833,9 +3833,9 @@
       --fs-op: clamp(1.6rem, 10vh, 2.3rem);
       --fs-button: clamp(1.45rem, 8.5vh, 2rem);
       --fs-feedback: clamp(0.92rem, 4.3vh, 1.15rem);
-      --pill-num-size: clamp(1.5rem, 6.4vh, 1.8rem);
-      --pill-num-fs: clamp(0.75rem, 3.2vh, 0.9rem);
-      --star-size: clamp(1.1rem, 4.5vh, 1.35rem);
+      --pill-num-size: clamp(1.6rem, 6.9vh, 1.95rem);
+      --pill-num-fs: clamp(0.8rem, 3.5vh, 1rem);
+      --star-size: clamp(1.2rem, 4.9vh, 1.45rem);
     }
 
     .topbar {
@@ -4020,19 +4020,24 @@
      encore les tailles" à spécificité égale. */
   @media (max-width: 400px) and (orientation: portrait) {
     :root {
-      --star-size: 1.4rem;
-      --pill-num-size: 1.7rem;
+      --star-size: 1.5rem;
+      --pill-num-size: 1.82rem;
     }
 
-    .topbar { padding-left: calc(var(--header-bubble-size) + 0.5rem); }
-    .max-badge { padding-left: calc(var(--header-bubble-size) + 0.5rem); }
+    /* Réserve un peu élargie (0.5rem -> 0.75rem) et pilule resserrée
+       (gap/padding réduits) : les étoiles/le numéro de niveau un peu plus
+       gros (voir --star-size/--pill-num-size ci-dessus) rendent la pilule
+       plus large, ce qui la faisait chevaucher .game-back-bubble sur les
+       tout petits écrans sans ce rattrapage. */
+    .topbar { padding-left: calc(var(--header-bubble-size) + 0.75rem); }
+    .max-badge { padding-left: calc(var(--header-bubble-size) + 0.75rem); }
 
     .level-pill {
-      gap: 0.4rem;
-      padding: 0 0.8rem 0 0.7rem;
+      gap: 0.3rem;
+      padding: 0 0.7rem 0 0.6rem;
     }
 
-    .stars { gap: 0.2rem; }
+    .stars { gap: 0.15rem; }
   }
 </style>
 
