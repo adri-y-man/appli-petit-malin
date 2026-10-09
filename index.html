@@ -315,12 +315,15 @@
     flex: 0 0 auto;
     box-sizing: border-box;
     text-align: center;
+    /* Rapproche le badge de la pilule au-dessus : .scene met un gap entre
+       tous ses enfants, trop généreux pour ces 2 éléments-là. */
+    margin-top: -0.35rem;
     /* Même réserve à gauche que .topbar (voir plus haut) pour que le texte,
        centré dans cette boîte, tombe pile sous la pilule -- qui elle est
        centrée dans la largeur restante après cette réserve, pas dans toute
        la largeur de .scene. */
     padding-left: calc(var(--header-bubble-size) + 0.9rem);
-    font-size: clamp(0.7rem, 2.6vw, 0.85rem);
+    font-size: clamp(0.78rem, 2.9vw, 0.95rem);
     font-weight: 800;
     color: var(--white);
     text-shadow: 0 2px 0 rgba(31, 42, 60, 0.25);
