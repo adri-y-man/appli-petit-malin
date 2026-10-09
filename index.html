@@ -169,18 +169,20 @@
 
   /* ---------- top bar ---------- */
 
+  /* Simple rangée qui centre la pilule "Niveau + étoiles" (voir
+     .level-pill) -- le bouton retour n'est plus ici : .game-back-bubble
+     (bulle flottante) le porte maintenant pour tous les jeux, comme sur
+     les jeux de société, donc .topbar n'a plus besoin d'être une grande
+     barre pleine largeur pour l'accueillir. */
   .topbar {
     flex: 0 0 auto;
-    position: relative;
-    z-index: 2;
     display: flex;
-    align-items: center;
-    gap: clamp(0.5rem, 2vw, 0.9rem);
-    margin: calc(-1 * max(0.75rem, env(safe-area-inset-top))) calc(-1 * max(0.9rem, env(safe-area-inset-right))) 0 calc(-1 * max(0.9rem, env(safe-area-inset-left)));
-    padding: calc(env(safe-area-inset-top) + 0.4rem) clamp(0.9rem, 3vw, 1.4rem) 0.55rem;
-    max-height: calc(2cm + env(safe-area-inset-top));
-    background: var(--sky-top);
-    border-radius: 0 0 1.6rem 1.6rem;
+    justify-content: center;
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    /* Réserve la largeur de .game-back-bubble (+ un peu d'air) à gauche
+       avant de centrer la pilule : sans ça, sur un petit téléphone, la
+       pilule centrée sur TOUTE la largeur finit collée contre la bulle. */
+    padding-left: clamp(3.1rem, 11vw, 3.8rem);
   }
 
   .topbar[hidden] { display: none; }
@@ -225,6 +227,10 @@
     align-items: center;
     gap: 0.6rem;
     margin: 0 auto;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 999px;
+    padding: 0.5rem 1.1rem 0.5rem 0.7rem;
+    box-shadow: 0 6px 14px -8px rgba(31, 42, 60, 0.45);
   }
 
   .level-pill[hidden] { display: none; }
@@ -269,8 +275,7 @@
     font-size: var(--fs-eyebrow);
     font-weight: 700;
     letter-spacing: 0.02em;
-    color: var(--white);
-    text-shadow: 0 2px 0 rgba(31, 42, 60, 0.25);
+    color: var(--ink);
   }
 
   .stars {
@@ -282,7 +287,7 @@
   .stars svg {
     width: var(--star-size);
     height: var(--star-size);
-    fill: rgba(255, 255, 255, 0.35);
+    fill: rgba(31, 42, 60, 0.15);
     transition: fill 0.25s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     transform-origin: center;
   }
@@ -3244,28 +3249,6 @@
 
   /* ---------- menu picto + écran de choix du jeu ---------- */
 
-  .menu-btn {
-    flex: none;
-    width: clamp(2.1rem, 7vw, 2.5rem);
-    height: clamp(2.1rem, 7vw, 2.5rem);
-    padding: 0;
-    border: none;
-    border-radius: 50%;
-    background: transparent;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-  }
-
-  .menu-btn svg { width: 55%; height: 55%; }
-
-  .menu-btn svg path { stroke: var(--white); }
-
-  .menu-btn:focus-visible {
-    outline: 3px solid var(--candy-blue);
-    outline-offset: 2px;
-  }
-
   .menu-overlay {
     position: fixed;
     inset: 0;
@@ -3820,6 +3803,11 @@
     .topbar {
       max-height: calc(1.3cm + env(safe-area-inset-top));
       padding: calc(env(safe-area-inset-top) + 0.25rem) clamp(0.8rem, 3vw, 1.2rem) 0.35rem;
+      /* Remis après le raccourci "padding" ci-dessus (qui réinitialise les
+         2 côtés pareil) : même raison que la règle non conditionnelle de
+         .topbar -- réserver la largeur de .game-back-bubble à gauche
+         avant de centrer la pilule. */
+      padding-left: clamp(3.1rem, 11vw, 3.8rem);
     }
 
     .game-feedback { font-size: clamp(0.85rem, 6vh, 1.15rem); padding: 0.3rem 0.9rem; }
@@ -3976,6 +3964,31 @@
       font-size: clamp(0.85rem, 3.4vh, 1rem);
     }
   }
+
+  /* Petit téléphone portrait : la pilule "Niveau + étoiles" (voir
+     .level-pill) garde à peu près la même largeur quelle que soit la
+     largeur d'écran en dessous de 400px (--star-size/--pill-num-size
+     plafonnent à leur minimum bien avant) -- elle finissait par
+     chevaucher .game-back-bubble réservée à gauche (voir .topbar).
+     Resserré ici plutôt qu'en baissant ces minimums pour tout le monde.
+     Placé en toute fin de feuille de style (comme le bloc paysage
+     ci-dessus) pour l'emporter sur le bloc "mobile portrait : on pousse
+     encore les tailles" à spécificité égale. */
+  @media (max-width: 400px) and (orientation: portrait) {
+    :root {
+      --star-size: 1.3rem;
+      --pill-num-size: 1.6rem;
+    }
+
+    .topbar { padding-left: clamp(2.6rem, 11vw, 3.1rem); }
+
+    .level-pill {
+      gap: 0.4rem;
+      padding: 0.4rem 0.8rem 0.4rem 0.55rem;
+    }
+
+    .stars { gap: 0.2rem; }
+  }
 </style>
 
 <div class="scene">
@@ -3987,11 +4000,6 @@
   </div>
 
   <header class="topbar" id="topbar">
-    <button class="menu-btn" id="menuBtn" type="button" aria-label="Retour à l'accueil">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M15 4 L7 12 L15 20" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
-      </svg>
-    </button>
     <div class="level-pill" id="levelPill">
       <span class="label">Niveau</span>
       <button class="num" id="levelNum" type="button" aria-label="Réinitialiser ce jeu au niveau 1">1</button>
@@ -7570,7 +7578,6 @@
     }
 
     var els = {
-      menuBtn: document.getElementById("menuBtn"),
       topbar: document.getElementById("topbar"),
       gameBackBtn: document.getElementById("gameBackBtn"),
       foxWalker: document.getElementById("foxWalker"),
@@ -13230,11 +13237,11 @@
       // matcher le fond ciel, pas la couleur pensée pour .topbar -- sinon
       // elle jure juste au-dessus de la bulle retour.
       setThemeColor(noStars ? THEME_COLOR_DEFAULT : THEME_COLOR_BAR);
-      // Pas d'étoiles à afficher ici : la grande barre blanche de .topbar
-      // ne porterait plus que le bouton retour -- une simple bulle
-      // flottante suffit et libère l'écran (voir .game-back-bubble).
+      // La bulle de retour flottante (.game-back-bubble) sert pour tous
+      // les jeux maintenant, étoiles ou pas -- seule la pilule
+      // "Niveau + étoiles" dépend de noStars.
       els.topbar.hidden = noStars;
-      els.gameBackBtn.hidden = !noStars;
+      els.gameBackBtn.hidden = false;
       if (article) {
         state.problem = null;
         state.articleDisplayMode = null;
@@ -13360,7 +13367,7 @@
     // écouteur délégué plutôt qu'un par bouton, vu le nombre de boutons
     // concernés (voir playClickSound).
     document.addEventListener("click", function (e) {
-      if (e.target.closest(".category-card, .mode-card, .menu-back, .menu-brand, #menuBtn, #gameBackBtn, .answer-btn")) {
+      if (e.target.closest(".category-card, .mode-card, .menu-back, .menu-brand, #gameBackBtn, .answer-btn")) {
         playClickSound();
       }
     });
@@ -13382,7 +13389,6 @@
       updateMenuMusicBtn();
       if (menuMusicMuted) pauseMenuMusic(); else playMenuMusic();
     });
-    els.menuBtn.addEventListener("click", openMenu);
     els.menuBrand.addEventListener("click", function () { showMenuScreen("home"); });
     els.menuBrand.addEventListener("keydown", function (e) {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); showMenuScreen("home"); }
