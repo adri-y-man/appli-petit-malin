@@ -60,9 +60,13 @@
     --fs-op: clamp(2.9rem, 14.5vw, 6rem);
     --fs-button: clamp(2.3rem, 12vw, 3.8rem);
     --fs-feedback: clamp(1.3rem, 5vw, 2.05rem);
-    --pill-num-size: clamp(1.9rem, 6vw, 2.5rem);
+    --pill-num-size: clamp(2.05rem, 6.4vw, 2.7rem);
     --pill-num-fs: clamp(1rem, 3.4vw, 1.3rem);
-    --star-size: clamp(1.6rem, 5.4vw, 2.2rem);
+    --star-size: clamp(1.75rem, 5.8vw, 2.4rem);
+    /* Taille partagée par .game-back-bubble et la hauteur de .level-pill,
+       pour qu'elles s'alignent toujours pile l'une sur l'autre (voir les
+       deux règles) plutôt que 2 tailles à ajuster séparément à la main. */
+    --header-bubble-size: clamp(2.6rem, 8.6vw, 3.1rem);
 
     --font-hand: "Grandstander", ui-rounded, "SF Pro Rounded", "Segoe UI Rounded",
       system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
@@ -178,11 +182,17 @@
     flex: 0 0 auto;
     display: flex;
     justify-content: center;
-    padding-top: max(0.75rem, env(safe-area-inset-top));
+    /* .game-back-bubble (position:absolute) doit reproduire le padding de
+       .scene à la main pour atterrir au même endroit que le flux normal
+       (+0.3rem en plus) -- .topbar, elle, suit déjà ce padding
+       automatiquement (flux normal) : seul le +0.3rem reste à ajouter ici
+       pour que les deux s'alignent pile (sinon le padding de .scene se
+       comptait deux fois côté .topbar). */
+    padding-top: 0.3rem;
     /* Réserve la largeur de .game-back-bubble (+ un peu d'air) à gauche
        avant de centrer la pilule : sans ça, sur un petit téléphone, la
        pilule centrée sur TOUTE la largeur finit collée contre la bulle. */
-    padding-left: clamp(3.1rem, 11vw, 3.8rem);
+    padding-left: calc(var(--header-bubble-size) + 0.9rem);
   }
 
   .topbar[hidden] { display: none; }
@@ -204,8 +214,8 @@
     appearance: none;
     border: none;
     cursor: pointer;
-    width: clamp(2.4rem, 8vw, 2.9rem);
-    height: clamp(2.4rem, 8vw, 2.9rem);
+    width: var(--header-bubble-size);
+    height: var(--header-bubble-size);
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.85);
     display: grid;
@@ -229,7 +239,11 @@
     margin: 0 auto;
     background: rgba(255, 255, 255, 0.9);
     border-radius: 999px;
-    padding: 0.5rem 1.1rem 0.5rem 0.7rem;
+    padding: 0 1.1rem 0 0.7rem;
+    /* Même hauteur que .game-back-bubble, pour qu'elles s'alignent (voir
+       .topbar) au lieu de 2 formes posées à des hauteurs différentes. */
+    height: var(--header-bubble-size);
+    box-sizing: border-box;
     box-shadow: 0 6px 14px -8px rgba(31, 42, 60, 0.45);
   }
 
@@ -2754,9 +2768,9 @@
       --fs-problem: clamp(4.6rem, 25vw, 7rem);
       --fs-op: clamp(3.5rem, 19vw, 5.4rem);
       --fs-button: clamp(2.8rem, 15vw, 4.2rem);
-      --pill-num-size: clamp(2.4rem, 9vw, 3rem);
+      --pill-num-size: clamp(2.5rem, 9.4vw, 3.1rem);
       --pill-num-fs: clamp(1.3rem, 4.8vw, 1.6rem);
-      --star-size: clamp(1.85rem, 7vw, 2.4rem);
+      --star-size: clamp(1.95rem, 7.3vw, 2.5rem);
     }
 
     /* addition / soustraction / multiplication / division : 2 termes,
@@ -3258,7 +3272,11 @@
     justify-content: center;
     padding: clamp(4rem, 14vh, 6.5rem) clamp(1rem, 4vw, 2rem) clamp(1.5rem, 5vh, 2.5rem);
     overflow-y: auto;
-    background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
+    /* Même dégradé (avec le palier à 38%) que le fond derrière .scene :
+       sans ce palier, la couleur dérivait déjà visiblement avant la fin
+       de .menu-brand (fond plein uni), ce qui créait une coupure visible
+       pile sous le logo au lieu d'un fond continu. */
+    background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-top) 38%, var(--sky-bottom) 100%);
   }
 
   /* l'écran d'accueil (choix de la section) reste centré verticalement,
@@ -3795,9 +3813,9 @@
       --fs-op: clamp(1.6rem, 10vh, 2.3rem);
       --fs-button: clamp(1.45rem, 8.5vh, 2rem);
       --fs-feedback: clamp(0.92rem, 4.3vh, 1.15rem);
-      --pill-num-size: clamp(1.4rem, 6vh, 1.7rem);
+      --pill-num-size: clamp(1.5rem, 6.4vh, 1.8rem);
       --pill-num-fs: clamp(0.75rem, 3.2vh, 0.9rem);
-      --star-size: clamp(1rem, 4.2vh, 1.25rem);
+      --star-size: clamp(1.1rem, 4.5vh, 1.35rem);
     }
 
     .topbar {
@@ -3807,7 +3825,7 @@
          2 côtés pareil) : même raison que la règle non conditionnelle de
          .topbar -- réserver la largeur de .game-back-bubble à gauche
          avant de centrer la pilule. */
-      padding-left: clamp(3.1rem, 11vw, 3.8rem);
+      padding-left: calc(var(--header-bubble-size) + 0.9rem);
     }
 
     .game-feedback { font-size: clamp(0.85rem, 6vh, 1.15rem); padding: 0.3rem 0.9rem; }
@@ -3976,15 +3994,15 @@
      encore les tailles" à spécificité égale. */
   @media (max-width: 400px) and (orientation: portrait) {
     :root {
-      --star-size: 1.3rem;
-      --pill-num-size: 1.6rem;
+      --star-size: 1.4rem;
+      --pill-num-size: 1.7rem;
     }
 
-    .topbar { padding-left: clamp(2.6rem, 11vw, 3.1rem); }
+    .topbar { padding-left: calc(var(--header-bubble-size) + 0.5rem); }
 
     .level-pill {
       gap: 0.4rem;
-      padding: 0.4rem 0.8rem 0.4rem 0.55rem;
+      padding: 0 0.8rem 0 0.55rem;
     }
 
     .stars { gap: 0.2rem; }
