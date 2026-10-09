@@ -179,9 +179,8 @@
     margin: calc(-1 * max(0.75rem, env(safe-area-inset-top))) calc(-1 * max(0.9rem, env(safe-area-inset-right))) 0 calc(-1 * max(0.9rem, env(safe-area-inset-left)));
     padding: calc(env(safe-area-inset-top) + 0.4rem) clamp(0.9rem, 3vw, 1.4rem) 0.55rem;
     max-height: calc(2cm + env(safe-area-inset-top));
-    background: rgba(255, 255, 255, 0.85);
+    background: var(--sky-top);
     border-radius: 0 0 1.6rem 1.6rem;
-    box-shadow: 0 6px 0 rgba(31, 42, 60, 0.1);
   }
 
   .topbar[hidden] { display: none; }
@@ -270,7 +269,8 @@
     font-size: var(--fs-eyebrow);
     font-weight: 700;
     letter-spacing: 0.02em;
-    color: var(--ink);
+    color: var(--white);
+    text-shadow: 0 2px 0 rgba(31, 42, 60, 0.25);
   }
 
   .stars {
@@ -282,7 +282,7 @@
   .stars svg {
     width: var(--star-size);
     height: var(--star-size);
-    fill: rgba(31, 42, 60, 0.15);
+    fill: rgba(255, 255, 255, 0.35);
     transition: fill 0.25s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     transform-origin: center;
   }
@@ -3259,7 +3259,7 @@
 
   .menu-btn svg { width: 55%; height: 55%; }
 
-  .menu-btn svg path { stroke: var(--ink); }
+  .menu-btn svg path { stroke: var(--white); }
 
   .menu-btn:focus-visible {
     outline: 3px solid var(--candy-blue);
@@ -13010,7 +13010,10 @@
     }
 
     var THEME_COLOR_DEFAULT = "#4fb3e8";
-    var THEME_COLOR_BAR = "#e5f4fc";
+    // Même bleu que THEME_COLOR_DEFAULT : .topbar est maintenant de la
+    // même couleur que le fond ciel (plus de carte blanche), donc la
+    // teinte de la barre d'état du téléphone doit suivre pareil.
+    var THEME_COLOR_BAR = "#4fb3e8";
     var THEME_COLOR_CELEBRATE = "#ffd166";
     var themeColorMeta = document.getElementById("themeColorMeta");
 
