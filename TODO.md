@@ -72,3 +72,20 @@ Liste des prochaines modifications demandées, pas encore faites.
      "Géographie" à créer) ?
    - Faut-il plus de 10 drapeaux que le pool actuel pour un vrai jeu de
      quiz (celui-là était pensé pour un jeu de mémoire, pas un quiz) ?
+
+6. **Revoir la mécanique du Sudoku** (`sudokuforme`/`sudokuchiffre`,
+   partagent le même moteur -- `onSudokuCellTap`/`onSudokuPaletteTap`/
+   `onSudokuComplete` dans `index.html`). Aujourd'hui `onSudokuPaletteTap`
+   vérifie chaque case IMMÉDIATEMENT contre `state.sudokuSolution` : si ce
+   n'est pas la bonne valeur, la case secoue et refuse de se remplir --
+   impossible de poser autre chose que la bonne réponse, donc pas un vrai
+   sudoku. À la place : laisser remplir n'importe quelle case avec
+   n'importe quelle valeur (y compris en corrigeant une case déjà remplie),
+   et ajouter un bouton "Valider" qui vérifie toute la grille d'un coup à
+   la fin et dit si c'est bon ou pas.
+   Points à trancher avant de coder :
+   - Si c'est faux après validation, qu'est-ce qui est montré : juste
+     "c'est pas encore ça" sans détail, ou les cases en erreur
+     surlignées (sans donner la bonne réponse) ?
+   - Le bouton "Valider" est-il actif seulement grille pleine, ou
+     utilisable à tout moment pour vérifier l'avancement ?
