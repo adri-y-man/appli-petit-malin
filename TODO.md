@@ -45,3 +45,17 @@ Liste des prochaines modifications demandées, pas encore faites.
      légende "🍎=2, 🍌=3") ou à mémoriser ?
    - Les fruits affichés sont-ils toujours les mêmes à chaque partie, ou
      tirés au sort parmi un pool plus large à chaque niveau ?
+
+4. **Nouveau jeu "Devine la comptine chantée"** dans Musique Malin (à
+   côté de Musique libre / Quel instrument ? / Répète le rythme / grave-
+   aigu) : un extrait chanté (vrai enregistrement, pas synthétisé) est
+   joué, l'enfant doit deviner de quelle chanson/comptine il s'agit
+   parmi plusieurs titres proposés. Mécanique proche de "Quel
+   instrument ?" (`instruments` : joue un son, 3 réponses au choix) mais
+   avec des chansons chantées à la place de sons d'instruments, et des
+   pochettes/emoji ou juste le titre en texte comme réponses.
+   Points à trancher avant de coder :
+   - Quelles comptines (domaine public/libres de droits, comme la
+     musique de fond actuelle via Pixabay) et combien au départ ?
+   - Extrait complet ou juste les premières secondes (plus facile de
+     deviner vite = indice progressif selon le niveau) ?
