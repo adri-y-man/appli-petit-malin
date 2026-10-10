@@ -2434,7 +2434,13 @@
     .sol-board { width: min(82vw, 40rem); }
   }
 
-  @media (min-width: 640px) and (orientation: landscape) {
+  /* "and (min-height: 500px)" : sur téléphone en paysage (large mais
+     court), "100vh - 14.5rem" produisait un plateau minuscule (la
+     soustraction fixe, pensée pour une tablette qui a de la hauteur à
+     revendre, mangeait presque tout un écran court). Limité ici aux vrais
+     écrans hauts ; en dessous, retombe sur la règle de base ci-dessus
+     (min(88vw, 62vh, 26rem)), déjà consciente de la hauteur. */
+  @media (min-width: 640px) and (orientation: landscape) and (min-height: 500px) {
     .sol-board { width: min(calc(100vh - 14.5rem), 40rem); }
   }
 
@@ -4016,6 +4022,23 @@
       padding: 0.5rem 1.1rem;
       font-size: clamp(0.85rem, 3.4vh, 1rem);
     }
+
+    /* Statut + bouton "Rejouer" des jeux de société (Solitaire, Dames,
+       Morpion...) : tailles/paddings pensés en vw, donc bien trop grands
+       une fois la hauteur très réduite en paysage -- repassés en vh comme
+       le reste de ce bloc, pour laisser plus de place au plateau. */
+    .boardgame-status { font-size: clamp(0.85rem, 5vh, 1.1rem); }
+    .boardgame-replay-btn {
+      font-size: clamp(0.8rem, 4vh, 1rem);
+      padding: clamp(0.3rem, 1.8vh, 0.5rem) clamp(0.8rem, 3.5vh, 1.3rem);
+      border-bottom-width: clamp(2px, 0.6vh, 4px);
+    }
+
+    /* Solitaire : le plateau 7x7 était écrasé par la réserve fixe de
+       .sol-board en paysage tablette (voir plus haut) appliquée à tort
+       sur téléphone court. Ici la hauteur est la vraie contrainte -- on
+       dimensionne dessus directement. */
+    .sol-board { width: min(70vh, 88vw, 26rem); }
   }
 
   /* Petit téléphone portrait : la pilule "Niveau + étoiles" (voir
