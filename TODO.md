@@ -59,3 +59,16 @@ Liste des prochaines modifications demandées, pas encore faites.
      musique de fond actuelle via Pixabay) et combien au départ ?
    - Extrait complet ou juste les premières secondes (plus facile de
      deviner vite = indice progressif selon le niveau) ?
+
+5. **Nouveau jeu "Devine le pays à partir de son drapeau"** : un drapeau
+   affiché, l'enfant choisit le bon nom de pays parmi plusieurs
+   propositions. Il existe déjà un pool de 10 drapeaux réutilisable,
+   `FLAG_SYMBOL_POOL` (actuellement utilisé par "Paires cachées
+   (drapeaux)" en Mémoire Malin) -- il manque juste l'association
+   drapeau → nom de pays (en français). Mécanique proche de "Les
+   couleurs"/"Les animaux" (image + choix de mots). Points à trancher :
+   - Dans quelle catégorie (Mémoire Malin à côté des paires de drapeaux,
+     Anglais Malin si les noms sont en anglais, ou nouvelle catégorie
+     "Géographie" à créer) ?
+   - Faut-il plus de 10 drapeaux que le pool actuel pour un vrai jeu de
+     quiz (celui-là était pensé pour un jeu de mémoire, pas un quiz) ?
