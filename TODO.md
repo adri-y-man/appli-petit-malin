@@ -19,11 +19,11 @@ Liste des prochaines modifications demandées, pas encore faites.
    col)` existe déjà et donne les coups légaux d'une case -- base
    réutilisable pour une IA (lister tous les coups de toutes les pièces
    du joueur "w", choisir selon la force voulue).
-   Points à trancher avant de coder :
-   - Comment choisir solo vs 2 joueurs (écran de choix avant la partie ?
-     bouton dans le menu Dames ?) -- et comment choisir le niveau de
-     l'IA dans ce cas (la pilule de niveau n'existe pas sur cet écran
-     aujourd'hui).
+   Choix fait pour le flux de sélection : avant la partie, un écran/bouton
+   propose "Jouer à deux" ou "Jouer tout seul" ; si "tout seul" est
+   choisi, un second groupe de boutons apparaît pour régler la force de
+   l'adversaire (ex. facile/moyen/fort).
+   Points encore à trancher avant de coder :
    - Niveaux de force envisageables : facile = coup aléatoire parmi les
      légaux (en priorisant une prise si possible) ; moyen = + éviter de
      se faire prendre sans raison ; fort = minimax/évaluation simple sur
