@@ -104,3 +104,18 @@ Liste des prochaines modifications demandées, pas encore faites.
      lequel/dans n'importe quel ordre tant que toutes y passent ?
    - Chaque friandise reste-t-elle le même emoji (`codeCurrentTreat`,
      tiré une fois) ou un emoji différent par case ?
+
+8. **Puissance 4 : le jeton doit tomber "derrière" la façade bleue**,
+   comme sur le vrai jeu physique -- visible seulement à travers les
+   trous (fond blanc) pendant sa chute, pas glissant par-dessus tout le
+   plateau. Aujourd'hui (`.p4-board`/`.p4-cell`/`.p4-disc`, animation
+   `p4-drop` via `--fall-rows`) le jeton est un enfant direct de sa case
+   d'arrivée, simplement translaté vers le haut pendant la chute -- rien
+   ne le fait passer derrière les cases qu'il traverse en chemin, donc
+   pas d'effet "visible seulement par les trous".
+   Probablement besoin d'une vraie structure à 2 couches : une couche
+   "trous" (fond blanc, cercles) au-dessus, une couche "jetons" en
+   dessous qui tombe à travers (masque CSS/`mask-image` avec les cercles
+   découpés, ou superposition de 2 grilles plutôt qu'une case = un
+   disque). Prototype visuel à valider avant d'aller plus loin, ce n'est
+   pas juste un ajustement de CSS existant.
