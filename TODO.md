@@ -89,3 +89,18 @@ Liste des prochaines modifications demandées, pas encore faites.
      surlignées (sans donner la bonne réponse) ?
    - Le bouton "Valider" est-il actif seulement grille pleine, ou
      utilisable à tout moment pour vérifier l'avancement ?
+
+7. **"Guide le renard" : 2-3 friandises aux niveaux supérieurs** (mode
+   `codeseq`). Aujourd'hui `codeGenerateMaze`/`codeGenerateLayout` ne
+   placent qu'une seule case cible ("T", trouvée via BFS depuis le
+   départ), et `codeLaunchSeq` considère le niveau réussi dès que le
+   renard atteint cette case. Pour les niveaux élevés, générer 2 puis 3
+   cases à manger au lieu d'une seule -- parcours plus long, niveau plus
+   difficile.
+   Points à trancher avant de coder :
+   - À partir de quel niveau (3 ? 4-5 seulement ?) et combien de
+     friandises par niveau ?
+   - Le renard doit-il les manger dans un ordre précis, ou n'importe
+     lequel/dans n'importe quel ordre tant que toutes y passent ?
+   - Chaque friandise reste-t-elle le même emoji (`codeCurrentTreat`,
+     tiré une fois) ou un emoji différent par case ?
