@@ -3693,6 +3693,7 @@
 
   .category-card[data-category="2"] { background: linear-gradient(135deg, var(--candy-blue), var(--candy-teal)); }
   .category-card[data-category="3"] { background: linear-gradient(135deg, var(--sky-top), #3454d1); }
+  .category-card-equations { background: linear-gradient(135deg, #a8b8f0, #7c8ee0); }
   .category-card-colors { background: linear-gradient(135deg, #e63946, #ffd400, #43b98a, #3d7fe0); }
   .category-card-reading { background: linear-gradient(135deg, #ffb199, #f77f5c); }
   .category-card-letters { background: linear-gradient(135deg, #a8e6a1, #6fcf6a); }
@@ -4509,6 +4510,11 @@
           <span class="icon emoji">🧮</span>
           <span>Calculs à 3 termes</span>
           <span class="level-badge">CE1-CE2</span>
+        </button>
+        <button class="category-card category-card-equations" type="button" id="equationsCard">
+          <span class="icon emoji">⚖️</span>
+          <span>Mes premières équations</span>
+          <span class="level-badge">GS-CE1</span>
         </button>
       </div>
       <div class="category-grid">
@@ -5751,6 +5757,34 @@
       div: { param: [3, 5, 7, 9, 10] }
     };
 
+    // "Mes premières équations" : contrairement aux autres jeux de calcul
+    // (toujours "a op b = ?"), la case cachée ("X") peut être n'importe quel
+    // terme de l'équation -- ça montre que le "=" représente un équilibre,
+    // pas juste "calcule de gauche à droite". resultFirst place le résultat
+    // avant le signe "=" (ex. "X = 3 + 4") plutôt qu'après.
+    var EQUATION_FORMS = {
+      result: { unknown: "result", resultFirst: false },
+      a: { unknown: "a", resultFirst: false },
+      b: { unknown: "b", resultFirst: false },
+      resultFirst: { unknown: "result", resultFirst: true }
+    };
+    // Niveau 1 : seulement "a + b = X" (même forme que les autres jeux de
+    // calcul, pour ne pas dérouter). Niveau 2 : la case cachée peut être un
+    // des 2 termes. Niveau 3+ : + la soustraction et "X = a + b". Niveau 5 :
+    // + une multiplication simple (tables de 1 à 5).
+    var EQUATION_LEVELS = {
+      ops: [["add"], ["add"], ["add", "sub"], ["add", "sub"], ["add", "sub", "mul"]],
+      forms: [
+        ["result"],
+        ["result", "a", "b"],
+        ["result", "a", "b", "resultFirst"],
+        ["result", "a", "b", "resultFirst"],
+        ["result", "a", "b", "resultFirst"]
+      ],
+      maxTerm: [10, 10, 15, 20, 20]
+    };
+    var EQUATION_MUL_FACTOR = 5;
+
     // "Compte les objets" : une rangée d'objets à dénombrer, un peu plus
     // nombreux à chaque niveau.
     // Pas d'étoile ici : elle serait confondue avec les étoiles de niveau
@@ -6600,6 +6634,78 @@
       return shuffle(Array.from(choices));
     }
 
+    // "Mes premières équations" : les mauvaises réponses imitent des
+    // erreurs typiques plutôt que des nombres au hasard -- la mauvaise
+    // opération appliquée aux 2 nombres visibles (ex. additionner au lieu
+    // de soustraire) quand c'est le résultat qui est caché, ou reprendre
+    // un nombre déjà affiché (confondre l'inconnue avec un terme visible)
+    // quand c'est un terme qui est caché.
+    function generateEquationChoices(unknown, opKey, a, b, result, upperBound) {
+      var answer = unknown === "a" ? a : unknown === "b" ? b : result;
+      var choices = new Set([answer]);
+
+      if (unknown === "result") {
+        var wrongOp = opKey === "sub" ? "add" : "sub";
+        var wrongVal = computeAnswer(wrongOp, a, b);
+        if (wrongVal >= 0 && wrongVal <= upperBound) choices.add(wrongVal);
+      } else {
+        var visible = unknown === "a" ? b : a;
+        choices.add(visible);
+        if (choices.size < 3) choices.add(result);
+      }
+
+      var deltas = shuffle([-3, -2, -1, 1, 2, 3]);
+      for (var d = 0; d < deltas.length && choices.size < 3; d++) {
+        var candidate = answer + deltas[d];
+        if (candidate >= 0 && candidate <= upperBound) choices.add(candidate);
+      }
+      var tries = 0;
+      while (choices.size < 3 && tries < 200) {
+        choices.add(randInt(0, Math.max(upperBound, 2)));
+        tries++;
+      }
+      return shuffle(Array.from(choices));
+    }
+
+    function generateEquationProblem(levelIdx) {
+      var opsPool = EQUATION_LEVELS.ops[levelIdx];
+      var formsPool = EQUATION_LEVELS.forms[levelIdx];
+      var opKey = opsPool[randInt(0, opsPool.length - 1)];
+      var form = EQUATION_FORMS[formsPool[randInt(0, formsPool.length - 1)]];
+      var maxTerm = EQUATION_LEVELS.maxTerm[levelIdx];
+      var a, b;
+      if (opKey === "add") {
+        var t = generateAddition(maxTerm, maxTerm);
+        a = t.a; b = t.b;
+      } else if (opKey === "sub") {
+        var t2 = generateSubtraction(maxTerm);
+        a = t2.a; b = t2.b;
+      } else {
+        // Un terme caché à 0 rendrait "X × 0 = 0" possible pour n'importe
+        // quel X : on retire ce cas-là uniquement quand un terme (pas le
+        // résultat) est caché.
+        var needsNonZero = form.unknown !== "result";
+        var t3;
+        do {
+          t3 = generateMultiplication(EQUATION_MUL_FACTOR);
+        } while (needsNonZero && (t3.a === 0 || t3.b === 0));
+        a = t3.a; b = t3.b;
+      }
+      var result = computeAnswer(opKey, a, b);
+      var upperBound = opKey === "mul" ? EQUATION_MUL_FACTOR * EQUATION_MUL_FACTOR : maxTerm;
+      return {
+        kind: "equation",
+        op: opKey,
+        a: a,
+        b: b,
+        result: result,
+        unknown: form.unknown,
+        resultFirst: form.resultFirst,
+        answer: form.unknown === "a" ? a : form.unknown === "b" ? b : result,
+        choices: generateEquationChoices(form.unknown, opKey, a, b, result, upperBound)
+      };
+    }
+
     function generateCountProblem(levelIdx) {
       var maxCount = COUNT_LEVELS.maxCount[levelIdx];
       var count = randInt(1, maxCount);
@@ -7424,6 +7530,11 @@
         return p1.kind === "sequence" && p2.kind === "sequence" &&
           JSON.stringify(p1.sequence) === JSON.stringify(p2.sequence) && p1.answer === p2.answer;
       }
+      if (p1.kind === "equation" || p2.kind === "equation") {
+        return p1.kind === "equation" && p2.kind === "equation" &&
+          p1.op === p2.op && p1.a === p2.a && p1.b === p2.b &&
+          p1.unknown === p2.unknown && p1.resultFirst === p2.resultFirst;
+      }
       if (p1.kind === "colors" || p2.kind === "colors") {
         return p1.kind === "colors" && p2.kind === "colors" && p1.colorKey === p2.colorKey;
       }
@@ -7522,6 +7633,9 @@
       }
       if (state.mode === "sequence") {
         return generateSequenceProblem(levelIdx);
+      }
+      if (state.mode === "equations") {
+        return generateEquationProblem(levelIdx);
       }
       if (state.mode === "colors") {
         return generateColorsProblem(levelIdx);
@@ -7712,6 +7826,7 @@
       breakoutCanvas: document.getElementById("breakoutCanvas"),
       breakoutReplayBtn: document.getElementById("breakoutReplayBtn"),
       categoryCards: document.querySelectorAll(".category-card"),
+      equationsCard: document.getElementById("equationsCard"),
       calcBackBtn: document.getElementById("calcBackBtn"),
       terms2BackBtn: document.getElementById("terms2BackBtn"),
       terms3BackBtn: document.getElementById("terms3BackBtn"),
@@ -8697,6 +8812,49 @@
           }
         });
         fitSequenceRow();
+        els.problem.classList.remove("pop");
+        void els.problem.offsetWidth;
+        els.problem.classList.add("pop");
+        return;
+      }
+
+      // "Mes premières équations" : contrairement au calcul normal (le "?"
+      // est toujours le résultat, en dernière position), le "X" peut être
+      // n'importe lequel des 3 termes affichés -- et l'équation peut même
+      // être écrite résultat-en-premier ("X = 3 + 4").
+      if (p.kind === "equation") {
+        els.problem.setAttribute("data-terms", "2");
+        var eqSlots = p.resultFirst
+          ? [
+              { kind: "num", isUnknown: p.unknown === "result", value: p.result },
+              { kind: "eq" },
+              { kind: "num", isUnknown: p.unknown === "a", value: p.a },
+              { kind: "op" },
+              { kind: "num", isUnknown: p.unknown === "b", value: p.b }
+            ]
+          : [
+              { kind: "num", isUnknown: p.unknown === "a", value: p.a },
+              { kind: "op" },
+              { kind: "num", isUnknown: p.unknown === "b", value: p.b },
+              { kind: "eq" },
+              { kind: "num", isUnknown: p.unknown === "result", value: p.result }
+            ];
+        eqSlots.forEach(function (slot) {
+          var el = document.createElement("span");
+          if (slot.kind === "eq") {
+            el.className = "eq";
+            el.textContent = "=";
+          } else if (slot.kind === "op") {
+            el.className = "op";
+            el.setAttribute("data-op", p.op);
+            el.setAttribute("aria-label", OP_ARIA_LABEL[p.op]);
+            el.textContent = OP_SYMBOL[p.op];
+          } else {
+            el.className = slot.isUnknown ? "q" : "num";
+            el.textContent = slot.isUnknown ? "X" : String(slot.value);
+          }
+          els.problem.appendChild(el);
+        });
         els.problem.classList.remove("pop");
         void els.problem.offsetWidth;
         els.problem.classList.add("pop");
@@ -13104,7 +13262,7 @@
     function categoryOfMode(mode) {
       if (mode === "add" || mode === "sub" || mode === "mul" || mode === "div" || MIX_MODES[mode]) return "2";
       if (MODE_TO_OP_3[mode] || MIX_MODES_3[mode]) return "3";
-      if (mode === "count" || mode === "compare" || mode === "sequence" || mode === "sudokuchiffre") return "calc";
+      if (mode === "count" || mode === "compare" || mode === "sequence" || mode === "sudokuchiffre" || mode === "equations") return "calc";
       if (mode === "colors" || mode === "animals" || mode === "numbers" || mode === "body" || mode === "food") return "anglais";
       if (mode === "reading" || mode === "letters" || mode === "syllables" || mode === "rhymes" || mode === "wordgrid" || mode === "casse" || mode === "sound") return "lire";
       if (isPaintMode(mode) || mode === "paintnum") return "peinture";
@@ -13469,6 +13627,7 @@
     els.categoryCards.forEach(function (card) {
       card.addEventListener("click", function () { showMenuScreen(card.getAttribute("data-category")); });
     });
+    els.equationsCard.addEventListener("click", function () { selectMode("equations"); });
     els.colorsCard.addEventListener("click", function () { selectMode("colors"); });
     els.animalsCard.addEventListener("click", function () { selectMode("animals"); });
     els.bodyCard.addEventListener("click", function () { selectMode("body"); });
