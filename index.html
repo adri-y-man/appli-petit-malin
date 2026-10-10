@@ -2304,6 +2304,17 @@
     50% { transform: scale(1.1); }
   }
 
+  /* Quand le jeton gagnant est aussi celui qui vient de tomber (win +
+     drop-in ensemble), "animation" étant un raccourci, la règle .win
+     ci-dessus (plus bas dans la feuille, donc gagnante à spécificité
+     égale) remplaçait entièrement l'animation de chute -- le dernier
+     jeton semblait apparaître déjà posé au lieu de tomber avant de
+     gagner. Règle dédiée, plus spécifique, qui enchaîne les 2 : la chute
+     d'abord, puis le pulse une fois posé (délai = durée de la chute). */
+  .p4-disc.win.drop-in {
+    animation: p4-drop 0.6s ease-in, p4-win-pulse 0.9s ease-in-out infinite 0.6s;
+  }
+
   .dames-screen {
     flex: 1 1 0;
     display: flex;
