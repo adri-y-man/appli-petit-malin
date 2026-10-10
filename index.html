@@ -8377,11 +8377,12 @@
       for (var i = 0; i < cards.length; i++) fitIconLabelText(cards[i]);
     }
 
-    // "Complète la suite" : 4 nombres à largeur variable (1 ou 2 chiffres)
-    // sur une seule ligne obligatoire (contrairement au calcul costaud, on
-    // ne veut jamais qu'elle passe à la ligne) — on force flex-wrap:nowrap
-    // et on réduit la police jusqu'à ce que la rangée tienne.
-    function fitSequenceRow() {
+    // "Complète la suite" et "Mes premières équations" : contenu à largeur
+    // variable (1 ou 2 chiffres par nombre) sur une seule ligne obligatoire
+    // (contrairement au calcul costaud, on ne veut jamais que ça passe à la
+    // ligne) — on force flex-wrap:nowrap et on réduit la police jusqu'à ce
+    // que la rangée tienne.
+    function fitProblemRow() {
       if (typeof window.getComputedStyle !== "function") return;
       els.problem.style.flexWrap = "nowrap";
       var maxWidth = Math.min(window.innerWidth || 9999, document.documentElement.clientWidth || 9999) * 0.92;
@@ -8811,7 +8812,7 @@
             els.problem.appendChild(seqNumEl);
           }
         });
-        fitSequenceRow();
+        fitProblemRow();
         els.problem.classList.remove("pop");
         void els.problem.offsetWidth;
         els.problem.classList.add("pop");
@@ -8855,6 +8856,7 @@
           }
           els.problem.appendChild(el);
         });
+        fitProblemRow();
         els.problem.classList.remove("pop");
         void els.problem.offsetWidth;
         els.problem.classList.add("pop");
