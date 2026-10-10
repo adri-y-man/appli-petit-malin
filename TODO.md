@@ -30,3 +30,18 @@ Liste des prochaines modifications demandées, pas encore faites.
      quelques coups.
    - Le joueur reste toujours les pions noirs (`b`), l'IA joue les
      blancs (`w`) ?
+
+3. **Nouveau jeu "Somme de fruits"** : plusieurs fruits affichés, chacun
+   avec une valeur différente (ex. 🍎 = 2, 🍌 = 3, 🍇 = 5...), l'enfant
+   doit trouver la somme totale. Probablement dans Calcul Malin, en
+   mode-card à côté de "Mes premières équations"/"Compte les objets".
+   Mécanique proche de "Compte les objets" (`generateCountProblem`) mais
+   avec des valeurs différentes par type de fruit au lieu de compter des
+   objets identiques -- et des niveaux qui font monter le nombre de
+   fruits affichés / la variété de valeurs, comme les autres jeux de
+   calcul (3 réponses au choix, mêmes mécaniques de niveau/étoiles).
+   Points à trancher avant de coder :
+   - Les valeurs sont-elles toujours visibles à l'écran (ex. une petite
+     légende "🍎=2, 🍌=3") ou à mémoriser ?
+   - Les fruits affichés sont-ils toujours les mêmes à chaque partie, ou
+     tirés au sort parmi un pool plus large à chaque niveau ?
