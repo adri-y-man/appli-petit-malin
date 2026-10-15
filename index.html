@@ -2339,6 +2339,8 @@
     box-shadow: 0 12px 24px -12px rgba(31, 42, 60, 0.55);
   }
 
+  .dames-board[hidden] { display: none; }
+
   .dames-cell {
     appearance: none;
     border: none;
@@ -2366,6 +2368,28 @@
 
   .dames-piece.piece-b { background: #2a2a2a; color: #ffd400; }
   .dames-piece.piece-w { background: #fff8ee; color: #6a4c93; border: 2px solid #d8c9a8; }
+
+  /* Écran de choix avant la partie (2 joueurs / tout seul + force de
+     l'IA) : même esprit que l'écran de choix d'article en Écriture
+     Malin, affiché à la place du plateau tant qu'aucun choix n'est
+     fait. */
+  .dames-setup {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(0.8rem, 3.5vh, 1.4rem);
+  }
+
+  .dames-setup[hidden] { display: none; }
+
+  .dames-setup-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(0.5rem, 2vw, 0.8rem);
+  }
+
+  .dames-setup-buttons[hidden] { display: none; }
 
   /* Dames sur tablette : le plafond de 26rem pensé pour téléphone laissait
      le plateau minuscule au milieu de tout l'espace disponible. En
@@ -4234,9 +4258,21 @@
   </section>
 
   <section class="dames-screen" id="damesScreen" hidden>
-    <p class="boardgame-status" id="damesStatus"></p>
-    <div class="dames-board" id="damesBoard"></div>
-    <button type="button" class="boardgame-replay-btn" id="damesReplayBtn">Rejouer ↻</button>
+    <div class="dames-setup" id="damesSetup">
+      <p class="boardgame-status">Comment veux-tu jouer ?</p>
+      <div class="dames-setup-buttons" id="damesModeButtons">
+        <button type="button" class="boardgame-replay-btn" id="damesPvpBtn">👥 Jouer à deux</button>
+        <button type="button" class="boardgame-replay-btn" id="damesSoloBtn">🤖 Jouer tout seul</button>
+      </div>
+      <div class="dames-setup-buttons" id="damesDifficultyButtons" hidden>
+        <button type="button" class="boardgame-replay-btn" data-difficulty="facile">🙂 Facile</button>
+        <button type="button" class="boardgame-replay-btn" data-difficulty="moyen">😐 Moyen</button>
+        <button type="button" class="boardgame-replay-btn" data-difficulty="fort">😈 Fort</button>
+      </div>
+    </div>
+    <p class="boardgame-status" id="damesStatus" hidden></p>
+    <div class="dames-board" id="damesBoard" hidden></div>
+    <button type="button" class="boardgame-replay-btn" id="damesReplayBtn" hidden>Rejouer ↻</button>
   </section>
 
   <section class="bn-screen" id="bnScreen" hidden>
@@ -6549,6 +6585,8 @@
       damesTurn: "b",
       damesWinner: null,
       damesSelected: null,
+      damesVsAI: false,
+      damesDifficulty: null,
       bnShips1: [],
       bnShips2: [],
       bnShots1: [],
@@ -7882,6 +7920,11 @@
       p4Board: document.getElementById("p4Board"),
       p4ReplayBtn: document.getElementById("p4ReplayBtn"),
       damesScreen: document.getElementById("damesScreen"),
+      damesSetup: document.getElementById("damesSetup"),
+      damesModeButtons: document.getElementById("damesModeButtons"),
+      damesDifficultyButtons: document.getElementById("damesDifficultyButtons"),
+      damesPvpBtn: document.getElementById("damesPvpBtn"),
+      damesSoloBtn: document.getElementById("damesSoloBtn"),
       damesStatus: document.getElementById("damesStatus"),
       damesBoard: document.getElementById("damesBoard"),
       damesReplayBtn: document.getElementById("damesReplayBtn"),
@@ -12525,7 +12568,184 @@
       return n;
     }
 
-    function startDames() {
+    // Vrai si "player" a au moins un coup légal quelque part sur le
+    // plateau -- sans ça, un joueur bloqué (plus rare, mais possible avec
+    // des pions qui n'avancent que dans un sens) laissait la partie
+    // coincée indéfiniment sur son tour. Compté comme une défaite, comme
+    // aux dames classiques.
+    function damesPlayerHasAnyMove(board, player) {
+      for (var r = 0; r < DAMES_SIZE; r++) {
+        for (var c = 0; c < DAMES_SIZE; c++) {
+          var piece = board[r][c];
+          if (piece && damesPlayerOf(piece) === player && damesLegalMovesFor(board, r, c).length) return true;
+        }
+      }
+      return false;
+    }
+
+    function damesAllLegalMoves(board, player) {
+      var moves = [];
+      for (var r = 0; r < DAMES_SIZE; r++) {
+        for (var c = 0; c < DAMES_SIZE; c++) {
+          var piece = board[r][c];
+          if (piece && damesPlayerOf(piece) === player) {
+            damesLegalMovesFor(board, r, c).forEach(function (m) {
+              moves.push({ from: [r, c], to: m.to, capture: m.capture });
+            });
+          }
+        }
+      }
+      return moves;
+    }
+
+    // Applique un coup déjà choisi (par un tap humain ou par l'IA) :
+    // déplace la pièce, retire une éventuelle prise, promeut en dame à
+    // la dernière rangée, puis passe la main (ou déclare une victoire).
+    // Partagé par onDamesCellTap et damesAiMove pour ne pas dupliquer
+    // cette logique entre les 2.
+    function damesApplyMove(board, from, to, capture) {
+      var movedPiece = board[from[0]][from[1]];
+      board[from[0]][from[1]] = null;
+      if (capture) board[capture[0]][capture[1]] = null;
+      if (movedPiece === "b" && to[0] === DAMES_SIZE - 1) movedPiece = "B";
+      if (movedPiece === "w" && to[0] === 0) movedPiece = "W";
+      board[to[0]][to[1]] = movedPiece;
+    }
+
+    function damesPlayMove(from, to, capture) {
+      damesApplyMove(state.damesBoard, from, to, capture);
+      state.damesSelected = null;
+      var mover = state.damesTurn;
+      var opponent = mover === "b" ? "w" : "b";
+      if (damesCountPieces(state.damesBoard, opponent) === 0 || !damesPlayerHasAnyMove(state.damesBoard, opponent)) {
+        state.damesWinner = mover;
+      } else {
+        state.damesTurn = opponent;
+      }
+      renderDamesScreen();
+      if (!state.damesWinner && state.damesVsAI && state.damesTurn === "w") {
+        window.setTimeout(damesAiMove, 550);
+      }
+    }
+
+    // Copie du plateau après un coup donné, sans toucher au plateau
+    // réel -- utilisé par l'IA pour essayer des coups sans y jouer.
+    function damesSimulateMove(board, move) {
+      var copy = board.map(function (row) { return row.slice(); });
+      damesApplyMove(copy, move.from, move.to, move.capture);
+      return copy;
+    }
+
+    // Vrai si un pion de "byPlayer" peut capturer sur "square" (donc "sauter
+    // par-dessus" une pièce qui s'y trouverait) -- utilisé par l'IA
+    // "moyen" pour éviter de poser un pion en prise sans raison.
+    function damesSquareIsThreatened(board, square, byPlayer) {
+      return damesAllLegalMoves(board, byPlayer).some(function (m) {
+        return m.capture && m.capture[0] === square[0] && m.capture[1] === square[1];
+      });
+    }
+
+    // Évaluation simple pour l'IA "fort" : nombre de pièces (dames
+    // comptant plus) en faveur de "player" moins celles de l'adversaire.
+    function damesEvaluate(board, player) {
+      var score = 0;
+      for (var r = 0; r < DAMES_SIZE; r++) {
+        for (var c = 0; c < DAMES_SIZE; c++) {
+          var piece = board[r][c];
+          if (!piece) continue;
+          var val = damesIsKing(piece) ? 3 : 1;
+          score += damesPlayerOf(piece) === player ? val : -val;
+        }
+      }
+      return score;
+    }
+
+    // Minimax + élagage alpha-bêta, quelques coups d'avance (IA "fort").
+    // Plateau 6x6 avec peu de pièces : même à profondeur 3 (IA, joueur,
+    // IA), le nombre de positions explorées reste minuscule pour du JS.
+    function damesMinimax(board, player, toMove, depth, alpha, beta) {
+      var moves = damesAllLegalMoves(board, toMove);
+      if (moves.length === 0) return toMove === player ? -1000 : 1000;
+      if (depth === 0) return damesEvaluate(board, player);
+      var opponent = toMove === "b" ? "w" : "b";
+      if (toMove === player) {
+        var best = -Infinity;
+        for (var i = 0; i < moves.length; i++) {
+          var val = damesMinimax(damesSimulateMove(board, moves[i]), player, opponent, depth - 1, alpha, beta);
+          if (val > best) best = val;
+          if (best > alpha) alpha = best;
+          if (alpha >= beta) break;
+        }
+        return best;
+      }
+      var worst = Infinity;
+      for (var j = 0; j < moves.length; j++) {
+        var val2 = damesMinimax(damesSimulateMove(board, moves[j]), player, opponent, depth - 1, alpha, beta);
+        if (val2 < worst) worst = val2;
+        if (worst < beta) beta = worst;
+        if (alpha >= beta) break;
+      }
+      return worst;
+    }
+
+    function damesBestMoveMinimax(board, player, depth) {
+      var moves = damesAllLegalMoves(board, player);
+      if (!moves.length) return null;
+      var opponent = player === "b" ? "w" : "b";
+      var bestVal = -Infinity;
+      var bestMoves = [];
+      moves.forEach(function (m) {
+        var val = damesMinimax(damesSimulateMove(board, m), player, opponent, depth - 1, -Infinity, Infinity);
+        if (val > bestVal) { bestVal = val; bestMoves = [m]; } else if (val === bestVal) { bestMoves.push(m); }
+      });
+      return bestMoves[randInt(0, bestMoves.length - 1)];
+    }
+
+    // 3 forces d'IA (voir TODO.md) : "facile" joue au hasard (en
+    // priorisant une prise si possible) ; "moyen" pareil mais évite en
+    // plus de se poser en prise quand une autre option existe ; "fort"
+    // cherche le meilleur coup à quelques coups d'avance.
+    function damesChooseAiMove(board, player, difficulty) {
+      var moves = damesAllLegalMoves(board, player);
+      if (!moves.length) return null;
+      if (difficulty === "fort") return damesBestMoveMinimax(board, player, 3);
+
+      var captures = moves.filter(function (m) { return m.capture; });
+      var candidates = captures.length ? captures : moves;
+
+      if (difficulty === "moyen") {
+        var opponent = player === "b" ? "w" : "b";
+        var safe = candidates.filter(function (m) {
+          return !damesSquareIsThreatened(damesSimulateMove(board, m), m.to, opponent);
+        });
+        candidates = safe.length ? safe : candidates;
+      }
+      return candidates[randInt(0, candidates.length - 1)];
+    }
+
+    function damesAiMove() {
+      if (state.damesWinner || state.damesTurn !== "w") return;
+      var move = damesChooseAiMove(state.damesBoard, "w", state.damesDifficulty);
+      if (!move) {
+        state.damesWinner = "b";
+        renderDamesScreen();
+        return;
+      }
+      damesPlayMove(move.from, move.to, move.capture);
+    }
+
+    // Écran de choix avant la partie : "à deux" lance tout de suite,
+    // "tout seul" affiche un 2e groupe de boutons pour choisir la force.
+    function showDamesSetup() {
+      els.damesSetup.hidden = false;
+      els.damesModeButtons.hidden = false;
+      els.damesDifficultyButtons.hidden = true;
+      els.damesStatus.hidden = true;
+      els.damesBoard.hidden = true;
+      els.damesReplayBtn.hidden = true;
+    }
+
+    function startDamesGame() {
       var board = [];
       for (var r = 0; r < DAMES_SIZE; r++) board.push(new Array(DAMES_SIZE).fill(null));
       for (var r0 = 0; r0 < 2; r0++) {
@@ -12542,31 +12762,42 @@
       state.damesTurn = "b";
       state.damesWinner = null;
       state.damesSelected = null;
+      els.damesSetup.hidden = true;
+      els.damesStatus.hidden = false;
+      els.damesBoard.hidden = false;
+      els.damesReplayBtn.hidden = false;
       renderDamesScreen();
+    }
+
+    function startDamesPvp() {
+      state.damesVsAI = false;
+      state.damesDifficulty = null;
+      startDamesGame();
+    }
+
+    function startDamesSolo(difficulty) {
+      state.damesVsAI = true;
+      state.damesDifficulty = difficulty;
+      startDamesGame();
+    }
+
+    // Bouton "Rejouer" (voir plus bas) : relance une partie avec les
+    // mêmes réglages (solo/2 joueurs, force) sans repasser par l'écran
+    // de choix -- il faut quitter puis revenir à Dames pour en changer.
+    function replayDames() {
+      startDamesGame();
     }
 
     function onDamesCellTap(row, col) {
       if (state.damesWinner) return;
+      if (state.damesVsAI && state.damesTurn === "w") return;
       var piece = state.damesBoard[row][col];
       if (state.damesSelected) {
         var sel = state.damesSelected;
         var moves = damesLegalMovesFor(state.damesBoard, sel[0], sel[1]);
         var chosen = moves.filter(function (m) { return m.to[0] === row && m.to[1] === col; })[0];
         if (chosen) {
-          var movedPiece = state.damesBoard[sel[0]][sel[1]];
-          state.damesBoard[sel[0]][sel[1]] = null;
-          if (chosen.capture) state.damesBoard[chosen.capture[0]][chosen.capture[1]] = null;
-          if (movedPiece === "b" && row === DAMES_SIZE - 1) movedPiece = "B";
-          if (movedPiece === "w" && row === 0) movedPiece = "W";
-          state.damesBoard[row][col] = movedPiece;
-          state.damesSelected = null;
-          var opponent = state.damesTurn === "b" ? "w" : "b";
-          if (damesCountPieces(state.damesBoard, opponent) === 0) {
-            state.damesWinner = state.damesTurn;
-          } else {
-            state.damesTurn = opponent;
-          }
-          renderDamesScreen();
+          damesPlayMove(sel, [row, col], chosen.capture);
           return;
         }
         state.damesSelected = (piece && damesPlayerOf(piece) === state.damesTurn) ? [row, col] : null;
@@ -12610,7 +12841,11 @@
         }
       }
       if (state.damesWinner) {
-        els.damesStatus.textContent = (state.damesWinner === "b" ? "⚫️" : "⚪️") + " a gagné !";
+        els.damesStatus.textContent = state.damesVsAI
+          ? (state.damesWinner === "b" ? "🎉 Tu as gagné !" : "🤖 L'ordinateur a gagné !")
+          : (state.damesWinner === "b" ? "⚫️" : "⚪️") + " a gagné !";
+      } else if (state.damesVsAI) {
+        els.damesStatus.textContent = state.damesTurn === "b" ? "À toi de jouer ⚫️" : "🤖 L'ordinateur réfléchit...";
       } else {
         els.damesStatus.textContent = "Au tour de " + (state.damesTurn === "b" ? "⚫️" : "⚪️");
       }
@@ -13568,7 +13803,7 @@
       }
       if (dames) {
         state.problem = null;
-        startDames();
+        showDamesSetup();
         return;
       }
       if (bataillenavale) {
@@ -13785,7 +14020,15 @@
     els.breakoutCard.addEventListener("click", function () { selectMode("breakout"); });
     els.morpionReplayBtn.addEventListener("click", startMorpion);
     els.p4ReplayBtn.addEventListener("click", startPuissance4);
-    els.damesReplayBtn.addEventListener("click", startDames);
+    els.damesReplayBtn.addEventListener("click", replayDames);
+    els.damesPvpBtn.addEventListener("click", startDamesPvp);
+    els.damesSoloBtn.addEventListener("click", function () {
+      els.damesModeButtons.hidden = true;
+      els.damesDifficultyButtons.hidden = false;
+    });
+    Array.prototype.forEach.call(els.damesDifficultyButtons.querySelectorAll("button"), function (btn) {
+      btn.addEventListener("click", function () { startDamesSolo(btn.getAttribute("data-difficulty")); });
+    });
     els.bnReadyBtn.addEventListener("click", bnReady);
     els.bnReplayBtn.addEventListener("click", startBatailleNavale);
     els.dominoLeftMarker.addEventListener("click", function () { onDominoEndTap("left"); });

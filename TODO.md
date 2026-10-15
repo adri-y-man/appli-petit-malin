@@ -11,27 +11,7 @@ Liste des prochaines modifications demandées, pas encore faites.
    cache, voir aussi `audio/level-up.mp3` pour le pattern fichier externe
    plutôt que data URI inline).
 
-2. **Mode solo (contre l'ordinateur) aux Dames**, avec une IA dont la
-   force dépend du niveau choisi. État actuel (`index.html`, à partir de
-   `var DAMES_SIZE = 6;`) : Dames n'est que du 2 joueurs en local, pas
-   d'IA, pas de pilule de niveau (jeu de société = `isBoardGameMode` =
-   écran "noStars", voir `selectMode`). `damesLegalMovesFor(board, row,
-   col)` existe déjà et donne les coups légaux d'une case -- base
-   réutilisable pour une IA (lister tous les coups de toutes les pièces
-   du joueur "w", choisir selon la force voulue).
-   Choix fait pour le flux de sélection : avant la partie, un écran/bouton
-   propose "Jouer à deux" ou "Jouer tout seul" ; si "tout seul" est
-   choisi, un second groupe de boutons apparaît pour régler la force de
-   l'adversaire (ex. facile/moyen/fort).
-   Points encore à trancher avant de coder :
-   - Niveaux de force envisageables : facile = coup aléatoire parmi les
-     légaux (en priorisant une prise si possible) ; moyen = + éviter de
-     se faire prendre sans raison ; fort = minimax/évaluation simple sur
-     quelques coups.
-   - Le joueur reste toujours les pions noirs (`b`), l'IA joue les
-     blancs (`w`) ?
-
-3. **Nouveau jeu "Somme de fruits"** : plusieurs fruits affichés, chacun
+2. **Nouveau jeu "Somme de fruits"** : plusieurs fruits affichés, chacun
    avec une valeur différente (ex. 🍎 = 2, 🍌 = 3, 🍇 = 5...), l'enfant
    doit trouver la somme totale. Probablement dans Calcul Malin, en
    mode-card à côté de "Mes premières équations"/"Compte les objets".
@@ -46,7 +26,7 @@ Liste des prochaines modifications demandées, pas encore faites.
    - Les fruits affichés sont-ils toujours les mêmes à chaque partie, ou
      tirés au sort parmi un pool plus large à chaque niveau ?
 
-4. **Nouveau jeu "Devine la comptine chantée"** dans Musique Malin (à
+3. **Nouveau jeu "Devine la comptine chantée"** dans Musique Malin (à
    côté de Musique libre / Quel instrument ? / Répète le rythme / grave-
    aigu) : un extrait chanté (vrai enregistrement, pas synthétisé) est
    joué, l'enfant doit deviner de quelle chanson/comptine il s'agit
@@ -60,20 +40,7 @@ Liste des prochaines modifications demandées, pas encore faites.
    - Extrait complet ou juste les premières secondes (plus facile de
      deviner vite = indice progressif selon le niveau) ?
 
-5. **Nouveau jeu "Devine le pays à partir de son drapeau"** : un drapeau
-   affiché, l'enfant choisit le bon nom de pays parmi plusieurs
-   propositions. Il existe déjà un pool de 10 drapeaux réutilisable,
-   `FLAG_SYMBOL_POOL` (actuellement utilisé par "Paires cachées
-   (drapeaux)" en Mémoire Malin) -- il manque juste l'association
-   drapeau → nom de pays (en français). Mécanique proche de "Les
-   couleurs"/"Les animaux" (image + choix de mots). Points à trancher :
-   - Dans quelle catégorie (Mémoire Malin à côté des paires de drapeaux,
-     Anglais Malin si les noms sont en anglais, ou nouvelle catégorie
-     "Géographie" à créer) ?
-   - Faut-il plus de 10 drapeaux que le pool actuel pour un vrai jeu de
-     quiz (celui-là était pensé pour un jeu de mémoire, pas un quiz) ?
-
-6. **Revoir la mécanique du Sudoku** (`sudokuforme`/`sudokuchiffre`,
+4. **Revoir la mécanique du Sudoku** (`sudokuforme`/`sudokuchiffre`,
    partagent le même moteur -- `onSudokuCellTap`/`onSudokuPaletteTap`/
    `onSudokuComplete` dans `index.html`). Aujourd'hui `onSudokuPaletteTap`
    vérifie chaque case IMMÉDIATEMENT contre `state.sudokuSolution` : si ce
@@ -90,7 +57,7 @@ Liste des prochaines modifications demandées, pas encore faites.
    - Le bouton "Valider" est-il actif seulement grille pleine, ou
      utilisable à tout moment pour vérifier l'avancement ?
 
-7. **"Guide le renard" : 2-3 friandises aux niveaux supérieurs** (mode
+5. **"Guide le renard" : 2-3 friandises aux niveaux supérieurs** (mode
    `codeseq`). Aujourd'hui `codeGenerateMaze`/`codeGenerateLayout` ne
    placent qu'une seule case cible ("T", trouvée via BFS depuis le
    départ), et `codeLaunchSeq` considère le niveau réussi dès que le
@@ -105,7 +72,7 @@ Liste des prochaines modifications demandées, pas encore faites.
    - Chaque friandise reste-t-elle le même emoji (`codeCurrentTreat`,
      tiré une fois) ou un emoji différent par case ?
 
-8. **Puissance 4 : le jeton doit tomber "derrière" la façade bleue**,
+6. **Puissance 4 : le jeton doit tomber "derrière" la façade bleue**,
    comme sur le vrai jeu physique -- visible seulement à travers les
    trous (fond blanc) pendant sa chute, pas glissant par-dessus tout le
    plateau. Aujourd'hui (`.p4-board`/`.p4-cell`/`.p4-disc`, animation
