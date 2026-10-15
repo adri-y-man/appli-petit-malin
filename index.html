@@ -3739,6 +3739,7 @@
   .category-card-food { background: linear-gradient(135deg, #a8e6a1, #6fcf6a); }
   .category-card-paires { background: linear-gradient(135deg, #7ee8d0, #45c7a8); }
   .category-card-pairesdrapeaux { background: linear-gradient(135deg, #f7a8d8, #e879c2); }
+  .category-card-flags { background: linear-gradient(135deg, #a8e6a1, #6fcf6a); }
   .category-card-disparu { background: linear-gradient(135deg, #ffd68a, #ffb648); }
   .category-card-ordre { background: linear-gradient(135deg, #ff8fa3, #ff6b81); }
   .category-card-change { background: linear-gradient(135deg, #a8e6a1, #6fcf6a); }
@@ -4784,6 +4785,11 @@
           <span class="icon emoji">🌍</span>
           <span>Paires cachées (drapeaux)</span>
           <span class="level-badge">PS-GS</span>
+        </button>
+        <button class="category-card category-card-flags" type="button" id="flagsCard">
+          <span class="icon emoji">🇫🇷</span>
+          <span>Devine le drapeau</span>
+          <span class="level-badge">MS-GS</span>
         </button>
         <button class="category-card category-card-disparu" type="button" id="disparuCard">
           <span class="icon emoji">❓</span>
@@ -6202,6 +6208,32 @@
     // (progression et pile mélangée propres), choisis pour rester
     // visuellement bien distincts les uns des autres.
     var FLAG_SYMBOL_POOL = ["🇫🇷", "🇮🇹", "🇪🇸", "🇩🇪", "🇬🇧", "🇺🇸", "🇯🇵", "🇧🇷", "🇨🇦", "🇧🇪"];
+
+    // "Devine le drapeau" : même pool de drapeaux que le jeu de mémoire
+    // ci-dessus, avec cette fois le nom du pays associé (à deviner).
+    var FLAG_DEFS = {
+      fr: { emoji: "🇫🇷", fr: "FRANCE" },
+      gb: { emoji: "🇬🇧", fr: "ROYAUME-UNI" },
+      us: { emoji: "🇺🇸", fr: "ÉTATS-UNIS" },
+      de: { emoji: "🇩🇪", fr: "ALLEMAGNE" },
+      es: { emoji: "🇪🇸", fr: "ESPAGNE" },
+      it: { emoji: "🇮🇹", fr: "ITALIE" },
+      jp: { emoji: "🇯🇵", fr: "JAPON" },
+      ca: { emoji: "🇨🇦", fr: "CANADA" },
+      br: { emoji: "🇧🇷", fr: "BRÉSIL" },
+      be: { emoji: "🇧🇪", fr: "BELGIQUE" }
+    };
+    // Du plus familier (France, voisins/grandes puissances connues) au
+    // plus lointain, comme pour les animaux de savane -- lot complet
+    // atteint dès le niveau 4 faute d'en avoir plus en réserve.
+    var FLAG_LEVEL_POOL = [
+      ["fr", "gb", "us", "de"],
+      ["fr", "gb", "us", "de", "es", "it"],
+      ["fr", "gb", "us", "de", "es", "it", "jp", "ca"],
+      ["fr", "gb", "us", "de", "es", "it", "jp", "ca", "br", "be"],
+      ["fr", "gb", "us", "de", "es", "it", "jp", "ca", "br", "be"]
+    ];
+
     var MEMORY_LEVELS = {
       pairs: [3, 4, 6, 8, 10],
       columns: [3, 4, 4, 4, 4]
@@ -6936,6 +6968,24 @@
       };
     }
 
+    // "Devine le drapeau" : même forme que "animalname" juste au-dessus
+    // -- le drapeau comme indice, le nom du pays en français à deviner
+    // (rendu générique, aucun affichage dédié requis côté réponses).
+    function generateFlagsProblem(levelIdx) {
+      var pool = FLAG_LEVEL_POOL[levelIdx];
+      var targetKey = pool[randInt(0, pool.length - 1)];
+      var targetFr = FLAG_DEFS[targetKey].fr;
+      var otherNames = shuffle(pool.filter(function (k) { return k !== targetKey; }).map(function (k) { return FLAG_DEFS[k].fr; })).slice(0, 2);
+      var choices = shuffle(otherNames.concat([targetFr]));
+      return {
+        kind: "flags",
+        pictureKey: targetKey,
+        emoji: FLAG_DEFS[targetKey].emoji,
+        answer: targetFr,
+        choices: choices
+      };
+    }
+
     function generateBabiesProblem(levelIdx) {
       var pool = ANIMAL_BABY_LEVEL_POOL[levelIdx];
       var targetKey = pool[randInt(0, pool.length - 1)];
@@ -7615,6 +7665,9 @@
       if (p1.kind === "animalname" || p2.kind === "animalname") {
         return p1.kind === "animalname" && p2.kind === "animalname" && p1.pictureKey === p2.pictureKey;
       }
+      if (p1.kind === "flags" || p2.kind === "flags") {
+        return p1.kind === "flags" && p2.kind === "flags" && p1.pictureKey === p2.pictureKey;
+      }
       if (p1.kind === "babies" || p2.kind === "babies") {
         return p1.kind === "babies" && p2.kind === "babies" && p1.pictureKey === p2.pictureKey;
       }
@@ -7688,6 +7741,9 @@
       }
       if (state.mode === "animalname") {
         return generateAnimalNameProblem(levelIdx);
+      }
+      if (state.mode === "flags") {
+        return generateFlagsProblem(levelIdx);
       }
       if (state.mode === "babies") {
         return generateBabiesProblem(levelIdx);
@@ -7909,6 +7965,7 @@
       animalSoundCard: document.getElementById("animalSoundCard"),
       pairesCard: document.getElementById("pairesCard"),
       pairesDrapeauxCard: document.getElementById("pairesDrapeauxCard"),
+      flagsCard: document.getElementById("flagsCard"),
       disparuCard: document.getElementById("disparuCard"),
       ordreCard: document.getElementById("ordreCard"),
       changeCard: document.getElementById("changeCard"),
@@ -8697,7 +8754,7 @@
         return;
       }
 
-      if (p.kind === "letters" || p.kind === "syllables" || p.kind === "animalname" || p.kind === "babies" || p.kind === "habitat" || p.kind === "diet" || p.kind === "animalsound") {
+      if (p.kind === "letters" || p.kind === "syllables" || p.kind === "animalname" || p.kind === "babies" || p.kind === "habitat" || p.kind === "diet" || p.kind === "animalsound" || p.kind === "flags") {
         els.problem.removeAttribute("data-terms");
         var pic;
         var photoList = p.photo ? ANIMAL_PHOTOS[p.photo] : null;
@@ -13304,7 +13361,7 @@
       if (isPaintMode(mode) || mode === "paintnum") return "peinture";
       if (mode === "musiquelibre" || mode === "instruments" || mode === "pitch" || mode === "rythme") return "musique";
       if (mode === "animalname" || mode === "babies" || mode === "habitat" || mode === "diet" || mode === "animalsound") return "animaux";
-      if (isMemoryMode(mode) || mode === "disparu" || mode === "ordre" || mode === "change" || mode === "suitelum") return "memoire";
+      if (isMemoryMode(mode) || mode === "disparu" || mode === "ordre" || mode === "change" || mode === "suitelum" || mode === "flags") return "memoire";
       if (mode === "mot" || mode === "composesimple" || mode === "composelibre" || mode === "lettreman" || mode === "trace" || mode === "syllordre" || mode === "article") return "ecriture";
       if (mode === "traceforme" || mode === "shapes" || mode === "fillforme" || mode === "intrus" || mode === "puzzle" || mode === "sudokuforme") return "formes";
       if (mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino" || mode === "solitaire" || mode === "contraire" || mode === "penalty" || mode === "breakout") return "jeux";
@@ -13697,6 +13754,7 @@
     els.animalSoundCard.addEventListener("click", function () { selectMode("animalsound"); });
     els.pairesCard.addEventListener("click", function () { selectMode("paires"); });
     els.pairesDrapeauxCard.addEventListener("click", function () { selectMode("pairesdrapeaux"); });
+    els.flagsCard.addEventListener("click", function () { selectMode("flags"); });
     els.disparuCard.addEventListener("click", function () { selectMode("disparu"); });
     els.ordreCard.addEventListener("click", function () { selectMode("ordre"); });
     els.changeCard.addEventListener("click", function () { selectMode("change"); });
