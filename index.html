@@ -11480,6 +11480,10 @@
       { width: 4, height: 4 },
       { width: 5, height: 5 }
     ];
+    // Nombre de friandises à placer dans "Guide le renard", par niveau :
+    // les deux premiers niveaux restent simples (une seule friandise),
+    // puis le parcours s'allonge (2, puis 3 friandises à manger).
+    var CODE_SEQ_TREAT_COUNT = [1, 1, 2, 3, 3];
     function codeEmptyGrid(width, height) {
       var grid = [];
       for (var y = 0; y < height; y++) {
@@ -11514,6 +11518,48 @@
         });
       }
       return false;
+    }
+
+    // Variante de codeBfsReachable qui renvoie la liste complète des
+    // cases accessibles depuis "start" (au lieu de s'arrêter à la
+    // première case cible trouvée) -- utilisée pour choisir où placer
+    // des friandises supplémentaires.
+    function codeReachableCells(grid, start) {
+      var dims = codeGridDims(grid);
+      var seen = {};
+      var key = function (x, y) { return x + "," + y; };
+      var queue = [{ x: start.x, y: start.y }];
+      var result = [];
+      seen[key(start.x, start.y)] = true;
+      while (queue.length) {
+        var cur = queue.shift();
+        result.push(cur);
+        [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
+          var nx = cur.x + d[0];
+          var ny = cur.y + d[1];
+          if (nx < 0 || nx >= dims.width || ny < 0 || ny >= dims.height) return;
+          if (grid[ny][nx] === "#") return;
+          var k = key(nx, ny);
+          if (!seen[k]) {
+            seen[k] = true;
+            queue.push({ x: nx, y: ny });
+          }
+        });
+      }
+      return result;
+    }
+
+    // Choisit "count" friandises supplémentaires parmi les cases
+    // accessibles (hors départ et première cible), tirées au hasard.
+    // Renvoie null si pas assez de cases disponibles.
+    function codePickExtraTargets(grid, start, firstTarget, count) {
+      if (count <= 0) return [];
+      var reachable = codeReachableCells(grid, start);
+      var candidates = reachable.filter(function (c) {
+        return !(c.x === start.x && c.y === start.y) && !(c.x === firstTarget.x && c.y === firstTarget.y);
+      });
+      if (candidates.length < count) return null;
+      return shuffle(candidates).slice(0, count);
     }
 
     // Plus court programme (haut/bas/gauche/droite) menant de "start" à
@@ -11705,16 +11751,20 @@
     // tantôt à droite, tantôt à gauche (ou au-dessus/en-dessous).
     function codeGenerateMaze(levelIdx) {
       var diff = CODE_MAZE_DIFFICULTY[levelIdx];
+      var treatCount = CODE_SEQ_TREAT_COUNT[levelIdx] || 1;
       for (var attempt = 0; attempt < 60; attempt++) {
         var layout = codeGenerateLayout(diff);
         if (!layout) continue;
         if (!codeBfsReachable(layout.grid, layout.start, layout.target)) continue;
-        layout.grid[layout.target.y][layout.target.x] = "T";
-        return { grid: layout.grid, start: layout.start };
+        var extra = codePickExtraTargets(layout.grid, layout.start, layout.target, treatCount - 1);
+        if (extra === null) continue;
+        var targets = [layout.target].concat(extra);
+        targets.forEach(function (t) { layout.grid[t.y][t.x] = "T"; });
+        return { grid: layout.grid, start: layout.start, targets: targets };
       }
       var fallback = codeEmptyGrid(diff.width, diff.height);
       fallback[0][diff.width - 1] = "T";
-      return { grid: fallback, start: { x: 0, y: 0 } };
+      return { grid: fallback, start: { x: 0, y: 0 }, targets: [{ x: diff.width - 1, y: 0 }] };
     }
 
     // Simule un motif tiré au hasard, répété N fois, sur un plateau vide
@@ -11835,6 +11885,10 @@
     var codeCurrentDims = { width: 1, height: 1 };
     var CODE_TARGET_TREATS = ["🐭", "🐰", "🐔", "🐦", "🍓", "🍄", "🌰"];
     var codeCurrentTreat = CODE_TARGET_TREATS[0];
+    // "Guide le renard" seulement : quand plusieurs friandises sont
+    // placées, chacune a son propre emoji -- clé "x,y" -> emoji. Reste à
+    // null pour tous les autres modes (une seule friandise, codeCurrentTreat).
+    var codeTreatByPos = null;
     var codeFoxEl = null;
     var codeRunning = false;
     var codeCurrentProgram = [];
@@ -11857,6 +11911,16 @@
         }
       }
       return null;
+    }
+
+    function findCodeCells(grid, ch) {
+      var found = [];
+      for (var y = 0; y < grid.length; y++) {
+        for (var x = 0; x < grid[y].length; x++) {
+          if (grid[y][x] === ch) found.push({ x: x, y: y });
+        }
+      }
+      return found;
     }
 
     function codeApplyStep(pos, step) {
@@ -11890,7 +11954,7 @@
           else if (ch === "^") cls += " rock";
           else if (ch === "*") cls += " flower";
           cell.className = cls;
-          if (ch === "T") cell.textContent = codeCurrentTreat;
+          if (ch === "T") cell.textContent = (codeTreatByPos && codeTreatByPos[x + "," + y]) || codeCurrentTreat;
           else if (CODE_IF_EVENT_BY_CHAR[ch]) cell.textContent = CODE_IF_EVENT_BY_CHAR[ch].icon;
           els.codeBoard.appendChild(cell);
         }
@@ -11918,8 +11982,11 @@
 
     // Exécute "steps" un par un (avec animation), s'arrête net (bump) au
     // premier mur/bord rencontré. onStepIndex(i), si fourni, permet de
-    // surligner le bloc en cours dans le programme affiché.
-    function codeRunProgram(steps, onDone, onStepIndex) {
+    // surligner le bloc en cours dans le programme affiché. onStep(pos),
+    // si fourni, est appelé après chaque déplacement réussi (utilisé par
+    // "Guide le renard" pour repérer les friandises mangées en cours de
+    // route, quel que soit l'ordre).
+    function codeRunProgram(steps, onDone, onStepIndex, onStep) {
       codeRunning = true;
       var i = 0;
       function step() {
@@ -11942,6 +12009,7 @@
         }
         codeFoxState = next;
         placeCodeFox(next.x, next.y, true);
+        if (onStep) onStep(next);
         i++;
         window.setTimeout(step, CODE_STEP_MS);
       }
@@ -12118,14 +12186,22 @@
 
     // ---------- "Guide le renard" ----------
 
+    var codeSeqVisited = {};
+
     function startCodeSeqLevel() {
       var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
       var def = codeGenerateMaze(levelIdx);
       codeCurrentGrid = def.grid;
       codeFoxState = { x: def.start.x, y: def.start.y };
       codeCurrentProgram = [];
-      codeCurrentTreat = CODE_TARGET_TREATS[randInt(0, CODE_TARGET_TREATS.length - 1)];
-      els.codeInstruction.textContent = "Guide le renard jusqu'à sa friandise !";
+      codeSeqVisited = {};
+      var treatEmojis = shuffle(CODE_TARGET_TREATS.slice()).slice(0, def.targets.length);
+      codeCurrentTreat = treatEmojis[0];
+      codeTreatByPos = {};
+      def.targets.forEach(function (t, i) { codeTreatByPos[t.x + "," + t.y] = treatEmojis[i]; });
+      els.codeInstruction.textContent = def.targets.length > 1
+        ? "Guide le renard jusqu'à toutes ses friandises !"
+        : "Guide le renard jusqu'à sa friandise !";
       renderCodeBoard(codeCurrentGrid, codeFoxState);
       renderCodeSeqBuilder();
     }
@@ -12150,15 +12226,22 @@
     function codeLaunchSeq() {
       if (codeRunning || codeCurrentProgram.length === 0) return;
       codeSetBuilderDisabled(true);
+      var targets = findCodeCells(codeCurrentGrid, "T");
+      codeSeqVisited = {};
+      if (codeTreatByPos && codeTreatByPos[codeFoxState.x + "," + codeFoxState.y]) {
+        codeSeqVisited[codeFoxState.x + "," + codeFoxState.y] = true;
+      }
       codeRunProgram(codeCurrentProgram.slice(), function (finishedAll) {
-        var target = findCodeCell(codeCurrentGrid, "T");
-        var success = finishedAll && codeFoxState.x === target.x && codeFoxState.y === target.y;
+        var allEaten = targets.every(function (t) { return codeSeqVisited[t.x + "," + t.y]; });
+        var success = finishedAll && allEaten;
         if (success) {
           onCodeLevelComplete(startCodeSeqLevel);
         } else {
           showResultAnim("fail", startCodeSeqLevel);
         }
-      }, codeHighlightProgramSlot);
+      }, codeHighlightProgramSlot, function (pos) {
+        codeSeqVisited[pos.x + "," + pos.y] = true;
+      });
     }
 
     // ---------- "Répète avec moi" ----------
@@ -12171,6 +12254,7 @@
       codeLoopPattern = [];
       codeLoopCount = 2;
       codeCurrentTreat = CODE_TARGET_TREATS[randInt(0, CODE_TARGET_TREATS.length - 1)];
+      codeTreatByPos = null;
       els.codeInstruction.textContent = "Construis un petit motif et répète-le pour atteindre sa friandise !";
       renderCodeBoard(codeCurrentGrid, codeFoxState);
       renderCodeLoopBuilder();
@@ -12240,6 +12324,7 @@
       codeDebugProgram = def.program.slice();
       codeDebugSelected = -1;
       codeCurrentTreat = CODE_TARGET_TREATS[randInt(0, CODE_TARGET_TREATS.length - 1)];
+      codeTreatByPos = null;
       els.codeInstruction.textContent = def.bugCount >= 2
         ? "Ce programme a 2 bugs ! Touche les blocs fautifs puis choisis les bons."
         : "Ce programme a un bug ! Touche le bloc fautif puis choisis le bon.";
@@ -12294,6 +12379,7 @@
       codeIfRules = {};
       codeFoxState = { x: 0, y: 0 };
       codeCurrentTreat = CODE_TARGET_TREATS[randInt(0, CODE_TARGET_TREATS.length - 1)];
+      codeTreatByPos = null;
       els.codeInstruction.textContent = "Choisis ce que le renard doit faire sur chaque case, puis lance-le !";
       renderCodeBoard(codeCurrentGrid, codeFoxState);
       renderCodeIfBuilder();
