@@ -2243,43 +2243,92 @@
 
   .p4-screen[hidden] { display: none; }
 
-  .p4-board {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    grid-template-rows: repeat(6, 1fr);
-    gap: clamp(0.25rem, 1.1vw, 0.5rem);
+  /* Reproduit la vraie structure du jeu physique en 3 couches
+     superposées plutôt qu'un plateau plein avec des jetons dessus :
+     - .p4-backing (fond crème, tout en bas) : ce qu'on voit à travers
+       un trou vide.
+     - .p4-discs (jetons, au milieu) : positionnés sur la même grille
+       7x6 que la façade, donc un jeton qui tombe passe RÉELLEMENT
+       derrière chaque case qu'il traverse en chemin.
+     - .p4-board (façade bleue, tout en haut) : un masque radial répété
+       (cercle transparent au centre de chaque case, bleu opaque
+       ailleurs) troue la façade à l'emplacement de chaque case -- un
+       jeton au milieu n'est donc visible qu'à travers ces trous,
+       jamais en glissant par-dessus. Les .p4-cell (boutons de clic)
+       restent sur la façade mais sans fond propre : c'est le masque
+       qui dessine les trous, pas elles. */
+  .p4-board-wrap {
+    --p4-gap: clamp(0.25rem, 1.1vw, 0.5rem);
+    --p4-pad: clamp(0.4rem, 1.8vw, 0.7rem);
+    position: relative;
     width: min(94vw, 68vh, 30rem);
     aspect-ratio: 7 / 6;
-    background: #2f5fc4;
-    padding: clamp(0.4rem, 1.8vw, 0.7rem);
     border-radius: clamp(0.7rem, 2.5vw, 1.1rem);
     box-shadow: 0 12px 24px -12px rgba(31, 42, 60, 0.55);
   }
 
+  .p4-backing {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 248, 238, 0.9);
+    border-radius: clamp(0.7rem, 2.5vw, 1.1rem);
+  }
+
+  .p4-discs {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    gap: var(--p4-gap);
+    padding: var(--p4-pad);
+    box-sizing: border-box;
+  }
+
+  .p4-board {
+    position: absolute;
+    inset: 0;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    gap: var(--p4-gap);
+    padding: var(--p4-pad);
+    background: #2f5fc4;
+    border-radius: clamp(0.7rem, 2.5vw, 1.1rem);
+    /* Trou = cercle transparent centré sur chaque case, répété sur
+       toute la grille. La taille de la tuile (case + 1 jeu de marge)
+       et le rayon du trou (en % de cette tuile) sont dérivés des mêmes
+       variables --p4-gap/--p4-pad que la grille elle-même, pour rester
+       alignés avec .p4-discs à toutes les tailles d'écran. */
+    -webkit-mask-image: radial-gradient(circle, transparent 0 43%, black 45% 100%);
+    -webkit-mask-size: calc((100% - 6 * var(--p4-gap)) / 7 + var(--p4-gap)) calc((100% - 5 * var(--p4-gap)) / 6 + var(--p4-gap));
+    -webkit-mask-repeat: repeat;
+    -webkit-mask-origin: content-box;
+    mask-image: radial-gradient(circle, transparent 0 43%, black 45% 100%);
+    mask-size: calc((100% - 6 * var(--p4-gap)) / 7 + var(--p4-gap)) calc((100% - 5 * var(--p4-gap)) / 6 + var(--p4-gap));
+    mask-repeat: repeat;
+    mask-origin: content-box;
+  }
+
   .p4-cell {
-    position: relative;
     appearance: none;
     border: none;
     cursor: pointer;
-    border-radius: 50%;
-    background: rgba(255, 248, 238, 0.9);
-    box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.2);
+    background: transparent;
   }
 
   .p4-cell:disabled { cursor: default; }
 
   #p4Status { font-size: clamp(1.25rem, 5.2vw, 1.7rem); }
 
-  /* Le jeton est un rond séparé posé par-dessus le trou (plutôt que le
-     trou lui-même qui changerait de couleur) : le trou reste visiblement
-     vide tant que le jeton, en train de tomber, ne l'a pas encore
-     recouvert. "--fall-rows" (posé en JS = numéro de ligne + 1) donne la
-     distance à parcourir en hauteurs de case, pour un jeton qui tombe
-     plus ou moins loin selon la ligne où il atterrit, comme au vrai
-     Puissance 4. */
+  /* "--fall-rows" (posé en JS = numéro de ligne + 1) donne la distance
+     à parcourir en hauteurs de case, pour un jeton qui tombe plus ou
+     moins loin selon la ligne où il atterrit, comme au vrai Puissance
+     4. Le jeton est placé nativement sur la grille de .p4-discs (sa
+     case d'arrivée, via grid-row/grid-column posés en JS) ; cette
+     translation l'anime juste depuis au-dessus de cette case. */
   .p4-disc {
-    position: absolute;
-    inset: 0;
     border-radius: 50%;
   }
 
@@ -2291,29 +2340,39 @@
     100% { transform: translateY(0); }
   }
 
-  /* L'anneau de victoire doit être posé sur le jeton (.p4-disc) et non
-     sur le trou (.p4-cell) qui est maintenant en dessous, entièrement
-     recouvert par le jeton -- un outline posé sur .p4-cell ne se voyait
-     donc plus du tout. */
-  .p4-disc.win {
-    box-shadow: 0 0 0 4px #43b98a, 0 0 16px 5px rgba(67, 185, 138, 0.75), inset 0 3px 6px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.2);
-    animation: p4-win-pulse 0.9s ease-in-out infinite;
-  }
   @keyframes p4-win-pulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.1); }
   }
 
-  /* Quand le jeton gagnant est aussi celui qui vient de tomber (win +
-     drop-in ensemble), "animation" étant un raccourci, la règle .win
-     ci-dessus (plus bas dans la feuille, donc gagnante à spécificité
-     égale) remplaçait entièrement l'animation de chute -- le dernier
-     jeton semblait apparaître déjà posé au lieu de tomber avant de
-     gagner. Règle dédiée, plus spécifique, qui enchaîne les 2 : la chute
-     d'abord, puis le pulse une fois posé (délai = durée de la chute). */
-  .p4-disc.win.drop-in {
-    animation: p4-drop 0.6s ease-in, p4-win-pulse 0.9s ease-in-out infinite 0.6s;
+  /* L'anneau de victoire est une couche à part, par-dessus la façade
+     (donc jamais rognée par son masque -- contrairement à un halo posé
+     directement sur .p4-disc, qui dépasse largement le petit trou
+     découpé et disparaissait presque entièrement). Même grille que
+     .p4-discs/.p4-board pour tomber exactement sur les jetons gagnants. */
+  .p4-glow {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    gap: var(--p4-gap);
+    padding: var(--p4-pad);
+    box-sizing: border-box;
+    pointer-events: none;
   }
+
+  .p4-glow-ring {
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px #43b98a, 0 0 16px 5px rgba(67, 185, 138, 0.75);
+    animation: p4-win-pulse 0.9s ease-in-out infinite;
+  }
+
+  /* Anneau du jeton gagnant qui vient tout juste de tomber : attend la
+     fin de l'animation de chute (0.6s) avant de commencer à pulser,
+     sinon il clignote déjà au-dessus du plateau pendant que le jeton
+     tombe encore. */
+  .p4-glow-ring.delayed { animation-delay: 0.6s; }
 
   .dames-screen {
     flex: 1 1 0;
@@ -4253,7 +4312,12 @@
 
   <section class="p4-screen" id="puissance4Screen" hidden>
     <p class="boardgame-status" id="p4Status"></p>
-    <div class="p4-board" id="p4Board"></div>
+    <div class="p4-board-wrap">
+      <div class="p4-backing"></div>
+      <div class="p4-discs" id="p4Discs"></div>
+      <div class="p4-board" id="p4Board"></div>
+      <div class="p4-glow" id="p4Glow"></div>
+    </div>
     <button type="button" class="boardgame-replay-btn" id="p4ReplayBtn">Rejouer ↻</button>
   </section>
 
@@ -7917,7 +7981,9 @@
       morpionReplayBtn: document.getElementById("morpionReplayBtn"),
       puissance4Screen: document.getElementById("puissance4Screen"),
       p4Status: document.getElementById("p4Status"),
+      p4Discs: document.getElementById("p4Discs"),
       p4Board: document.getElementById("p4Board"),
+      p4Glow: document.getElementById("p4Glow"),
       p4ReplayBtn: document.getElementById("p4ReplayBtn"),
       damesScreen: document.getElementById("damesScreen"),
       damesSetup: document.getElementById("damesSetup"),
@@ -12487,28 +12553,40 @@
 
     function renderPuissance4Screen() {
       els.p4Board.innerHTML = "";
+      els.p4Discs.innerHTML = "";
+      els.p4Glow.innerHTML = "";
       for (var r = 0; r < P4_ROWS; r++) {
         for (var c = 0; c < P4_COLS; c++) {
-          var cell = document.createElement("button");
-          cell.type = "button";
           var v = state.p4Board[r][c];
           var isWin = !!(state.p4WinCells && state.p4WinCells.some(function (wc) { return wc[0] === r && wc[1] === c; }));
-          cell.className = "p4-cell" + (isWin ? " win" : "");
-          if (v) {
-            var disc = document.createElement("span");
-            disc.className = "p4-disc " + (v === "R" ? "mark-r" : "mark-y") + (isWin ? " win" : "");
-            if (state.p4LastDrop && state.p4LastDrop.row === r && state.p4LastDrop.col === c) {
-              disc.className += " drop-in";
-              disc.style.setProperty("--fall-rows", r + 1);
-            }
-            cell.appendChild(disc);
-          }
+          var isLastDrop = !!(state.p4LastDrop && state.p4LastDrop.row === r && state.p4LastDrop.col === c);
+
+          var cell = document.createElement("button");
+          cell.type = "button";
+          cell.className = "p4-cell";
           cell.setAttribute("aria-label", v
             ? "Ligne " + (r + 1) + " colonne " + (c + 1) + " : " + (v === "R" ? "rouge" : "jaune")
             : "Colonne " + (c + 1) + ", case vide");
           cell.disabled = !!state.p4Winner;
           cell.addEventListener("click", function (colIdx) { return function () { dropP4(colIdx); }; }(c));
           els.p4Board.appendChild(cell);
+
+          if (v) {
+            var disc = document.createElement("span");
+            disc.className = "p4-disc " + (v === "R" ? "mark-r" : "mark-y") + (isLastDrop ? " drop-in" : "");
+            disc.style.gridRow = String(r + 1);
+            disc.style.gridColumn = String(c + 1);
+            if (isLastDrop) disc.style.setProperty("--fall-rows", r + 1);
+            els.p4Discs.appendChild(disc);
+
+            if (isWin) {
+              var ring = document.createElement("span");
+              ring.className = "p4-glow-ring" + (isLastDrop ? " delayed" : "");
+              ring.style.gridRow = String(r + 1);
+              ring.style.gridColumn = String(c + 1);
+              els.p4Glow.appendChild(ring);
+            }
+          }
         }
       }
       if (state.p4Winner === "draw") {
