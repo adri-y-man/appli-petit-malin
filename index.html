@@ -2267,6 +2267,15 @@
     box-shadow: 0 12px 24px -12px rgba(31, 42, 60, 0.55);
   }
 
+  /* Tablette : le plateau plafonnait à 30rem, laissant beaucoup de vide. */
+  @media (min-width: 700px) {
+    .p4-board-wrap {
+      width: min(92vw, 70vh, 48rem);
+      --p4-gap: clamp(0.4rem, 1vw, 0.8rem);
+      --p4-pad: clamp(0.6rem, 1.6vw, 1.1rem);
+    }
+  }
+
   .p4-backing {
     position: absolute;
     inset: 0;
@@ -2301,11 +2310,11 @@
        et le rayon du trou (en % de cette tuile) sont dérivés des mêmes
        variables --p4-gap/--p4-pad que la grille elle-même, pour rester
        alignés avec .p4-discs à toutes les tailles d'écran. */
-    -webkit-mask-image: radial-gradient(circle at calc(50% - var(--p4-gap) / 2) calc(50% - var(--p4-gap) / 2), transparent 0 43%, black 45% 100%);
+    -webkit-mask-image: radial-gradient(ellipse 31% 31% at calc(50% - var(--p4-gap) / 2) calc(50% - var(--p4-gap) / 2), transparent 0 94%, black 100%);
     -webkit-mask-size: calc((100% - 6 * var(--p4-gap)) / 7 + var(--p4-gap)) calc((100% - 5 * var(--p4-gap)) / 6 + var(--p4-gap));
     -webkit-mask-repeat: repeat;
     -webkit-mask-origin: content-box;
-    mask-image: radial-gradient(circle at calc(50% - var(--p4-gap) / 2) calc(50% - var(--p4-gap) / 2), transparent 0 43%, black 45% 100%);
+    mask-image: radial-gradient(ellipse 31% 31% at calc(50% - var(--p4-gap) / 2) calc(50% - var(--p4-gap) / 2), transparent 0 94%, black 100%);
     mask-size: calc((100% - 6 * var(--p4-gap)) / 7 + var(--p4-gap)) calc((100% - 5 * var(--p4-gap)) / 6 + var(--p4-gap));
     mask-repeat: repeat;
     mask-origin: content-box;
@@ -2321,6 +2330,9 @@
   .p4-cell:disabled { cursor: default; }
 
   #p4Status { font-size: clamp(1.25rem, 5.2vw, 1.7rem); }
+  @media (min-width: 700px) {
+    #p4Status { font-size: clamp(1.7rem, 3.2vw, 2.4rem); }
+  }
 
   /* "--fall-rows" (posé en JS = numéro de ligne + 1) donne la distance
      à parcourir en hauteurs de case, pour un jeton qui tombe plus ou
@@ -2364,7 +2376,7 @@
 
   .p4-glow-ring {
     border-radius: 50%;
-    margin: 6%;
+    margin: 14%;
     box-shadow: 0 0 0 3px #43b98a, 0 0 10px 3px rgba(67, 185, 138, 0.7);
     animation: p4-win-pulse 0.9s ease-in-out infinite;
   }
