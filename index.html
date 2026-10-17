@@ -2301,11 +2301,11 @@
        et le rayon du trou (en % de cette tuile) sont dérivés des mêmes
        variables --p4-gap/--p4-pad que la grille elle-même, pour rester
        alignés avec .p4-discs à toutes les tailles d'écran. */
-    -webkit-mask-image: radial-gradient(circle, transparent 0 43%, black 45% 100%);
+    -webkit-mask-image: radial-gradient(circle at calc(50% - var(--p4-gap) / 2) calc(50% - var(--p4-gap) / 2), transparent 0 43%, black 45% 100%);
     -webkit-mask-size: calc((100% - 6 * var(--p4-gap)) / 7 + var(--p4-gap)) calc((100% - 5 * var(--p4-gap)) / 6 + var(--p4-gap));
     -webkit-mask-repeat: repeat;
     -webkit-mask-origin: content-box;
-    mask-image: radial-gradient(circle, transparent 0 43%, black 45% 100%);
+    mask-image: radial-gradient(circle at calc(50% - var(--p4-gap) / 2) calc(50% - var(--p4-gap) / 2), transparent 0 43%, black 45% 100%);
     mask-size: calc((100% - 6 * var(--p4-gap)) / 7 + var(--p4-gap)) calc((100% - 5 * var(--p4-gap)) / 6 + var(--p4-gap));
     mask-repeat: repeat;
     mask-origin: content-box;
@@ -2364,7 +2364,8 @@
 
   .p4-glow-ring {
     border-radius: 50%;
-    box-shadow: 0 0 0 4px #43b98a, 0 0 16px 5px rgba(67, 185, 138, 0.75);
+    margin: 6%;
+    box-shadow: 0 0 0 3px #43b98a, 0 0 10px 3px rgba(67, 185, 138, 0.7);
     animation: p4-win-pulse 0.9s ease-in-out infinite;
   }
 
