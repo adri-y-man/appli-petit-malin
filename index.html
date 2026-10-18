@@ -2689,6 +2689,118 @@
     height: 100%;
   }
 
+
+  /* ---------- "Tetris" ---------- */
+
+  .tetris-screen {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    width: 100%;
+  }
+
+  .tetris-screen[hidden] { display: none; }
+
+  .tetris-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(0.6rem, 2.4vh, 1rem);
+  }
+
+  .tetris-stage {
+    position: relative;
+    width: min(54vw, 33vh, 15rem);
+    aspect-ratio: 1 / 2;
+    background: #eaf4ff;
+    border-radius: clamp(0.5rem, 2vw, 0.9rem);
+    box-shadow: 0 12px 24px -12px rgba(31, 42, 60, 0.55);
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  .tetris-stage canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .tetris-side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(0.5rem, 2vh, 0.9rem);
+  }
+
+  .tetris-info {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .tetris-next {
+    width: clamp(3rem, 12vw, 4.2rem);
+    aspect-ratio: 1;
+    background: #eaf4ff;
+    border-radius: 0.6rem;
+    box-shadow: 0 6px 12px -8px rgba(31, 42, 60, 0.5);
+    flex: none;
+  }
+
+  .tetris-next canvas { display: block; width: 100%; height: 100%; }
+
+  .tetris-info .boardgame-status {
+    font-size: clamp(0.9rem, 3.6vw, 1.25rem);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tetris-controls {
+    display: flex;
+    gap: clamp(0.5rem, 2.4vw, 0.9rem);
+  }
+
+  .tetris-btn {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 800;
+    font-size: clamp(1.3rem, 5.5vw, 1.8rem);
+    width: clamp(3rem, 14vw, 4.2rem);
+    height: clamp(3rem, 14vw, 4.2rem);
+    border-radius: 50%;
+    color: var(--ink);
+    background: var(--white);
+    border-bottom: 4px solid rgba(31, 42, 60, 0.18);
+    box-shadow: 0 10px 18px -10px rgba(31, 42, 60, 0.45);
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .tetris-btn:active { transform: translateY(2px); }
+
+  /* Tablette portrait : plateau plus grand (même principe que
+     .breakout-stage). */
+  @media (min-width: 640px) and (orientation: portrait) {
+    .tetris-stage { width: min(60vw, 40vh, 26rem); }
+    .tetris-next { width: 5rem; }
+  }
+
+  /* Paysage : plateau à gauche, infos + commandes à droite -- la hauteur
+     est la contrainte, pas la largeur. */
+  @media (orientation: landscape) {
+    .tetris-layout { flex-direction: row; align-items: center; gap: clamp(1.2rem, 5vw, 3rem); }
+    .tetris-stage { width: min(calc((100vh - 7rem) / 2), 26rem); }
+    .tetris-side { align-items: center; }
+    .tetris-info { flex-direction: column; }
+    .tetris-btn { width: clamp(3rem, 8vh, 4.2rem); height: clamp(3rem, 8vh, 4.2rem); }
+  }
+
   .bn-screen {
     flex: 1 1 0;
     display: flex;
@@ -3941,6 +4053,7 @@
   .category-card-solitaire { background: linear-gradient(135deg, #ffb199, #f77f5c); }
   .category-card-penalty { background: linear-gradient(135deg, #8ed6ac, #43b98a); }
   .category-card-breakout { background: linear-gradient(135deg, #a8b8f0, #598ce6); }
+  .category-card-tetris { background: linear-gradient(135deg, #c3a6f0, #8a5ce0); }
   .category-card-pumpkin { background: linear-gradient(135deg, #ffc27a, #f08a24); }
 
   /* 3 colonnes fixes (plutôt qu'un auto-fill dont le nombre de colonnes
@@ -4477,6 +4590,27 @@
       <canvas id="breakoutCanvas" width="300" height="420"></canvas>
     </div>
     <button type="button" class="boardgame-replay-btn" id="breakoutReplayBtn" hidden>Rejouer ↻</button>
+  </section>
+
+  <section class="tetris-screen" id="tetrisScreen" hidden>
+    <div class="tetris-layout">
+      <div class="tetris-stage">
+        <canvas id="tetrisCanvas" width="300" height="600"></canvas>
+      </div>
+      <div class="tetris-side">
+        <div class="tetris-info">
+          <div class="tetris-next"><canvas id="tetrisNext" width="96" height="96" aria-label="Pièce suivante"></canvas></div>
+          <p class="boardgame-status" id="tetrisStatus"></p>
+        </div>
+        <div class="tetris-controls">
+          <button type="button" class="tetris-btn" id="tetrisLeftBtn" aria-label="Gauche">◀</button>
+          <button type="button" class="tetris-btn" id="tetrisRotateBtn" aria-label="Tourner">⟳</button>
+          <button type="button" class="tetris-btn" id="tetrisRightBtn" aria-label="Droite">▶</button>
+          <button type="button" class="tetris-btn" id="tetrisDropBtn" aria-label="Faire tomber">⤓</button>
+        </div>
+        <button type="button" class="boardgame-replay-btn" id="tetrisReplayBtn" hidden>Rejouer ↻</button>
+      </div>
+    </div>
   </section>
 
   <div class="menu-overlay" id="menuOverlay">
@@ -5141,6 +5275,11 @@
         <button class="category-card category-card-breakout" type="button" id="breakoutCard">
           <span class="icon emoji">🧱</span>
           <span>Casse-briques</span>
+          <span class="level-badge">1 joueur</span>
+        </button>
+        <button class="category-card category-card-tetris" type="button" id="tetrisCard">
+          <span class="icon emoji">🧩</span>
+          <span>Tetris</span>
           <span class="level-badge">1 joueur</span>
         </button>
         <button class="category-card category-card-pumpkin" type="button" id="pumpkinCard">
@@ -8156,6 +8295,16 @@
       breakoutStatus: document.getElementById("breakoutStatus"),
       breakoutCanvas: document.getElementById("breakoutCanvas"),
       breakoutReplayBtn: document.getElementById("breakoutReplayBtn"),
+      tetrisScreen: document.getElementById("tetrisScreen"),
+      tetrisCanvas: document.getElementById("tetrisCanvas"),
+      tetrisNext: document.getElementById("tetrisNext"),
+      tetrisStatus: document.getElementById("tetrisStatus"),
+      tetrisLeftBtn: document.getElementById("tetrisLeftBtn"),
+      tetrisRotateBtn: document.getElementById("tetrisRotateBtn"),
+      tetrisRightBtn: document.getElementById("tetrisRightBtn"),
+      tetrisDropBtn: document.getElementById("tetrisDropBtn"),
+      tetrisReplayBtn: document.getElementById("tetrisReplayBtn"),
+      tetrisCard: document.getElementById("tetrisCard"),
       categoryCards: document.querySelectorAll(".category-card"),
       equationsCard: document.getElementById("equationsCard"),
       calcBackBtn: document.getElementById("calcBackBtn"),
@@ -10138,7 +10287,7 @@
 
     // Jeux de société : parties à 2 joueurs en local (pas de niveaux/étoiles).
     function isBoardGameMode(mode) {
-      return mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino" || mode === "solitaire" || mode === "penalty" || mode === "breakout";
+      return mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino" || mode === "solitaire" || mode === "penalty" || mode === "breakout" || mode === "tetris";
     }
 
     // "Paires cachées" et "Paires cachées (drapeaux)" partagent le même
@@ -13809,6 +13958,328 @@
       }
     }
 
+
+    // Jeux — "Tetris" : plateau 10x20, 7 pièces tirées par "sacs" (chaque
+    // pièce sort une fois avant qu'une autre ne se répète), pièce suivante
+    // affichée, ombre de la pièce là où elle va tomber. Commandes : boutons
+    // (gauche/droite en appui prolongé), tap sur le plateau = tourner,
+    // glisser horizontalement = déplacer ; flèches/espace au clavier. Le
+    // niveau monte toutes les 10 lignes et accélère la chute. Même garde-fou
+    // que breakoutStep : la boucle s'arrête d'elle-même quand on quitte
+    // l'écran.
+    var TT_COLS = 10;
+    var TT_ROWS = 20;
+    var TT_CELL = 30;
+    var TT_SHAPES = [
+      [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
+      [[1, 1], [1, 1]],
+      [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
+      [[0, 1, 1], [1, 1, 0], [0, 0, 0]],
+      [[1, 1, 0], [0, 1, 1], [0, 0, 0]],
+      [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
+      [[0, 0, 1], [1, 1, 1], [0, 0, 0]]
+    ];
+    var TT_COLORS = ["#4cc9f0", "#ffd166", "#b57bee", "#43b98a", "#ef5da8", "#598ce6", "#ff8a3d"];
+    var TT_LINE_POINTS = [0, 100, 300, 500, 800];
+    var ttCtx = null;
+    var ttNextCtx = null;
+    var ttLoopId = null;
+    var ttBoard = [];
+    var ttPiece = null;
+    var ttNextIdx = 0;
+    var ttBag = [];
+    var ttScore = 0;
+    var ttLines = 0;
+    var ttLevel = 1;
+    var ttOver = false;
+    var ttLastTime = 0;
+    var ttDropAcc = 0;
+    var ttDrag = null;
+    var ttRepeatDelay = null;
+    var ttRepeatTimer = null;
+
+    function ttRotateMatrix(m) {
+      var n = m.length;
+      var out = [];
+      for (var r = 0; r < n; r++) {
+        out.push([]);
+        for (var c = 0; c < n; c++) out[r].push(m[n - 1 - c][r]);
+      }
+      return out;
+    }
+
+    function ttDrawFromBag() {
+      if (!ttBag.length) ttBag = shuffle([0, 1, 2, 3, 4, 5, 6]);
+      return ttBag.pop();
+    }
+
+    function ttCollides(m, x, y) {
+      for (var r = 0; r < m.length; r++) {
+        for (var c = 0; c < m[r].length; c++) {
+          if (!m[r][c]) continue;
+          var bx = x + c;
+          var by = y + r;
+          if (bx < 0 || bx >= TT_COLS || by >= TT_ROWS) return true;
+          if (by >= 0 && ttBoard[by][bx]) return true;
+        }
+      }
+      return false;
+    }
+
+    function ttSpawn() {
+      var idx = ttNextIdx;
+      ttNextIdx = ttDrawFromBag();
+      var m = TT_SHAPES[idx].map(function (row) { return row.slice(); });
+      ttPiece = { m: m, idx: idx, x: Math.floor((TT_COLS - m.length) / 2), y: idx === 0 ? -1 : 0 };
+      if (ttCollides(ttPiece.m, ttPiece.x, ttPiece.y)) {
+        ttOver = true;
+        updateTetrisStatus();
+      }
+      drawTetrisNext();
+    }
+
+    function startTetris() {
+      ttBoard = [];
+      for (var r = 0; r < TT_ROWS; r++) ttBoard.push(new Array(TT_COLS).fill(0));
+      ttBag = [];
+      ttScore = 0;
+      ttLines = 0;
+      ttLevel = 1;
+      ttOver = false;
+      ttDropAcc = 0;
+      ttLastTime = 0;
+      ttNextIdx = ttDrawFromBag();
+      ttCtx = els.tetrisCanvas.getContext && els.tetrisCanvas.getContext("2d");
+      ttNextCtx = els.tetrisNext.getContext && els.tetrisNext.getContext("2d");
+      var dpr = window.devicePixelRatio || 1;
+      if (ttCtx) {
+        els.tetrisCanvas.width = TT_COLS * TT_CELL * dpr;
+        els.tetrisCanvas.height = TT_ROWS * TT_CELL * dpr;
+        ttCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      if (ttNextCtx) {
+        els.tetrisNext.width = 96 * dpr;
+        els.tetrisNext.height = 96 * dpr;
+        ttNextCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      ttSpawn();
+      updateTetrisStatus();
+      drawTetris();
+      if (ttLoopId === null) ttLoopId = window.requestAnimationFrame(tetrisStep);
+    }
+
+    function updateTetrisStatus() {
+      els.tetrisReplayBtn.hidden = !ttOver;
+      els.tetrisStatus.textContent = (ttOver ? "Perdu ! " : "") + "Score : " + ttScore + " — Lignes : " + ttLines + " — Niveau : " + ttLevel;
+    }
+
+    function ttLock() {
+      var m = ttPiece.m;
+      for (var r = 0; r < m.length; r++) {
+        for (var c = 0; c < m[r].length; c++) {
+          if (!m[r][c]) continue;
+          var by = ttPiece.y + r;
+          if (by < 0) { ttOver = true; continue; }
+          ttBoard[by][ttPiece.x + c] = ttPiece.idx + 1;
+        }
+      }
+      var cleared = 0;
+      for (var y = TT_ROWS - 1; y >= 0; y--) {
+        if (ttBoard[y].every(function (v) { return v; })) {
+          ttBoard.splice(y, 1);
+          ttBoard.unshift(new Array(TT_COLS).fill(0));
+          cleared++;
+          y++;
+        }
+      }
+      if (cleared) {
+        ttScore += TT_LINE_POINTS[cleared] * ttLevel;
+        ttLines += cleared;
+        ttLevel = Math.floor(ttLines / 10) + 1;
+      }
+      ttPiece = null;
+      if (ttOver) { updateTetrisStatus(); return; }
+      ttSpawn();
+      updateTetrisStatus();
+    }
+
+    function ttActive() {
+      return state.mode === "tetris" && ttPiece && !ttOver && !els.tetrisScreen.hidden && els.menuOverlay.hidden;
+    }
+
+    function tetrisMove(dx) {
+      if (!ttActive()) return;
+      if (!ttCollides(ttPiece.m, ttPiece.x + dx, ttPiece.y)) { ttPiece.x += dx; drawTetris(); }
+    }
+
+    function tetrisRotate() {
+      if (!ttActive()) return;
+      var rotated = ttRotateMatrix(ttPiece.m);
+      var kicks = [0, -1, 1, -2, 2];
+      for (var i = 0; i < kicks.length; i++) {
+        if (!ttCollides(rotated, ttPiece.x + kicks[i], ttPiece.y)) {
+          ttPiece.m = rotated;
+          ttPiece.x += kicks[i];
+          drawTetris();
+          return;
+        }
+      }
+    }
+
+    function ttGhostY() {
+      var y = ttPiece.y;
+      while (!ttCollides(ttPiece.m, ttPiece.x, y + 1)) y++;
+      return y;
+    }
+
+    function tetrisHardDrop() {
+      if (!ttActive()) return;
+      ttScore += (ttGhostY() - ttPiece.y);
+      ttPiece.y = ttGhostY();
+      ttLock();
+      ttDropAcc = 0;
+      drawTetris();
+    }
+
+    function ttGravityStep() {
+      if (!ttCollides(ttPiece.m, ttPiece.x, ttPiece.y + 1)) {
+        ttPiece.y++;
+      } else {
+        ttLock();
+      }
+    }
+
+    function tetrisStep(now) {
+      if (state.mode !== "tetris" || els.tetrisScreen.hidden || !els.menuOverlay.hidden) { ttLoopId = null; return; }
+      var dt = ttLastTime ? Math.min(100, now - ttLastTime) : 0;
+      ttLastTime = now;
+      if (ttActive()) {
+        ttDropAcc += dt;
+        var interval = Math.max(110, 800 - (ttLevel - 1) * 70);
+        while (ttDropAcc >= interval && ttActive()) {
+          ttDropAcc -= interval;
+          ttGravityStep();
+        }
+        drawTetris();
+      }
+      ttLoopId = window.requestAnimationFrame(tetrisStep);
+    }
+
+    function ttDrawCell(ctx, x, y, size, color, alpha) {
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(x + 1, y + 1, size - 2, size - 2, size * 0.2);
+      else ctx.rect(x + 1, y + 1, size - 2, size - 2);
+      ctx.fill();
+      if (alpha === 1) {
+        ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+        ctx.fillRect(x + size * 0.18, y + size * 0.14, size * 0.64, size * 0.14);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawTetris() {
+      if (!ttCtx) return;
+      ttCtx.clearRect(0, 0, TT_COLS * TT_CELL, TT_ROWS * TT_CELL);
+      ttCtx.fillStyle = "#eaf4ff";
+      ttCtx.fillRect(0, 0, TT_COLS * TT_CELL, TT_ROWS * TT_CELL);
+      ttCtx.strokeStyle = "rgba(89, 140, 230, 0.14)";
+      ttCtx.lineWidth = 1;
+      for (var gx = 1; gx < TT_COLS; gx++) {
+        ttCtx.beginPath(); ttCtx.moveTo(gx * TT_CELL, 0); ttCtx.lineTo(gx * TT_CELL, TT_ROWS * TT_CELL); ttCtx.stroke();
+      }
+      for (var gy = 1; gy < TT_ROWS; gy++) {
+        ttCtx.beginPath(); ttCtx.moveTo(0, gy * TT_CELL); ttCtx.lineTo(TT_COLS * TT_CELL, gy * TT_CELL); ttCtx.stroke();
+      }
+      for (var r = 0; r < TT_ROWS; r++) {
+        for (var c = 0; c < TT_COLS; c++) {
+          if (ttBoard[r][c]) ttDrawCell(ttCtx, c * TT_CELL, r * TT_CELL, TT_CELL, TT_COLORS[ttBoard[r][c] - 1], 1);
+        }
+      }
+      if (ttPiece && !ttOver) {
+        var gy2 = ttGhostY();
+        for (var pr = 0; pr < ttPiece.m.length; pr++) {
+          for (var pc = 0; pc < ttPiece.m[pr].length; pc++) {
+            if (!ttPiece.m[pr][pc]) continue;
+            var color = TT_COLORS[ttPiece.idx];
+            if (gy2 !== ttPiece.y) ttDrawCell(ttCtx, (ttPiece.x + pc) * TT_CELL, (gy2 + pr) * TT_CELL, TT_CELL, color, 0.28);
+            if (ttPiece.y + pr >= 0) ttDrawCell(ttCtx, (ttPiece.x + pc) * TT_CELL, (ttPiece.y + pr) * TT_CELL, TT_CELL, color, 1);
+          }
+        }
+      }
+    }
+
+    function drawTetrisNext() {
+      if (!ttNextCtx) return;
+      ttNextCtx.clearRect(0, 0, 96, 96);
+      var m = TT_SHAPES[ttNextIdx];
+      var size = 20;
+      var minR = 9, maxR = -1, minC = 9, maxC = -1;
+      for (var r = 0; r < m.length; r++) {
+        for (var c = 0; c < m[r].length; c++) {
+          if (!m[r][c]) continue;
+          minR = Math.min(minR, r); maxR = Math.max(maxR, r);
+          minC = Math.min(minC, c); maxC = Math.max(maxC, c);
+        }
+      }
+      var ox = (96 - (maxC - minC + 1) * size) / 2;
+      var oy = (96 - (maxR - minR + 1) * size) / 2;
+      for (var rr = minR; rr <= maxR; rr++) {
+        for (var cc = minC; cc <= maxC; cc++) {
+          if (m[rr][cc]) ttDrawCell(ttNextCtx, ox + (cc - minC) * size, oy + (rr - minR) * size, size, TT_COLORS[ttNextIdx], 1);
+        }
+      }
+    }
+
+    // Appui prolongé sur ◀ / ▶ : répète le déplacement.
+    function bindTetrisRepeat(btn, action) {
+      function stop() {
+        if (ttRepeatDelay) { window.clearTimeout(ttRepeatDelay); ttRepeatDelay = null; }
+        if (ttRepeatTimer) { window.clearInterval(ttRepeatTimer); ttRepeatTimer = null; }
+      }
+      btn.addEventListener("pointerdown", function (e) {
+        e.preventDefault();
+        stop();
+        action();
+        ttRepeatDelay = window.setTimeout(function () {
+          ttRepeatTimer = window.setInterval(action, 85);
+        }, 280);
+      });
+      ["pointerup", "pointerleave", "pointercancel"].forEach(function (ev) { btn.addEventListener(ev, stop); });
+    }
+
+    // Sur le plateau : un simple tap tourne la pièce, glisser à gauche /
+    // droite la déplace d'une colonne par largeur de case parcourue.
+    function onTetrisPointerDown(e) {
+      ttDrag = { x: e.clientX, moved: false };
+    }
+
+    function onTetrisPointerMove(e) {
+      if (!ttDrag) return;
+      var cellPx = els.tetrisCanvas.getBoundingClientRect().width / TT_COLS;
+      var steps = Math.trunc((e.clientX - ttDrag.x) / cellPx);
+      if (steps !== 0) {
+        ttDrag.moved = true;
+        for (var i = 0; i < Math.abs(steps); i++) tetrisMove(steps > 0 ? 1 : -1);
+        ttDrag.x += steps * cellPx;
+      }
+    }
+
+    function onTetrisPointerUp() {
+      if (ttDrag && !ttDrag.moved) tetrisRotate();
+      ttDrag = null;
+    }
+
+    function onTetrisKey(e) {
+      if (state.mode !== "tetris" || els.tetrisScreen.hidden || !els.menuOverlay.hidden) return;
+      if (e.key === "ArrowLeft") { e.preventDefault(); tetrisMove(-1); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); tetrisMove(1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); tetrisRotate(); }
+      else if (e.key === "ArrowDown") { e.preventDefault(); if (ttActive()) { ttGravityStep(); ttDropAcc = 0; drawTetris(); } }
+      else if (e.key === " ") { e.preventDefault(); tetrisHardDrop(); }
+    }
+
     // Jeux de société — "Bataille navale simplifiée" : grille réduite 6x6,
     // 3 bateaux par joueur (tailles 3/2/2) placés au hasard automatiquement
     // (pas de phase de placement manuel, pour rester simple). Les 2 joueurs
@@ -14189,7 +14660,7 @@
       if (isMemoryMode(mode) || mode === "disparu" || mode === "ordre" || mode === "change" || mode === "suitelum" || mode === "flags") return "memoire";
       if (mode === "mot" || mode === "composesimple" || mode === "composelibre" || mode === "lettreman" || mode === "trace" || mode === "syllordre" || mode === "article") return "ecriture";
       if (mode === "traceforme" || mode === "shapes" || mode === "fillforme" || mode === "intrus" || mode === "puzzle" || mode === "sudokuforme") return "formes";
-      if (mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino" || mode === "solitaire" || mode === "contraire" || mode === "penalty" || mode === "breakout") return "jeux";
+      if (mode === "morpion" || mode === "puissance4" || mode === "dames" || mode === "bataillenavale" || mode === "domino" || mode === "solitaire" || mode === "contraire" || mode === "penalty" || mode === "breakout" || mode === "tetris") return "jeux";
       if (mode === "codeseq" || mode === "codeloop" || mode === "codedebug" || mode === "codeif" || mode === "codesandbox") return "code";
       return null;
     }
@@ -14336,13 +14807,14 @@
       var solitaire = mode === "solitaire";
       var penalty = mode === "penalty";
       var breakout = mode === "breakout";
+      var tetris = mode === "tetris";
       var code = mode === "codeseq" || mode === "codeloop" || mode === "codedebug" || mode === "codeif" || mode === "codesandbox";
       // "Trouve le bon article" : écran de choix mot/image affiché avant
       // d'entrer dans le jeu -- la question elle-même réutilise ensuite
       // l'écran générique (problemZone/answers), voir confirmArticleChoice.
       var article = mode === "article";
-      els.problemZone.hidden = paint || paintnum || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || penalty || breakout || code || article;
-      els.answers.hidden = paint || paintnum || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || penalty || breakout || code || article;
+      els.problemZone.hidden = paint || paintnum || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || penalty || breakout || tetris || code || article;
+      els.answers.hidden = paint || paintnum || music || rhythm || memory || suitelum || ordre || spell || trace || fillforme || sudoku || morpion || puissance4 || dames || bataillenavale || domino || solitaire || penalty || breakout || tetris || code || article;
       els.articleChoiceScreen.hidden = !article;
       els.paintScreen.hidden = !paint;
       els.paintnumScreen.hidden = !paintnum;
@@ -14363,6 +14835,7 @@
       els.solScreen.hidden = !solitaire;
       els.penaltyScreen.hidden = !penalty;
       els.breakoutScreen.hidden = !breakout;
+      els.tetrisScreen.hidden = !tetris;
       els.codeScreen.hidden = !code;
       var noStars = mode === "dessine" || music || isBoardGameMode(mode) || mode === "codesandbox";
       els.levelPill.hidden = noStars;
@@ -14419,6 +14892,11 @@
       if (breakout) {
         state.problem = null;
         startBreakout();
+        return;
+      }
+      if (tetris) {
+        state.problem = null;
+        startTetris();
         return;
       }
       if (paint) {
@@ -14620,6 +15098,17 @@
     els.solCard.addEventListener("click", function () { selectMode("solitaire"); });
     els.penaltyCard.addEventListener("click", function () { selectMode("penalty"); });
     els.breakoutCard.addEventListener("click", function () { selectMode("breakout"); });
+    els.tetrisCard.addEventListener("click", function () { selectMode("tetris"); });
+    els.tetrisReplayBtn.addEventListener("click", startTetris);
+    bindTetrisRepeat(els.tetrisLeftBtn, function () { tetrisMove(-1); });
+    bindTetrisRepeat(els.tetrisRightBtn, function () { tetrisMove(1); });
+    els.tetrisRotateBtn.addEventListener("click", tetrisRotate);
+    els.tetrisDropBtn.addEventListener("click", tetrisHardDrop);
+    els.tetrisCanvas.addEventListener("pointerdown", onTetrisPointerDown);
+    els.tetrisCanvas.addEventListener("pointermove", onTetrisPointerMove);
+    els.tetrisCanvas.addEventListener("pointerup", onTetrisPointerUp);
+    els.tetrisCanvas.addEventListener("pointercancel", onTetrisPointerUp);
+    document.addEventListener("keydown", onTetrisKey);
     els.morpionReplayBtn.addEventListener("click", startMorpion);
     els.p4ReplayBtn.addEventListener("click", startPuissance4);
     els.damesReplayBtn.addEventListener("click", replayDames);
