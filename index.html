@@ -2198,6 +2198,8 @@
 
   .morpion-screen[hidden] { display: none; }
 
+  .morpion-board[hidden] { display: none; }
+
   .morpion-board {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -4506,9 +4508,21 @@
   </section>
 
   <section class="morpion-screen" id="morpionScreen" hidden>
-    <p class="boardgame-status" id="morpionStatus"></p>
-    <div class="morpion-board" id="morpionBoard"></div>
-    <button type="button" class="boardgame-replay-btn" id="morpionReplayBtn">Rejouer ↻</button>
+    <div class="dames-setup" id="morpionSetup">
+      <p class="boardgame-status">Comment veux-tu jouer ?</p>
+      <div class="dames-setup-buttons" id="morpionModeButtons">
+        <button type="button" class="boardgame-replay-btn" id="morpionPvpBtn">👥 Jouer à deux</button>
+        <button type="button" class="boardgame-replay-btn" id="morpionSoloBtn">🤖 Jouer tout seul</button>
+      </div>
+      <div class="dames-setup-buttons" id="morpionDifficultyButtons" hidden>
+        <button type="button" class="boardgame-replay-btn" data-difficulty="facile">🙂 Facile</button>
+        <button type="button" class="boardgame-replay-btn" data-difficulty="moyen">😐 Moyen</button>
+        <button type="button" class="boardgame-replay-btn" data-difficulty="fort">😈 Fort</button>
+      </div>
+    </div>
+    <p class="boardgame-status" id="morpionStatus" hidden></p>
+    <div class="morpion-board" id="morpionBoard" hidden></div>
+    <button type="button" class="boardgame-replay-btn" id="morpionReplayBtn" hidden>Rejouer ↻</button>
   </section>
 
   <section class="p4-screen" id="puissance4Screen" hidden>
@@ -6911,6 +6925,8 @@
       morpionTurn: "X",
       morpionWinner: null,
       morpionWinLine: null,
+      morpionVsAI: false,
+      morpionDifficulty: null,
       p4Board: [],
       p4Turn: "R",
       p4Winner: null,
@@ -8250,6 +8266,11 @@
       morpionStatus: document.getElementById("morpionStatus"),
       morpionBoard: document.getElementById("morpionBoard"),
       morpionReplayBtn: document.getElementById("morpionReplayBtn"),
+      morpionSetup: document.getElementById("morpionSetup"),
+      morpionModeButtons: document.getElementById("morpionModeButtons"),
+      morpionDifficultyButtons: document.getElementById("morpionDifficultyButtons"),
+      morpionPvpBtn: document.getElementById("morpionPvpBtn"),
+      morpionSoloBtn: document.getElementById("morpionSoloBtn"),
       puissance4Screen: document.getElementById("puissance4Screen"),
       p4Status: document.getElementById("p4Status"),
       p4Discs: document.getElementById("p4Discs"),
@@ -13110,15 +13131,123 @@
       return null;
     }
 
-    function startMorpion() {
+    // Seul contre l'ordinateur : l'enfant joue ❌ (et commence), l'ordinateur
+    // joue ⭕. Force : "facile" = case au hasard ; "moyen" = gagne s'il peut,
+    // bloque l'enfant s'il va gagner, sinon au hasard ; "fort" = minimax
+    // complet (ne perd jamais -- le morpion est assez petit pour tout
+    // explorer instantanément).
+    var morpionAiTimer = null;
+
+    function morpionEmptyCells(board) {
+      var out = [];
+      board.forEach(function (v, i) { if (!v) out.push(i); });
+      return out;
+    }
+
+    function morpionWinningCell(board, mark) {
+      var empties = morpionEmptyCells(board);
+      for (var i = 0; i < empties.length; i++) {
+        var test = board.slice();
+        test[empties[i]] = mark;
+        var res = checkMorpionWinner(test);
+        if (res && res.winner === mark) return empties[i];
+      }
+      return -1;
+    }
+
+    // Score du point de vue de ⭕ : +1 il gagne, -1 il perd ; on préfère
+    // gagner vite et perdre tard (depth).
+    function morpionMinimax(board, mark, depth) {
+      var res = checkMorpionWinner(board);
+      if (res) return res.winner === "O" ? 10 - depth : res.winner === "X" ? depth - 10 : 0;
+      var empties = morpionEmptyCells(board);
+      var best = mark === "O" ? -Infinity : Infinity;
+      for (var i = 0; i < empties.length; i++) {
+        board[empties[i]] = mark;
+        var score = morpionMinimax(board, mark === "O" ? "X" : "O", depth + 1);
+        board[empties[i]] = null;
+        best = mark === "O" ? Math.max(best, score) : Math.min(best, score);
+      }
+      return best;
+    }
+
+    function morpionChooseAiCell(board, difficulty) {
+      var empties = morpionEmptyCells(board);
+      if (difficulty === "fort") {
+        var bestScore = -Infinity;
+        var bestCells = [];
+        empties.forEach(function (cell) {
+          var copy = board.slice();
+          copy[cell] = "O";
+          var score = morpionMinimax(copy, "X", 1);
+          if (score > bestScore) { bestScore = score; bestCells = [cell]; }
+          else if (score === bestScore) bestCells.push(cell);
+        });
+        return bestCells[randInt(0, bestCells.length - 1)];
+      }
+      if (difficulty === "moyen") {
+        var win = morpionWinningCell(board, "O");
+        if (win >= 0) return win;
+        var block = morpionWinningCell(board, "X");
+        if (block >= 0) return block;
+      }
+      return empties[randInt(0, empties.length - 1)];
+    }
+
+    function morpionAiMove() {
+      morpionAiTimer = null;
+      if (!state.morpionVsAI || state.morpionWinner || state.morpionTurn !== "O") return;
+      morpionPlace(morpionChooseAiCell(state.morpionBoard, state.morpionDifficulty));
+    }
+
+    function morpionCancelAi() {
+      if (morpionAiTimer) { window.clearTimeout(morpionAiTimer); morpionAiTimer = null; }
+    }
+
+    // Écran de choix avant la partie (même esprit que Dames) : "à deux"
+    // lance tout de suite, "tout seul" demande ensuite la force.
+    function showMorpionSetup() {
+      morpionCancelAi();
+      els.morpionSetup.hidden = false;
+      els.morpionModeButtons.hidden = false;
+      els.morpionDifficultyButtons.hidden = true;
+      els.morpionStatus.hidden = true;
+      els.morpionBoard.hidden = true;
+      els.morpionReplayBtn.hidden = true;
+    }
+
+    function startMorpionGame() {
+      morpionCancelAi();
       state.morpionBoard = [null, null, null, null, null, null, null, null, null];
       state.morpionTurn = "X";
       state.morpionWinner = null;
       state.morpionWinLine = null;
+      els.morpionSetup.hidden = true;
+      els.morpionStatus.hidden = false;
+      els.morpionBoard.hidden = false;
+      els.morpionReplayBtn.hidden = false;
       renderMorpionScreen();
     }
 
-    function onMorpionCellTap(idx) {
+    function startMorpionPvp() {
+      state.morpionVsAI = false;
+      state.morpionDifficulty = null;
+      startMorpionGame();
+    }
+
+    function startMorpionSolo(difficulty) {
+      state.morpionVsAI = true;
+      state.morpionDifficulty = difficulty;
+      startMorpionGame();
+    }
+
+    // "Rejouer" garde les mêmes réglages ; pour en changer, quitter puis
+    // revenir au Morpion.
+    function replayMorpion() {
+      startMorpionGame();
+    }
+
+    function morpionPlace(idx) {
       if (state.morpionWinner || state.morpionBoard[idx]) return;
       state.morpionBoard[idx] = state.morpionTurn;
       var result = checkMorpionWinner(state.morpionBoard);
@@ -13129,6 +13258,15 @@
         state.morpionTurn = state.morpionTurn === "X" ? "O" : "X";
       }
       renderMorpionScreen();
+      if (state.morpionVsAI && !state.morpionWinner && state.morpionTurn === "O") {
+        morpionCancelAi();
+        morpionAiTimer = window.setTimeout(morpionAiMove, 500);
+      }
+    }
+
+    function onMorpionCellTap(idx) {
+      if (state.morpionVsAI && state.morpionTurn === "O") return;
+      morpionPlace(idx);
     }
 
     function renderMorpionScreen() {
@@ -13141,14 +13279,18 @@
         if (state.morpionWinLine && state.morpionWinLine.indexOf(idx) !== -1) cell.classList.add("win");
         cell.textContent = v || "";
         cell.setAttribute("aria-label", v ? "Case " + (idx + 1) + " : " + v : "Case " + (idx + 1) + " vide");
-        cell.disabled = !!(state.morpionWinner || v);
+        cell.disabled = !!(state.morpionWinner || v || (state.morpionVsAI && state.morpionTurn === "O"));
         cell.addEventListener("click", function () { onMorpionCellTap(idx); });
         els.morpionBoard.appendChild(cell);
       });
       if (state.morpionWinner === "draw") {
         els.morpionStatus.textContent = "Match nul !";
       } else if (state.morpionWinner) {
-        els.morpionStatus.textContent = (state.morpionWinner === "X" ? "❌" : "⭕") + " a gagné !";
+        els.morpionStatus.textContent = state.morpionVsAI
+          ? (state.morpionWinner === "X" ? "🎉 Bravo, tu as gagné ! ❌" : "🤖 L'ordinateur a gagné ! ⭕")
+          : (state.morpionWinner === "X" ? "❌" : "⭕") + " a gagné !";
+      } else if (state.morpionVsAI) {
+        els.morpionStatus.textContent = state.morpionTurn === "X" ? "À toi de jouer ❌" : "🤖 L'ordinateur réfléchit...";
       } else {
         els.morpionStatus.textContent = "Au tour de " + (state.morpionTurn === "X" ? "❌" : "⭕");
       }
@@ -14856,7 +14998,7 @@
       }
       if (morpion) {
         state.problem = null;
-        startMorpion();
+        showMorpionSetup();
         return;
       }
       if (puissance4) {
@@ -15109,7 +15251,15 @@
     els.tetrisCanvas.addEventListener("pointerup", onTetrisPointerUp);
     els.tetrisCanvas.addEventListener("pointercancel", onTetrisPointerUp);
     document.addEventListener("keydown", onTetrisKey);
-    els.morpionReplayBtn.addEventListener("click", startMorpion);
+    els.morpionReplayBtn.addEventListener("click", replayMorpion);
+    els.morpionPvpBtn.addEventListener("click", startMorpionPvp);
+    els.morpionSoloBtn.addEventListener("click", function () {
+      els.morpionModeButtons.hidden = true;
+      els.morpionDifficultyButtons.hidden = false;
+    });
+    Array.prototype.forEach.call(els.morpionDifficultyButtons.querySelectorAll("button"), function (btn) {
+      btn.addEventListener("click", function () { startMorpionSolo(btn.getAttribute("data-difficulty")); });
+    });
     els.p4ReplayBtn.addEventListener("click", startPuissance4);
     els.damesReplayBtn.addEventListener("click", replayDames);
     els.damesPvpBtn.addEventListener("click", startDamesPvp);
