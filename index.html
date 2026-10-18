@@ -3096,6 +3096,7 @@
   .celebrate-levelup { background: linear-gradient(160deg, #ffd166, #ff8fa3); }
   .celebrate-win { background: linear-gradient(160deg, #ffd166, #ff8a3d); }
   .celebrate-foxintro { background: linear-gradient(160deg, #ffb199, #e8743b); }
+  .celebrate-pumpkinintro { background: linear-gradient(160deg, #ffc27a, #d9731b); }
 
   .celebrate-panel {
     position: relative;
@@ -3401,6 +3402,79 @@
      bien plus petite pour qu'il reste centré sur une ligne au lieu de
      déborder ou de retomber en 2 lignes mal alignées. */
   .foxgame-countdown.go { font-size: clamp(2rem, 10vw, 3.2rem); }
+
+
+  /* ---------- "Tranche les citrouilles" : réutilise l'habillage de
+     "Attrape le renard" (en-tête, décompte, étincelles) ; ici le terrain
+     capte un geste de balayage (voir pkSliceSegment) au lieu de taps. ---------- */
+  .pk-field {
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: crosshair;
+  }
+
+  .pk-pumpkin {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    pointer-events: none;
+    filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.25));
+    will-change: transform;
+  }
+
+  .pk-half {
+    position: absolute;
+    left: 0;
+    top: 0;
+    pointer-events: none;
+  }
+
+  .pk-half-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    line-height: 1;
+    filter: drop-shadow(0 6px 4px rgba(0, 0, 0, 0.25));
+    animation: pk-half-fly 0.65s ease-in forwards;
+  }
+
+  .pk-half-inner.left { clip-path: inset(0 50% 0 0); }
+  .pk-half-inner.right { clip-path: inset(0 0 0 50%); }
+
+  @keyframes pk-half-fly {
+    0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+    100% { transform: translate(var(--dx, 0px), 150px) rotate(var(--rot, 0deg)); opacity: 0; }
+  }
+
+  .pk-trail {
+    position: absolute;
+    height: 5px;
+    margin-top: -2.5px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), #fff);
+    box-shadow: 0 0 8px 2px rgba(255, 255, 255, 0.7);
+    transform-origin: 0 50%;
+    pointer-events: none;
+    animation: pk-trail-fade 0.3s ease-out forwards;
+  }
+
+  @keyframes pk-trail-fade {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pk-half-inner { animation: none; opacity: 0; }
+    .pk-trail { animation: none; opacity: 0; }
+  }
 
   /* ---------- menu picto + écran de choix du jeu ---------- */
 
@@ -3867,6 +3941,7 @@
   .category-card-solitaire { background: linear-gradient(135deg, #ffb199, #f77f5c); }
   .category-card-penalty { background: linear-gradient(135deg, #8ed6ac, #43b98a); }
   .category-card-breakout { background: linear-gradient(135deg, #a8b8f0, #598ce6); }
+  .category-card-pumpkin { background: linear-gradient(135deg, #ffc27a, #f08a24); }
 
   /* 3 colonnes fixes (plutôt qu'un auto-fill dont le nombre de colonnes
      dépend de la largeur) : garantit que les 12 icônes (4 rangées de 3)
@@ -5068,6 +5143,11 @@
           <span>Casse-briques</span>
           <span class="level-badge">1 joueur</span>
         </button>
+        <button class="category-card category-card-pumpkin" type="button" id="pumpkinCard">
+          <span class="icon emoji">🎃</span>
+          <span>Tranche les citrouilles</span>
+          <span class="level-badge">1 joueur</span>
+        </button>
         <button class="category-card category-card-contraire" type="button" id="contraireCard">
           <span class="icon emoji">🔀</span>
           <span>Trouve le contraire</span>
@@ -5282,6 +5362,41 @@
       <div class="celebrate-actions">
         <button class="celebrate-btn celebrate-btn-secondary" id="foxGameEndCloseBtn" type="button">Fermer</button>
         <button class="celebrate-btn" id="foxGameReplayBtn" type="button">Rejouer ↻</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="celebrate-overlay celebrate-pumpkinintro" id="pkIntroOverlay" hidden>
+    <div class="celebrate-panel">
+      <div class="celebrate-badge">🎃</div>
+      <h2 class="celebrate-title">Tranche les citrouilles</h2>
+      <p class="celebrate-sub">Glisse ton doigt sur les citrouilles pour les trancher : 20 en 30 secondes.</p>
+      <div class="celebrate-actions">
+        <button class="celebrate-btn celebrate-btn-secondary" id="pkIntroCancelBtn" type="button">Annuler</button>
+        <button class="celebrate-btn" id="pkIntroStartBtn" type="button">C'est parti !</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="foxgame-overlay" id="pkOverlay" hidden>
+    <div class="foxgame-header">
+      <div class="foxgame-stat">⏱️ <span id="pkTime">30</span>s</div>
+      <div class="foxgame-stat">🎃 <span id="pkScore">0</span>/20</div>
+      <button type="button" class="foxgame-close" id="pkCloseBtn" aria-label="Fermer le jeu">✕</button>
+    </div>
+    <div class="foxgame-field pk-field" id="pkField"></div>
+    <div class="foxgame-countdown" id="pkCountdown" hidden></div>
+  </div>
+
+  <div class="celebrate-overlay celebrate-win" id="pkEndOverlay" hidden>
+    <div class="confetti" id="pkConfetti" aria-hidden="true"></div>
+    <div class="celebrate-panel">
+      <div class="celebrate-badge">🎃</div>
+      <h2 class="celebrate-title" id="pkEndTitle">Temps écoulé !</h2>
+      <p class="celebrate-sub">Tu as tranché <span id="pkFinalScore">0</span> citrouilles !</p>
+      <div class="celebrate-actions">
+        <button class="celebrate-btn celebrate-btn-secondary" id="pkEndCloseBtn" type="button">Fermer</button>
+        <button class="celebrate-btn" id="pkReplayBtn" type="button">Rejouer ↻</button>
       </div>
     </div>
   </div>
@@ -8189,7 +8304,23 @@
       foxGameEndTitle: document.getElementById("foxGameEndTitle"),
       foxGameFinalScore: document.getElementById("foxGameFinalScore"),
       foxGameEndCloseBtn: document.getElementById("foxGameEndCloseBtn"),
-      foxGameReplayBtn: document.getElementById("foxGameReplayBtn")
+      foxGameReplayBtn: document.getElementById("foxGameReplayBtn"),
+      pkIntroOverlay: document.getElementById("pkIntroOverlay"),
+      pkIntroStartBtn: document.getElementById("pkIntroStartBtn"),
+      pkIntroCancelBtn: document.getElementById("pkIntroCancelBtn"),
+      pkOverlay: document.getElementById("pkOverlay"),
+      pkTime: document.getElementById("pkTime"),
+      pkScore: document.getElementById("pkScore"),
+      pkCloseBtn: document.getElementById("pkCloseBtn"),
+      pkField: document.getElementById("pkField"),
+      pkCountdown: document.getElementById("pkCountdown"),
+      pkEndOverlay: document.getElementById("pkEndOverlay"),
+      pkConfetti: document.getElementById("pkConfetti"),
+      pkEndTitle: document.getElementById("pkEndTitle"),
+      pkFinalScore: document.getElementById("pkFinalScore"),
+      pkEndCloseBtn: document.getElementById("pkEndCloseBtn"),
+      pkReplayBtn: document.getElementById("pkReplayBtn"),
+      pumpkinCard: document.getElementById("pumpkinCard")
     };
 
     var STAR_PATH = "M12 2 L14.9 8.6 L22 9.3 L16.5 14 L18.2 21 L12 17.3 L5.8 21 L7.5 14 L2 9.3 L9.1 8.6 Z";
@@ -8304,7 +8435,8 @@
     // Petite volée d'étincelles qui s'envolent depuis le point (x, y) et
     // s'évanouissent -- purement décoratif, chaque étincelle se retire
     // elle-même du DOM une fois son animation terminée.
-    function foxGameSpawnBurst(x, y) {
+    function foxGameSpawnBurst(x, y, field) {
+      field = field || els.foxGameField;
       var count = 7;
       for (var i = 0; i < count; i++) {
         var angle = ((Math.PI * 2) / count) * i + Math.random() * 0.5;
@@ -8316,7 +8448,7 @@
         spark.style.background = FOX_SPARK_COLORS[i % FOX_SPARK_COLORS.length];
         spark.style.setProperty("--dx", (Math.cos(angle) * dist).toFixed(1) + "px");
         spark.style.setProperty("--dy", (Math.sin(angle) * dist).toFixed(1) + "px");
-        els.foxGameField.appendChild(spark);
+        field.appendChild(spark);
         // fermeture par appel de fonction : "var spark" est partagé par
         // toutes les itérations, sans ça chaque setTimeout retirerait la
         // même (dernière) étincelle au lieu de la sienne.
@@ -8462,6 +8594,267 @@
       els.foxGameOverlay.hidden = true;
       els.foxGameCountdown.hidden = true;
       els.foxGameEndOverlay.hidden = true;
+    }
+
+
+    // ---------- "Tranche les citrouilles" ----------
+    // Des citrouilles montent du bas de l'écran vers le haut ; l'enfant les
+    // tranche d'un balayage du doigt (ou de la souris, bouton enfoncé).
+    // Même déroulé qu'"Attrape le renard" (explication, décompte 3-2-1,
+    // 30 secondes) : la partie s'arrête au chrono ou dès que PK_GOAL
+    // citrouilles sont tranchées. Mouvement en requestAnimationFrame (et pas
+    // en animation CSS) pour connaître à tout instant la position réelle de
+    // chaque citrouille et tester si le geste la traverse.
+    var PK_GOAL = 20;
+    var PK_DURATION = 30;
+    var PK_SPAWN_MS = 560;
+    var PK_SPAWN_JITTER = 240;
+    var pkInterval = null;
+    var pkCountdownTimer = null;
+    var pkEndTimer = null;
+    var pkRaf = null;
+    var pkActive = false;
+    var pkScore = 0;
+    var pkTimeLeft = PK_DURATION;
+    var pkList = [];
+    var pkNextSpawn = 0;
+    var pkLastFrame = 0;
+    var pkLastPt = null;
+
+    function pkSize() {
+      return Math.max(56, Math.min(104, els.pkField.clientWidth * 0.17));
+    }
+
+    function pkSpawn() {
+      var field = els.pkField;
+      var w = field.clientWidth;
+      var h = field.clientHeight;
+      var size = pkSize();
+      var el = document.createElement("div");
+      el.className = "pk-pumpkin";
+      el.textContent = "🎃";
+      el.style.width = size + "px";
+      el.style.height = size + "px";
+      el.style.fontSize = (size * 0.85) + "px";
+      field.appendChild(el);
+      var crossSeconds = 2.8 + Math.random() * 1.6;
+      var p = {
+        el: el,
+        size: size,
+        x: Math.random() * Math.max(1, w - size),
+        y: h + size * 0.1,
+        vx: (Math.random() * 2 - 1) * w * 0.07,
+        vy: -(h + size * 1.3) / crossSeconds,
+        rot: Math.random() * 60 - 30,
+        vr: (Math.random() * 2 - 1) * 90
+      };
+      pkList.push(p);
+      pkPlace(p);
+    }
+
+    function pkPlace(p) {
+      p.el.style.transform = "translate(" + p.x.toFixed(1) + "px," + p.y.toFixed(1) + "px) rotate(" + p.rot.toFixed(1) + "deg)";
+    }
+
+    function pkFrame(now) {
+      if (!pkActive) { pkRaf = null; return; }
+      var dt = pkLastFrame ? Math.min(0.05, (now - pkLastFrame) / 1000) : 0;
+      pkLastFrame = now;
+      if (now >= pkNextSpawn) {
+        pkSpawn();
+        pkNextSpawn = now + PK_SPAWN_MS + (Math.random() * 2 - 1) * PK_SPAWN_JITTER;
+      }
+      for (var i = pkList.length - 1; i >= 0; i--) {
+        var p = pkList[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.rot += p.vr * dt;
+        if (p.y < -p.size * 1.3) {
+          if (p.el.parentNode) p.el.parentNode.removeChild(p.el);
+          pkList.splice(i, 1);
+        } else {
+          pkPlace(p);
+        }
+      }
+      pkRaf = window.requestAnimationFrame(pkFrame);
+    }
+
+    // Distance du point (cx, cy) au segment (x1, y1)-(x2, y2).
+    function pkSegDist(cx, cy, x1, y1, x2, y2) {
+      var dx = x2 - x1;
+      var dy = y2 - y1;
+      var len2 = dx * dx + dy * dy;
+      var t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((cx - x1) * dx + (cy - y1) * dy) / len2));
+      var px = x1 + t * dx;
+      var py = y1 + t * dy;
+      return Math.sqrt((cx - px) * (cx - px) + (cy - py) * (cy - py));
+    }
+
+    function pkTrail(x1, y1, x2, y2) {
+      var len = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+      if (len < 2) return;
+      var t = document.createElement("div");
+      t.className = "pk-trail";
+      t.style.left = x1 + "px";
+      t.style.top = y1 + "px";
+      t.style.width = len + "px";
+      t.style.transform = "rotate(" + Math.atan2(y2 - y1, x2 - x1) + "rad)";
+      els.pkField.appendChild(t);
+      window.setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 300);
+    }
+
+    // Deux moitiés (la même émoji, rognée à gauche / à droite) qui
+    // s'écartent en tombant.
+    function pkSlice(p) {
+      var idx = pkList.indexOf(p);
+      if (idx >= 0) pkList.splice(idx, 1);
+      if (p.el.parentNode) p.el.parentNode.removeChild(p.el);
+      ["left", "right"].forEach(function (side) {
+        var sign = side === "left" ? -1 : 1;
+        var half = document.createElement("div");
+        half.className = "pk-half";
+        half.style.width = p.size + "px";
+        half.style.height = p.size + "px";
+        half.style.fontSize = (p.size * 0.85) + "px";
+        half.style.transform = "translate(" + p.x.toFixed(1) + "px," + p.y.toFixed(1) + "px) rotate(" + p.rot.toFixed(1) + "deg)";
+        var inner = document.createElement("div");
+        inner.className = "pk-half-inner " + side;
+        inner.textContent = "🎃";
+        inner.style.setProperty("--dx", (sign * (30 + Math.random() * 40)).toFixed(0) + "px");
+        inner.style.setProperty("--rot", (sign * (35 + Math.random() * 50)).toFixed(0) + "deg");
+        half.appendChild(inner);
+        els.pkField.appendChild(half);
+        window.setTimeout(function () { if (half.parentNode) half.parentNode.removeChild(half); }, 700);
+      });
+      foxGameSpawnBurst(p.x + p.size / 2, p.y + p.size / 2, els.pkField);
+      pkScore++;
+      els.pkScore.textContent = String(pkScore);
+      if (pkScore >= PK_GOAL && pkActive) {
+        pkHaltPlay();
+        pkEndTimer = window.setTimeout(function () { endPumpkinGame("cleared"); }, 450);
+      }
+    }
+
+    function pkSliceSegment(x1, y1, x2, y2) {
+      if (!pkActive) return;
+      pkTrail(x1, y1, x2, y2);
+      var hits = pkList.filter(function (p) {
+        return pkSegDist(p.x + p.size / 2, p.y + p.size / 2, x1, y1, x2, y2) <= p.size / 2 + 8;
+      });
+      hits.forEach(pkSlice);
+    }
+
+    function pkPointerPos(e) {
+      var rect = els.pkField.getBoundingClientRect();
+      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+
+    function onPkPointerDown(e) {
+      if (!pkActive) return;
+      var pt = pkPointerPos(e);
+      pkLastPt = pt;
+      pkSliceSegment(pt.x, pt.y, pt.x, pt.y);
+    }
+
+    function onPkPointerMove(e) {
+      if (!pkActive || !pkLastPt) return;
+      var pt = pkPointerPos(e);
+      pkSliceSegment(pkLastPt.x, pkLastPt.y, pt.x, pt.y);
+      pkLastPt = pt;
+    }
+
+    function onPkPointerUp() { pkLastPt = null; }
+
+    // Arrête le jeu en cours (chrono, animation) sans toucher à l'affichage.
+    function pkHaltPlay() {
+      pkActive = false;
+      pkLastPt = null;
+      if (pkInterval) { window.clearInterval(pkInterval); pkInterval = null; }
+      if (pkRaf) { window.cancelAnimationFrame(pkRaf); pkRaf = null; }
+    }
+
+    function stopPumpkinTimers() {
+      pkHaltPlay();
+      if (pkCountdownTimer) { window.clearTimeout(pkCountdownTimer); pkCountdownTimer = null; }
+      if (pkEndTimer) { window.clearTimeout(pkEndTimer); pkEndTimer = null; }
+    }
+
+    function pkCountdownStep(n) {
+      els.pkCountdown.textContent = n > 0 ? String(n) : "C'est parti !";
+      els.pkCountdown.classList.toggle("go", n <= 0);
+      els.pkCountdown.classList.remove("pop");
+      void els.pkCountdown.offsetWidth;
+      els.pkCountdown.classList.add("pop");
+      pkCountdownTimer = window.setTimeout(function () {
+        if (n > 0) {
+          pkCountdownStep(n - 1);
+        } else {
+          els.pkCountdown.hidden = true;
+          pkBeginRound();
+        }
+      }, FOX_COUNTDOWN_STEP_MS);
+    }
+
+    function pkBeginRound() {
+      pkActive = true;
+      pkLastFrame = 0;
+      pkNextSpawn = 0;
+      pkRaf = window.requestAnimationFrame(pkFrame);
+      pkInterval = window.setInterval(function () {
+        pkTimeLeft--;
+        els.pkTime.textContent = String(Math.max(0, pkTimeLeft));
+        if (pkTimeLeft <= 0) endPumpkinGame("timeout");
+      }, 1000);
+    }
+
+    function resetPumpkinState() {
+      stopPumpkinTimers();
+      pkScore = 0;
+      pkTimeLeft = PK_DURATION;
+      pkList = [];
+      els.pkScore.textContent = "0";
+      els.pkTime.textContent = String(PK_DURATION);
+      els.pkField.innerHTML = "";
+      els.pkEndOverlay.hidden = true;
+    }
+
+    function startPumpkinGame() {
+      resetPumpkinState();
+      els.pkOverlay.hidden = true;
+      els.pkIntroOverlay.hidden = false;
+    }
+
+    function replayPumpkinGame() {
+      resetPumpkinState();
+      pkIntroBegin();
+    }
+
+    function pkIntroBegin() {
+      els.pkIntroOverlay.hidden = true;
+      els.pkOverlay.hidden = false;
+      els.pkCountdown.hidden = false;
+      pkCountdownStep(3);
+    }
+
+    function endPumpkinGame(reason) {
+      stopPumpkinTimers();
+      els.pkOverlay.hidden = true;
+      els.pkEndTitle.textContent = reason === "cleared" ? "Bravo !" : "Temps écoulé !";
+      els.pkFinalScore.textContent = String(pkScore);
+      els.pkEndOverlay.hidden = false;
+      spawnConfetti(els.pkConfetti, 30);
+    }
+
+    function closePumpkinGame() {
+      stopPumpkinTimers();
+      els.pkIntroOverlay.hidden = true;
+      els.pkOverlay.hidden = true;
+      els.pkCountdown.hidden = true;
+      els.pkEndOverlay.hidden = true;
+    }
+
+    function pumpkinGameOpen() {
+      return !els.pkIntroOverlay.hidden || !els.pkOverlay.hidden || !els.pkEndOverlay.hidden;
     }
 
     // 3 taps rapprochés sur le renard de l'accueil (souris/tactile/clavier)
@@ -14126,6 +14519,16 @@
     els.foxGameCloseBtn.addEventListener("click", closeFoxGame);
     els.foxGameEndCloseBtn.addEventListener("click", closeFoxGame);
     els.foxGameReplayBtn.addEventListener("click", replayFoxGame);
+    els.pumpkinCard.addEventListener("click", startPumpkinGame);
+    els.pkIntroStartBtn.addEventListener("click", pkIntroBegin);
+    els.pkIntroCancelBtn.addEventListener("click", closePumpkinGame);
+    els.pkCloseBtn.addEventListener("click", closePumpkinGame);
+    els.pkEndCloseBtn.addEventListener("click", closePumpkinGame);
+    els.pkReplayBtn.addEventListener("click", replayPumpkinGame);
+    els.pkField.addEventListener("pointerdown", onPkPointerDown);
+    els.pkField.addEventListener("pointermove", onPkPointerMove);
+    els.pkField.addEventListener("pointerup", onPkPointerUp);
+    els.pkField.addEventListener("pointercancel", onPkPointerUp);
     els.modeCards.forEach(function (card) {
       card.addEventListener("click", function () { selectMode(card.getAttribute("data-mode")); });
     });
@@ -14340,6 +14743,11 @@
     }
 
     function handleBackPress() {
+      if (pumpkinGameOpen()) {
+        closePumpkinGame();
+        armBackTrap();
+        return;
+      }
       if (!els.resetOverlay.hidden) {
         els.resetOverlay.hidden = true;
         armBackTrap();
