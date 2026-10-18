@@ -5371,6 +5371,10 @@
       <div class="celebrate-badge">🎃</div>
       <h2 class="celebrate-title">Tranche les citrouilles</h2>
       <p class="celebrate-sub">Glisse ton doigt sur les citrouilles pour les trancher : 20 en 30 secondes.</p>
+      <div class="foxgame-diff-group" role="group" aria-label="Difficulté">
+        <button class="foxgame-diff-btn is-selected" id="pkDiffEasyBtn" type="button">Facile</button>
+        <button class="foxgame-diff-btn" id="pkDiffHardBtn" type="button">Difficile</button>
+      </div>
       <div class="celebrate-actions">
         <button class="celebrate-btn celebrate-btn-secondary" id="pkIntroCancelBtn" type="button">Annuler</button>
         <button class="celebrate-btn" id="pkIntroStartBtn" type="button">C'est parti !</button>
@@ -8305,6 +8309,8 @@
       foxGameFinalScore: document.getElementById("foxGameFinalScore"),
       foxGameEndCloseBtn: document.getElementById("foxGameEndCloseBtn"),
       foxGameReplayBtn: document.getElementById("foxGameReplayBtn"),
+      pkDiffEasyBtn: document.getElementById("pkDiffEasyBtn"),
+      pkDiffHardBtn: document.getElementById("pkDiffHardBtn"),
       pkIntroOverlay: document.getElementById("pkIntroOverlay"),
       pkIntroStartBtn: document.getElementById("pkIntroStartBtn"),
       pkIntroCancelBtn: document.getElementById("pkIntroCancelBtn"),
@@ -8607,8 +8613,15 @@
     // chaque citrouille et tester si le geste la traverse.
     var PK_GOAL = 20;
     var PK_DURATION = 30;
-    var PK_SPAWN_MS = 560;
     var PK_SPAWN_JITTER = 240;
+    // "Difficile" : citrouilles plus rapides, plus petites et plus nombreuses
+    // à la fois ; "Facile" garde le rythme d'origine. Le choix reste actif
+    // d'une partie à l'autre tant que la page n'est pas rechargée.
+    var PK_LEVELS = {
+      easy: { cross: [2.8, 4.4], spawnMs: 560, sizeRatio: 0.17 },
+      hard: { cross: [1.6, 2.7], spawnMs: 420, sizeRatio: 0.13 }
+    };
+    var pkDifficulty = "easy";
     var pkInterval = null;
     var pkCountdownTimer = null;
     var pkEndTimer = null;
@@ -8621,8 +8634,14 @@
     var pkLastFrame = 0;
     var pkLastPt = null;
 
+    function setPumpkinDifficulty(difficulty) {
+      pkDifficulty = difficulty === "hard" ? "hard" : "easy";
+      els.pkDiffEasyBtn.classList.toggle("is-selected", pkDifficulty === "easy");
+      els.pkDiffHardBtn.classList.toggle("is-selected", pkDifficulty === "hard");
+    }
+
     function pkSize() {
-      return Math.max(56, Math.min(104, els.pkField.clientWidth * 0.17));
+      return Math.max(44, Math.min(104, els.pkField.clientWidth * PK_LEVELS[pkDifficulty].sizeRatio));
     }
 
     function pkSpawn() {
@@ -8637,7 +8656,8 @@
       el.style.height = size + "px";
       el.style.fontSize = (size * 0.85) + "px";
       field.appendChild(el);
-      var crossSeconds = 2.8 + Math.random() * 1.6;
+      var cross = PK_LEVELS[pkDifficulty].cross;
+      var crossSeconds = cross[0] + Math.random() * (cross[1] - cross[0]);
       var p = {
         el: el,
         size: size,
@@ -8662,7 +8682,7 @@
       pkLastFrame = now;
       if (now >= pkNextSpawn) {
         pkSpawn();
-        pkNextSpawn = now + PK_SPAWN_MS + (Math.random() * 2 - 1) * PK_SPAWN_JITTER;
+        pkNextSpawn = now + PK_LEVELS[pkDifficulty].spawnMs + (Math.random() * 2 - 1) * PK_SPAWN_JITTER;
       }
       for (var i = pkList.length - 1; i >= 0; i--) {
         var p = pkList[i];
@@ -14521,6 +14541,8 @@
     els.foxGameReplayBtn.addEventListener("click", replayFoxGame);
     els.pumpkinCard.addEventListener("click", startPumpkinGame);
     els.pkIntroStartBtn.addEventListener("click", pkIntroBegin);
+    els.pkDiffEasyBtn.addEventListener("click", function () { setPumpkinDifficulty("easy"); });
+    els.pkDiffHardBtn.addEventListener("click", function () { setPumpkinDifficulty("hard"); });
     els.pkIntroCancelBtn.addEventListener("click", closePumpkinGame);
     els.pkCloseBtn.addEventListener("click", closePumpkinGame);
     els.pkEndCloseBtn.addEventListener("click", closePumpkinGame);
