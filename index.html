@@ -13132,13 +13132,13 @@
     }
 
     // Seul contre l'ordinateur : l'enfant joue ❌ (et commence), l'ordinateur
-    // joue ⭕. Force : "facile" = case au hasard ; "moyen" = gagne s'il peut,
-    // bloque l'enfant s'il va gagner, sinon au hasard ; "fort" = minimax
-    // complet. Un coup parfait à chaque tour serait imbattable : aux
-    // niveaux moyen et fort l'ordinateur ne joue donc "malin" que la
-    // plupart du temps (MORPION_AI_SMART_RATE), le reste du temps il joue
-    // une case au hasard -- l'enfant peut gagner dès qu'il en profite.
-    var MORPION_AI_SMART_RATE = { facile: 0, moyen: 0.65, fort: 0.8 };
+    // joue ⭕. Coup "malin" : facile/moyen = gagne s'il peut, bloque
+    // l'enfant s'il va gagner, sinon au hasard ; fort = minimax complet.
+    // Un coup parfait à chaque tour serait imbattable : l'ordinateur ne
+    // joue "malin" que MORPION_AI_SMART_RATE du temps selon la force, le
+    // reste du temps une case au hasard -- l'enfant peut gagner dès qu'il
+    // en profite.
+    var MORPION_AI_SMART_RATE = { facile: 0.5, moyen: 0.7, fort: 0.8 };
     var morpionAiTimer = null;
 
     function morpionEmptyCells(board) {
@@ -13191,12 +13191,10 @@
         });
         return bestCells[randInt(0, bestCells.length - 1)];
       }
-      if (difficulty === "moyen") {
-        var win = morpionWinningCell(board, "O");
-        if (win >= 0) return win;
-        var block = morpionWinningCell(board, "X");
-        if (block >= 0) return block;
-      }
+      var win = morpionWinningCell(board, "O");
+      if (win >= 0) return win;
+      var block = morpionWinningCell(board, "X");
+      if (block >= 0) return block;
       return empties[randInt(0, empties.length - 1)];
     }
 
