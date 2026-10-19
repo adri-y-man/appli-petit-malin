@@ -11,22 +11,7 @@ Liste des prochaines modifications demandées, pas encore faites.
    cache, voir aussi `audio/level-up.mp3` pour le pattern fichier externe
    plutôt que data URI inline).
 
-2. **Nouveau jeu "Somme de fruits"** : plusieurs fruits affichés, chacun
-   avec une valeur différente (ex. 🍎 = 2, 🍌 = 3, 🍇 = 5...), l'enfant
-   doit trouver la somme totale. Probablement dans Calcul Malin, en
-   mode-card à côté de "Mes premières équations"/"Compte les objets".
-   Mécanique proche de "Compte les objets" (`generateCountProblem`) mais
-   avec des valeurs différentes par type de fruit au lieu de compter des
-   objets identiques -- et des niveaux qui font monter le nombre de
-   fruits affichés / la variété de valeurs, comme les autres jeux de
-   calcul (3 réponses au choix, mêmes mécaniques de niveau/étoiles).
-   Points à trancher avant de coder :
-   - Les valeurs sont-elles toujours visibles à l'écran (ex. une petite
-     légende "🍎=2, 🍌=3") ou à mémoriser ?
-   - Les fruits affichés sont-ils toujours les mêmes à chaque partie, ou
-     tirés au sort parmi un pool plus large à chaque niveau ?
-
-3. **Nouveau jeu "Devine la comptine chantée"** dans Musique Malin (à
+2. **Nouveau jeu "Devine la comptine chantée"** dans Musique Malin (à
    côté de Musique libre / Quel instrument ? / Répète le rythme / grave-
    aigu) : un extrait chanté (vrai enregistrement, pas synthétisé) est
    joué, l'enfant doit deviner de quelle chanson/comptine il s'agit
@@ -39,21 +24,3 @@ Liste des prochaines modifications demandées, pas encore faites.
      musique de fond actuelle via Pixabay) et combien au départ ?
    - Extrait complet ou juste les premières secondes (plus facile de
      deviner vite = indice progressif selon le niveau) ?
-
-4. **Revoir la mécanique du Sudoku** (`sudokuforme`/`sudokuchiffre`,
-   partagent le même moteur -- `onSudokuCellTap`/`onSudokuPaletteTap`/
-   `onSudokuComplete` dans `index.html`). Aujourd'hui `onSudokuPaletteTap`
-   vérifie chaque case IMMÉDIATEMENT contre `state.sudokuSolution` : si ce
-   n'est pas la bonne valeur, la case secoue et refuse de se remplir --
-   impossible de poser autre chose que la bonne réponse, donc pas un vrai
-   sudoku. À la place : laisser remplir n'importe quelle case avec
-   n'importe quelle valeur (y compris en corrigeant une case déjà remplie),
-   et ajouter un bouton "Valider" qui vérifie toute la grille d'un coup à
-   la fin et dit si c'est bon ou pas.
-   Points à trancher avant de coder :
-   - Si c'est faux après validation, qu'est-ce qui est montré : juste
-     "c'est pas encore ça" sans détail, ou les cases en erreur
-     surlignées (sans donner la bonne réponse) ?
-   - Le bouton "Valider" est-il actif seulement grille pleine, ou
-     utilisable à tout moment pour vérifier l'avancement ?
-

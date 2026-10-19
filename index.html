@@ -569,6 +569,31 @@
 
   /* ---------- jeu "compte les objets" : rangée d'objets à dénombrer ---------- */
 
+  .fruitsum-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(0.6rem, 2.5vh, 1.1rem);
+  }
+
+  .fruitsum-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .fruitsum-chip {
+    background: rgba(255, 255, 255, 0.88);
+    color: var(--ink);
+    font-weight: 800;
+    font-size: clamp(1.15rem, 5vw, 1.7rem);
+    padding: 0.2rem 0.8rem;
+    border-radius: 999px;
+    box-shadow: 0 6px 12px -8px rgba(31, 42, 60, 0.4);
+    font-variant-numeric: tabular-nums;
+  }
+
   .count-objects {
     display: flex;
     flex-wrap: wrap;
@@ -1755,6 +1780,12 @@
   .sudoku-cell:disabled { cursor: default; }
   .sudoku-cell.selected { background: #fff3a0; box-shadow: inset 0 0 0 3px #ffb648; }
   .sudoku-cell.just-filled { background: #d9f2e6; }
+  .sudoku-cell.wrong { background: #ffd9d9; box-shadow: inset 0 0 0 3px #e63946; }
+
+  .sudoku-message {
+    min-height: 1.6em;
+    max-width: 90vw;
+  }
 
   .sudoku-cell .sudoku-shape { width: 62%; height: 62%; display: block; }
   .sudoku-cell .sudoku-shape svg { display: block; width: 100%; height: 100%; }
@@ -3924,6 +3955,7 @@
 
   .mode-flat[data-mode="count"] { background: linear-gradient(135deg, #ffc93c, #f2994a); }
   .mode-flat[data-mode="compare"] { background: linear-gradient(135deg, #598ce6, #3454d1); }
+  .mode-flat[data-mode="fruitsum"] { background: linear-gradient(135deg, #ff9a8b, #e8504a); }
   .mode-flat[data-mode="sequence"] { background: linear-gradient(135deg, #43b98a, #2a9d6f); }
   .mode-flat[data-mode="sudokuchiffre"] { background: linear-gradient(135deg, #ffb199, #f77f5c); }
 
@@ -4499,6 +4531,8 @@
   <section class="sudoku-screen" id="sudokuScreen" hidden>
     <div class="sudoku-board" id="sudokuBoard"></div>
     <div class="sudoku-palette" id="sudokuPalette"></div>
+    <p class="boardgame-status sudoku-message" id="sudokuMessage"></p>
+    <button type="button" class="boardgame-replay-btn" id="sudokuValidateBtn">Valider ✓</button>
   </section>
 
   <section class="code-screen" id="codeScreen" hidden>
@@ -4907,6 +4941,11 @@
           <span class="icon emoji">🍎</span>
           <span>Compte les objets</span>
           <span class="level-badge">PS-MS</span>
+        </button>
+        <button class="mode-card mode-flat" type="button" data-mode="fruitsum">
+          <span class="icon emoji">🍌</span>
+          <span>Somme de fruits</span>
+          <span class="level-badge">GS-CE1</span>
         </button>
         <button class="mode-card mode-flat" type="button" data-mode="compare">
           <span class="icon emoji">⚖️</span>
@@ -6230,6 +6269,16 @@
     // affichées en haut de l'écran.
     var COUNT_OBJECTS = ["🍎", "🎈", "🐱", "🌸", "🚗"];
     var COUNT_LEVELS = { maxCount: [5, 8, 12, 16, 20] };
+    // "Somme de fruits" : chaque sorte de fruit a sa propre valeur (toujours
+    // affichée dans la légende), l'enfant additionne la valeur de tous les
+    // fruits montrés. Le niveau fait monter le nombre de sortes de fruits,
+    // la valeur maximale d'un fruit et le nombre de fruits de chaque sorte.
+    var FRUITSUM_FRUITS = ["🍎", "🍌", "🍇", "🍓", "🍊", "🍒", "🍐", "🍉"];
+    var FRUITSUM_LEVELS = {
+      kinds: [2, 2, 3, 3, 3],
+      maxValue: [3, 4, 5, 6, 7],
+      maxCount: [2, 3, 3, 3, 3]
+    };
 
     // "Plus grand ou plus petit ?" : les 3 nombres tirés vont de 0 à
     // maxNum, un intervalle qui grandit avec le niveau.
@@ -7190,6 +7239,43 @@
       };
     }
 
+    // Les mauvaises réponses imitent des erreurs typiques : oublier une
+    // sorte de fruit, ou compter les fruits au lieu d'additionner leurs
+    // valeurs (puis à +/-1 pour compléter).
+    function generateFruitSumProblem(levelIdx) {
+      var kinds = FRUITSUM_LEVELS.kinds[levelIdx];
+      var maxValue = FRUITSUM_LEVELS.maxValue[levelIdx];
+      var maxCount = FRUITSUM_LEVELS.maxCount[levelIdx];
+      var emojis = shuffle(FRUITSUM_FRUITS.slice()).slice(0, kinds);
+      var values = [];
+      for (var v = 1; v <= maxValue; v++) values.push(v);
+      values = shuffle(values).slice(0, kinds);
+      var items = emojis.map(function (emoji, i) {
+        return { emoji: emoji, value: values[i], count: randInt(1, maxCount) };
+      });
+      var answer = 0;
+      var fruitCount = 0;
+      var fruits = [];
+      items.forEach(function (it) {
+        answer += it.value * it.count;
+        fruitCount += it.count;
+        for (var k = 0; k < it.count; k++) fruits.push(it.emoji);
+      });
+      if (levelIdx >= 2) shuffle(fruits);
+      var candidates = [fruitCount].concat(items.map(function (it) { return answer - it.value * it.count; }));
+      candidates = shuffle(candidates.concat([answer - 1, answer + 1, answer + 2, answer - 2]));
+      var choices = [answer];
+      candidates.forEach(function (c) {
+        if (choices.length < 3 && c > 0 && choices.indexOf(c) === -1) choices.push(c);
+      });
+      var fill = 1;
+      while (choices.length < 3) {
+        if (choices.indexOf(answer + fill) === -1) choices.push(answer + fill);
+        fill++;
+      }
+      return { kind: "fruitsum", items: items, fruits: fruits, answer: answer, choices: shuffle(choices) };
+    }
+
     // "Plus grand ou plus petit ?" : 3 nombres distincts affichés comme
     // réponses possibles, il faut trouver le plus grand (ou le plus petit,
     // tiré au hasard) des trois.
@@ -8003,6 +8089,10 @@
       if (p1.kind === "count" || p2.kind === "count") {
         return p1.kind === "count" && p2.kind === "count" && p1.count === p2.count && p1.emoji === p2.emoji;
       }
+      if (p1.kind === "fruitsum" || p2.kind === "fruitsum") {
+        return p1.kind === "fruitsum" && p2.kind === "fruitsum" &&
+          JSON.stringify(p1.items) === JSON.stringify(p2.items);
+      }
       if (p1.kind === "compare" || p2.kind === "compare") {
         if (p1.kind !== "compare" || p2.kind !== "compare" || p1.compareMode !== p2.compareMode) return false;
         var cn1 = p1.numbers.slice().sort(function (a, b) { return a - b; }).join(",");
@@ -8122,6 +8212,9 @@
       }
       if (state.mode === "compare") {
         return generateCompareProblem(levelIdx);
+      }
+      if (state.mode === "fruitsum") {
+        return generateFruitSumProblem(levelIdx);
       }
       if (state.mode === "sequence") {
         return generateSequenceProblem(levelIdx);
@@ -8471,6 +8564,8 @@
       sudokuScreen: document.getElementById("sudokuScreen"),
       sudokuBoard: document.getElementById("sudokuBoard"),
       sudokuPalette: document.getElementById("sudokuPalette"),
+      sudokuMessage: document.getElementById("sudokuMessage"),
+      sudokuValidateBtn: document.getElementById("sudokuValidateBtn"),
       sudokuformeCard: document.getElementById("sudokuformeCard"),
       levelUpOverlay: document.getElementById("levelUpOverlay"),
       levelUpNum: document.getElementById("levelUpNum"),
@@ -9512,6 +9607,34 @@
           objectsWrap.appendChild(objEl);
         }
         els.problem.appendChild(objectsWrap);
+        els.problem.classList.remove("pop");
+        void els.problem.offsetWidth;
+        els.problem.classList.add("pop");
+        return;
+      }
+
+      if (p.kind === "fruitsum") {
+        els.problem.removeAttribute("data-terms");
+        var fsWrap = document.createElement("div");
+        fsWrap.className = "fruitsum-wrap";
+        var fsLegend = document.createElement("div");
+        fsLegend.className = "fruitsum-legend";
+        p.items.forEach(function (it) {
+          var chip = document.createElement("span");
+          chip.className = "fruitsum-chip";
+          chip.innerHTML = '<span class="emoji">' + it.emoji + "</span> = " + it.value;
+          fsLegend.appendChild(chip);
+        });
+        var fsFruits = document.createElement("div");
+        fsFruits.className = "count-objects emoji";
+        p.fruits.forEach(function (emoji) {
+          var f = document.createElement("span");
+          f.textContent = emoji;
+          fsFruits.appendChild(f);
+        });
+        fsWrap.appendChild(fsLegend);
+        fsWrap.appendChild(fsFruits);
+        els.problem.appendChild(fsWrap);
         els.problem.classList.remove("pop");
         void els.problem.offsetWidth;
         els.problem.classList.add("pop");
@@ -11929,8 +12052,11 @@
       var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
       var gen = sudokuGeneratePuzzle(SUDOKU_GIVENS_FOR_LEVEL[levelIdx]);
       state.sudokuPuzzle = gen.puzzle;
+      state.sudokuGivens = gen.puzzle.map(function (row) { return row.slice(); });
       state.sudokuSolution = gen.solution;
       state.sudokuSelected = null;
+      state.sudokuWrong = null;
+      els.sudokuMessage.textContent = "";
       renderSudokuScreen();
       setGameFeedback("");
       saveProgress();
@@ -11948,6 +12074,14 @@
         btn.addEventListener("click", (function (val) { return function () { onSudokuPaletteTap(val); }; }(v)));
         els.sudokuPalette.appendChild(btn);
       }
+      var erase = document.createElement("button");
+      erase.type = "button";
+      erase.className = "sudoku-palette-btn";
+      erase.disabled = !state.sudokuSelected;
+      erase.textContent = "⌫";
+      erase.setAttribute("aria-label", "Effacer la case");
+      erase.addEventListener("click", function () { onSudokuPaletteTap(0); });
+      els.sudokuPalette.appendChild(erase);
     }
 
     function renderSudokuScreen() {
@@ -11955,23 +12089,25 @@
       for (var r = 0; r < SUDOKU_SIZE; r++) {
         for (var c = 0; c < SUDOKU_SIZE; c++) {
           var val = state.sudokuPuzzle[r][c];
+          var isGiven = state.sudokuGivens[r][c] !== 0;
           var cell = document.createElement("button");
           cell.type = "button";
           var cls = "sudoku-cell";
           if (c === 1) cls += " box-right";
           if (r === 1) cls += " box-bottom";
-          if (val !== 0) {
+          if (isGiven) {
             cls += " given";
             cell.disabled = true;
-          } else if (state.sudokuSelected && state.sudokuSelected[0] === r && state.sudokuSelected[1] === c) {
-            cls += " selected";
+          } else {
+            if (state.sudokuSelected && state.sudokuSelected[0] === r && state.sudokuSelected[1] === c) cls += " selected";
+            if (state.sudokuWrong && state.sudokuWrong.indexOf(r * SUDOKU_SIZE + c) !== -1) cls += " wrong";
           }
           cell.className = cls;
-          if (val !== 0) {
-            cell.appendChild(sudokuSymbolEl(val));
+          if (val !== 0) cell.appendChild(sudokuSymbolEl(val));
+          if (isGiven) {
             cell.setAttribute("aria-label", "Case fixée");
           } else {
-            cell.setAttribute("aria-label", "Case vide, ligne " + (r + 1) + " colonne " + (c + 1));
+            cell.setAttribute("aria-label", (val !== 0 ? "Case remplie" : "Case vide") + ", ligne " + (r + 1) + " colonne " + (c + 1));
             cell.addEventListener("click", (function (rr, cc) { return function () { onSudokuCellTap(rr, cc); }; }(r, c)));
           }
           els.sudokuBoard.appendChild(cell);
@@ -11981,7 +12117,7 @@
     }
 
     function onSudokuCellTap(r, c) {
-      if (state.sudokuPuzzle[r][c] !== 0) return;
+      if (state.sudokuGivens[r][c] !== 0) return;
       state.sudokuSelected = (state.sudokuSelected && state.sudokuSelected[0] === r && state.sudokuSelected[1] === c) ? null : [r, c];
       renderSudokuScreen();
     }
@@ -11995,29 +12131,49 @@
       return true;
     }
 
+    // Toute valeur peut être posée (ou la case effacée avec val = 0, ou
+    // corrigée en la remplaçant) : rien n'est vérifié avant "Valider".
     function onSudokuPaletteTap(val) {
       if (!state.sudokuSelected) return;
       var r = state.sudokuSelected[0];
       var c = state.sudokuSelected[1];
-      if (state.sudokuSolution[r][c] === val) {
-        state.sudokuPuzzle[r][c] = val;
-        state.sudokuSelected = null;
-        renderSudokuScreen();
-        var idx = r * SUDOKU_SIZE + c;
-        var filledCell = els.sudokuBoard.children[idx];
+      state.sudokuPuzzle[r][c] = val;
+      state.sudokuSelected = null;
+      state.sudokuWrong = null;
+      els.sudokuMessage.textContent = "";
+      renderSudokuScreen();
+      if (val !== 0) {
+        var filledCell = els.sudokuBoard.children[r * SUDOKU_SIZE + c];
         if (filledCell) filledCell.classList.add("just-filled");
-        if (sudokuIsComplete()) {
-          window.setTimeout(onSudokuComplete, 350);
-        }
-      } else {
-        var badIdx = r * SUDOKU_SIZE + c;
-        var badCell = els.sudokuBoard.children[badIdx];
-        if (badCell) {
-          badCell.classList.remove("shake");
-          void badCell.offsetWidth;
-          badCell.classList.add("shake");
+      }
+    }
+
+    // "Valider" : grille incomplète -> on le dit sans rien vérifier ;
+    // grille pleine mais fausse -> les cases en erreur sont entourées en
+    // rouge (sans donner la bonne réponse) ; grille juste -> réussite.
+    function onSudokuValidate() {
+      if (state.sudokuSelected !== null) state.sudokuSelected = null;
+      if (!sudokuIsComplete()) {
+        els.sudokuMessage.textContent = "Il reste des cases à remplir !";
+        renderSudokuScreen();
+        return;
+      }
+      var wrong = [];
+      for (var r = 0; r < SUDOKU_SIZE; r++) {
+        for (var c = 0; c < SUDOKU_SIZE; c++) {
+          if (state.sudokuPuzzle[r][c] !== state.sudokuSolution[r][c]) wrong.push(r * SUDOKU_SIZE + c);
         }
       }
+      if (wrong.length === 0) {
+        els.sudokuMessage.textContent = "";
+        state.sudokuWrong = null;
+        renderSudokuScreen();
+        window.setTimeout(onSudokuComplete, 250);
+        return;
+      }
+      state.sudokuWrong = wrong;
+      els.sudokuMessage.textContent = "Pas encore ça… regarde les cases en rouge !";
+      renderSudokuScreen();
     }
 
     function onSudokuComplete() {
@@ -14989,7 +15145,7 @@
     function categoryOfMode(mode) {
       if (mode === "add" || mode === "sub" || mode === "mul" || mode === "div" || MIX_MODES[mode]) return "2";
       if (MODE_TO_OP_3[mode] || MIX_MODES_3[mode]) return "3";
-      if (mode === "count" || mode === "compare" || mode === "sequence" || mode === "sudokuchiffre" || mode === "equations") return "calc";
+      if (mode === "count" || mode === "compare" || mode === "sequence" || mode === "sudokuchiffre" || mode === "equations" || mode === "fruitsum") return "calc";
       if (mode === "colors" || mode === "animals" || mode === "numbers" || mode === "body" || mode === "food") return "anglais";
       if (mode === "reading" || mode === "letters" || mode === "syllables" || mode === "rhymes" || mode === "wordgrid" || mode === "casse" || mode === "sound") return "lire";
       if (isPaintMode(mode) || mode === "paintnum") return "peinture";
@@ -15428,6 +15584,7 @@
     els.intrusCard.addEventListener("click", function () { selectMode("intrus"); });
     els.puzzleCard.addEventListener("click", function () { selectMode("puzzle"); });
     els.sudokuformeCard.addEventListener("click", function () { selectMode("sudokuforme"); });
+    els.sudokuValidateBtn.addEventListener("click", onSudokuValidate);
     els.morpionCard.addEventListener("click", function () { selectMode("morpion"); });
     els.puissance4Card.addEventListener("click", function () { selectMode("puissance4"); });
     els.damesCard.addEventListener("click", function () { selectMode("dames"); });
