@@ -2245,6 +2245,8 @@
 
   .p4-screen[hidden] { display: none; }
 
+  .p4-board-wrap[hidden] { display: none; }
+
   /* Reproduit la vraie structure du jeu physique en 3 couches
      superposées plutôt qu'un plateau plein avec des jetons dessus :
      - .p4-backing (fond crème, tout en bas) : ce qu'on voit à travers
@@ -4526,14 +4528,26 @@
   </section>
 
   <section class="p4-screen" id="puissance4Screen" hidden>
-    <p class="boardgame-status" id="p4Status"></p>
-    <div class="p4-board-wrap">
+    <div class="dames-setup" id="p4Setup">
+      <p class="boardgame-status">Comment veux-tu jouer ?</p>
+      <div class="dames-setup-buttons" id="p4ModeButtons">
+        <button type="button" class="boardgame-replay-btn" id="p4PvpBtn">👥 Jouer à deux</button>
+        <button type="button" class="boardgame-replay-btn" id="p4SoloBtn">🤖 Jouer tout seul</button>
+      </div>
+      <div class="dames-setup-buttons" id="p4DifficultyButtons" hidden>
+        <button type="button" class="boardgame-replay-btn" data-difficulty="facile">🙂 Facile</button>
+        <button type="button" class="boardgame-replay-btn" data-difficulty="moyen">😐 Moyen</button>
+        <button type="button" class="boardgame-replay-btn" data-difficulty="fort">😈 Fort</button>
+      </div>
+    </div>
+    <p class="boardgame-status" id="p4Status" hidden></p>
+    <div class="p4-board-wrap" id="p4Wrap" hidden>
       <div class="p4-backing"></div>
       <div class="p4-discs" id="p4Discs"></div>
       <div class="p4-board" id="p4Board"></div>
       <div class="p4-glow" id="p4Glow"></div>
     </div>
-    <button type="button" class="boardgame-replay-btn" id="p4ReplayBtn">Rejouer ↻</button>
+    <button type="button" class="boardgame-replay-btn" id="p4ReplayBtn" hidden>Rejouer ↻</button>
   </section>
 
   <section class="dames-screen" id="damesScreen" hidden>
@@ -6932,6 +6946,8 @@
       p4Winner: null,
       p4WinCells: null,
       p4LastDrop: null,
+      p4VsAI: false,
+      p4Difficulty: null,
       damesBoard: [],
       damesTurn: "b",
       damesWinner: null,
@@ -8277,6 +8293,12 @@
       p4Board: document.getElementById("p4Board"),
       p4Glow: document.getElementById("p4Glow"),
       p4ReplayBtn: document.getElementById("p4ReplayBtn"),
+      p4Setup: document.getElementById("p4Setup"),
+      p4ModeButtons: document.getElementById("p4ModeButtons"),
+      p4DifficultyButtons: document.getElementById("p4DifficultyButtons"),
+      p4PvpBtn: document.getElementById("p4PvpBtn"),
+      p4SoloBtn: document.getElementById("p4SoloBtn"),
+      p4Wrap: document.getElementById("p4Wrap"),
       damesScreen: document.getElementById("damesScreen"),
       damesSetup: document.getElementById("damesSetup"),
       damesModeButtons: document.getElementById("damesModeButtons"),
@@ -13327,14 +13349,175 @@
       return null;
     }
 
+    // Seul contre l'ordinateur : l'enfant joue 🔴 (et commence), l'ordinateur
+    // joue 🟡. Coup "malin" : facile = gagne s'il peut, bloque l'enfant s'il
+    // va gagner ; moyen = en plus évite de lui offrir une victoire au coup
+    // suivant ; fort = recherche minimax sur 5 coups. Un coup malin à
+    // chaque tour serait trop dur : l'ordinateur ne le joue que
+    // P4_AI_SMART_RATE du temps (50 % / 70 % / 80 %), sinon une colonne au
+    // hasard -- même principe que le Morpion.
+    var P4_AI_SMART_RATE = { facile: 0.5, moyen: 0.7, fort: 0.8 };
+    var P4_AI_DEPTH = 5;
+    var p4AiTimer = null;
+
+    function p4DropRow(board, col) {
+      for (var r = P4_ROWS - 1; r >= 0; r--) if (!board[r][col]) return r;
+      return -1;
+    }
+
+    function p4ValidCols(board) {
+      var cols = [];
+      for (var c = 0; c < P4_COLS; c++) if (board[0][c] === null) cols.push(c);
+      return cols;
+    }
+
+    // Colonne où "mark" gagnerait tout de suite, ou -1.
+    function p4WinningCol(board, mark) {
+      var cols = p4ValidCols(board);
+      for (var i = 0; i < cols.length; i++) {
+        var row = p4DropRow(board, cols[i]);
+        board[row][cols[i]] = mark;
+        var wins = !!checkP4WinAt(board, row, cols[i], mark);
+        board[row][cols[i]] = null;
+        if (wins) return cols[i];
+      }
+      return -1;
+    }
+
+    // Évaluation du point de vue de 🟡 : fenêtres de 4 cases (3 jaunes + 1
+    // vide = bien, 3 rouges + 1 vide = danger) + petit bonus au centre.
+    function p4Evaluate(board) {
+      var score = 0;
+      for (var r = 0; r < P4_ROWS; r++) if (board[r][3] === "Y") score += 3;
+      P4_DIRECTIONS.forEach(function (d) {
+        for (var r0 = 0; r0 < P4_ROWS; r0++) {
+          for (var c0 = 0; c0 < P4_COLS; c0++) {
+            var er = r0 + 3 * d[0], ec = c0 + 3 * d[1];
+            if (er < 0 || er >= P4_ROWS || ec < 0 || ec >= P4_COLS) continue;
+            var y = 0, rd = 0;
+            for (var k = 0; k < 4; k++) {
+              var v = board[r0 + k * d[0]][c0 + k * d[1]];
+              if (v === "Y") y++; else if (v === "R") rd++;
+            }
+            if (y && rd) continue;
+            if (y === 3) score += 5; else if (y === 2) score += 2;
+            if (rd === 3) score -= 6; else if (rd === 2) score -= 2;
+          }
+        }
+      });
+      return score;
+    }
+
+    function p4Minimax(board, depth, alpha, beta, yellowTurn) {
+      var cols = p4ValidCols(board);
+      if (!cols.length) return 0;
+      if (depth === 0) return p4Evaluate(board);
+      cols.sort(function (a, b) { return Math.abs(a - 3) - Math.abs(b - 3); });
+      var mark = yellowTurn ? "Y" : "R";
+      var best = yellowTurn ? -Infinity : Infinity;
+      for (var i = 0; i < cols.length; i++) {
+        var col = cols[i];
+        var row = p4DropRow(board, col);
+        board[row][col] = mark;
+        var score;
+        if (checkP4WinAt(board, row, col, mark)) {
+          score = (yellowTurn ? 1 : -1) * (100000 + depth);
+        } else {
+          score = p4Minimax(board, depth - 1, alpha, beta, !yellowTurn);
+        }
+        board[row][col] = null;
+        if (yellowTurn) { best = Math.max(best, score); alpha = Math.max(alpha, best); }
+        else { best = Math.min(best, score); beta = Math.min(beta, best); }
+        if (alpha >= beta) break;
+      }
+      return best;
+    }
+
+    function p4ChooseAiCol(board, difficulty) {
+      var cols = p4ValidCols(board);
+      var randomCol = function () { return cols[randInt(0, cols.length - 1)]; };
+      if (Math.random() >= (P4_AI_SMART_RATE[difficulty] || 0)) return randomCol();
+      var win = p4WinningCol(board, "Y");
+      if (win >= 0) return win;
+      var block = p4WinningCol(board, "R");
+      if (block >= 0) return block;
+      if (difficulty === "facile") return randomCol();
+      if (difficulty === "moyen") {
+        var safe = cols.filter(function (c) {
+          var row = p4DropRow(board, c);
+          if (row === 0) return true;
+          board[row][c] = "Y";
+          var gift = p4WinningCol(board, "R") === c;
+          board[row][c] = null;
+          return !gift;
+        });
+        if (safe.length) return safe[randInt(0, safe.length - 1)];
+        return randomCol();
+      }
+      var bestScore = -Infinity;
+      var bestCols = [];
+      cols.forEach(function (c) {
+        var row = p4DropRow(board, c);
+        board[row][c] = "Y";
+        var score = p4Minimax(board, P4_AI_DEPTH - 1, -Infinity, Infinity, false);
+        board[row][c] = null;
+        if (score > bestScore) { bestScore = score; bestCols = [c]; }
+        else if (score === bestScore) bestCols.push(c);
+      });
+      return bestCols[randInt(0, bestCols.length - 1)];
+    }
+
+    function p4CancelAi() {
+      if (p4AiTimer) { window.clearTimeout(p4AiTimer); p4AiTimer = null; }
+    }
+
+    function p4AiMove() {
+      p4AiTimer = null;
+      if (!state.p4VsAI || state.p4Winner || state.p4Turn !== "Y") return;
+      dropP4(p4ChooseAiCol(state.p4Board, state.p4Difficulty));
+    }
+
+    // Écran de choix avant la partie (même esprit que Dames/Morpion).
+    function showP4Setup() {
+      p4CancelAi();
+      els.p4Setup.hidden = false;
+      els.p4ModeButtons.hidden = false;
+      els.p4DifficultyButtons.hidden = true;
+      els.p4Status.hidden = true;
+      els.p4Wrap.hidden = true;
+      els.p4ReplayBtn.hidden = true;
+    }
+
     function startPuissance4() {
+      p4CancelAi();
       state.p4Board = [];
       for (var r = 0; r < P4_ROWS; r++) state.p4Board.push(new Array(P4_COLS).fill(null));
       state.p4Turn = "R";
       state.p4Winner = null;
       state.p4WinCells = null;
       state.p4LastDrop = null;
+      els.p4Setup.hidden = true;
+      els.p4Status.hidden = false;
+      els.p4Wrap.hidden = false;
+      els.p4ReplayBtn.hidden = false;
       renderPuissance4Screen();
+    }
+
+    function startP4Pvp() {
+      state.p4VsAI = false;
+      state.p4Difficulty = null;
+      startPuissance4();
+    }
+
+    function startP4Solo(difficulty) {
+      state.p4VsAI = true;
+      state.p4Difficulty = difficulty;
+      startPuissance4();
+    }
+
+    function onP4CellTap(col) {
+      if (state.p4VsAI && state.p4Turn === "Y") return;
+      dropP4(col);
     }
 
     function dropP4(col) {
@@ -13356,6 +13539,11 @@
         state.p4Turn = state.p4Turn === "R" ? "Y" : "R";
       }
       renderPuissance4Screen();
+      if (state.p4VsAI && !state.p4Winner && state.p4Turn === "Y") {
+        p4CancelAi();
+        // laisse finir la chute du jeton de l'enfant (0,6 s) avant de jouer
+        p4AiTimer = window.setTimeout(p4AiMove, 900);
+      }
     }
 
     function renderPuissance4Screen() {
@@ -13374,8 +13562,8 @@
           cell.setAttribute("aria-label", v
             ? "Ligne " + (r + 1) + " colonne " + (c + 1) + " : " + (v === "R" ? "rouge" : "jaune")
             : "Colonne " + (c + 1) + ", case vide");
-          cell.disabled = !!state.p4Winner;
-          cell.addEventListener("click", function (colIdx) { return function () { dropP4(colIdx); }; }(c));
+          cell.disabled = !!state.p4Winner || (state.p4VsAI && state.p4Turn === "Y");
+          cell.addEventListener("click", function (colIdx) { return function () { onP4CellTap(colIdx); }; }(c));
           els.p4Board.appendChild(cell);
 
           if (v) {
@@ -13399,7 +13587,11 @@
       if (state.p4Winner === "draw") {
         els.p4Status.textContent = "Match nul !";
       } else if (state.p4Winner) {
-        els.p4Status.textContent = (state.p4Winner === "R" ? "🔴" : "🟡") + " a gagné !";
+        els.p4Status.textContent = state.p4VsAI
+          ? (state.p4Winner === "R" ? "🎉 Bravo, tu as gagné ! 🔴" : "🤖 L'ordinateur a gagné ! 🟡")
+          : (state.p4Winner === "R" ? "🔴" : "🟡") + " a gagné !";
+      } else if (state.p4VsAI) {
+        els.p4Status.textContent = state.p4Turn === "R" ? "À toi de jouer 🔴" : "🤖 L'ordinateur réfléchit...";
       } else {
         els.p4Status.textContent = "Au tour de " + (state.p4Turn === "R" ? "🔴" : "🟡");
       }
@@ -15007,7 +15199,7 @@
       }
       if (puissance4) {
         state.problem = null;
-        startPuissance4();
+        showP4Setup();
         return;
       }
       if (dames) {
@@ -15265,6 +15457,14 @@
       btn.addEventListener("click", function () { startMorpionSolo(btn.getAttribute("data-difficulty")); });
     });
     els.p4ReplayBtn.addEventListener("click", startPuissance4);
+    els.p4PvpBtn.addEventListener("click", startP4Pvp);
+    els.p4SoloBtn.addEventListener("click", function () {
+      els.p4ModeButtons.hidden = true;
+      els.p4DifficultyButtons.hidden = false;
+    });
+    Array.prototype.forEach.call(els.p4DifficultyButtons.querySelectorAll("button"), function (btn) {
+      btn.addEventListener("click", function () { startP4Solo(btn.getAttribute("data-difficulty")); });
+    });
     els.damesReplayBtn.addEventListener("click", replayDames);
     els.damesPvpBtn.addEventListener("click", startDamesPvp);
     els.damesSoloBtn.addEventListener("click", function () {
