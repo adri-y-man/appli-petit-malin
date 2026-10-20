@@ -5820,27 +5820,80 @@
       };
     }
 
-    var LETTER_WORDS = {
-      chat: { emoji: "🐱", letter: "C" },
-      ballon: { emoji: "⚽", letter: "B" },
-      soleil: { emoji: "☀️", letter: "S" },
-      maison: { emoji: "🏠", letter: "M" },
-      lapin: { emoji: "🐰", letter: "L" },
-      robot: { emoji: "🤖", letter: "R" },
-      poisson: { emoji: "🐟", letter: "P" },
-      tomate: { emoji: "🍅", letter: "T" },
-      fusee: { emoji: "🚀", letter: "F" },
-      vache: { emoji: "🐮", letter: "V" },
-      gateau: { emoji: "🎂", letter: "G" },
-      arbre: { emoji: "🌳", letter: "A" }
-    };
-    var LETTER_LEVEL_POOL = [
-      ["chat", "ballon", "soleil", "maison"],
-      ["chat", "ballon", "soleil", "maison", "lapin", "robot"],
-      ["chat", "ballon", "soleil", "maison", "lapin", "robot", "poisson", "tomate"],
-      ["chat", "ballon", "soleil", "maison", "lapin", "robot", "poisson", "tomate", "fusee", "vache"],
-      ["chat", "ballon", "soleil", "maison", "lapin", "robot", "poisson", "tomate", "fusee", "vache", "gateau", "arbre"]
+    // "Les premières lettres" : 10 dessins par niveau, tous différents d'un
+    // niveau à l'autre (aucun dessin ne revient quand on monte de niveau).
+    // Chaque dessin doit avoir un nom évident pour un enfant -- pas
+    // d'emoji qui pourrait aussi se dire avec une autre initiale.
+    var LETTER_LEVEL_WORDS = [
+      {
+        chat: { emoji: "🐱", letter: "C" },
+        ballon: { emoji: "⚽", letter: "B" },
+        soleil: { emoji: "☀️", letter: "S" },
+        maison: { emoji: "🏠", letter: "M" },
+        lapin: { emoji: "🐰", letter: "L" },
+        robot: { emoji: "🤖", letter: "R" },
+        poisson: { emoji: "🐟", letter: "P" },
+        tomate: { emoji: "🍅", letter: "T" },
+        fusee: { emoji: "🚀", letter: "F" },
+        vache: { emoji: "🐮", letter: "V" }
+      },
+      {
+        gateau: { emoji: "🎂", letter: "G" },
+        arbre: { emoji: "🌳", letter: "A" },
+        pomme: { emoji: "🍎", letter: "P" },
+        banane: { emoji: "🍌", letter: "B" },
+        fraise: { emoji: "🍓", letter: "F" },
+        citron: { emoji: "🍋", letter: "C" },
+        carotte: { emoji: "🥕", letter: "C" },
+        avion: { emoji: "✈️", letter: "A" },
+        bateau: { emoji: "⛵", letter: "B" },
+        train: { emoji: "🚂", letter: "T" }
+      },
+      {
+        nuage: { emoji: "☁️", letter: "N" },
+        oiseau: { emoji: "🐦", letter: "O" },
+        chien: { emoji: "🐶", letter: "C" },
+        cheval: { emoji: "🐴", letter: "C" },
+        tortue: { emoji: "🐢", letter: "T" },
+        singe: { emoji: "🐵", letter: "S" },
+        livre: { emoji: "📖", letter: "L" },
+        ours: { emoji: "🐻", letter: "O" },
+        lion: { emoji: "🦁", letter: "L" },
+        mouton: { emoji: "🐑", letter: "M" }
+      },
+      {
+        canard: { emoji: "🦆", letter: "C" },
+        grenouille: { emoji: "🐸", letter: "G" },
+        papillon: { emoji: "🦋", letter: "P" },
+        escargot: { emoji: "🐌", letter: "E" },
+        araignee: { emoji: "🕷️", letter: "A" },
+        dauphin: { emoji: "🐬", letter: "D" },
+        requin: { emoji: "🦈", letter: "R" },
+        baleine: { emoji: "🐳", letter: "B" },
+        pingouin: { emoji: "🐧", letter: "P" },
+        girafe: { emoji: "🦒", letter: "G" }
+      },
+      {
+        guitare: { emoji: "🎸", letter: "G" },
+        lunettes: { emoji: "👓", letter: "L" },
+        velo: { emoji: "🚲", letter: "V" },
+        helicoptere: { emoji: "🚁", letter: "H" },
+        ciseaux: { emoji: "✂️", letter: "C" },
+        chapeau: { emoji: "🎩", letter: "C" },
+        parapluie: { emoji: "☂️", letter: "P" },
+        fromage: { emoji: "🧀", letter: "F" },
+        pizza: { emoji: "🍕", letter: "P" },
+        voiture: { emoji: "🚗", letter: "V" }
+      }
     ];
+    var LETTER_WORDS = {};
+    var LETTER_LEVEL_POOL = LETTER_LEVEL_WORDS.map(function (words) {
+      Object.keys(words).forEach(function (k) { LETTER_WORDS[k] = words[k]; });
+      return Object.keys(words);
+    });
+    // Derniers dessins montrés : évite qu'un même dessin revienne tant qu'il
+    // reste d'autres choix dans le niveau.
+    var lettersRecent = [];
 
     // Découpage volontairement simplifié (pas de linguistique stricte) : le
     // but est de faire entendre/repérer la première syllabe d'un mot connu,
@@ -7691,7 +7744,10 @@
 
     function generateLettersProblem(levelIdx) {
       var pool = LETTER_LEVEL_POOL[levelIdx];
-      var targetKey = pool[randInt(0, pool.length - 1)];
+      var fresh = pool.filter(function (k) { return lettersRecent.indexOf(k) === -1; });
+      var targetKey = fresh[randInt(0, fresh.length - 1)];
+      lettersRecent.push(targetKey);
+      if (lettersRecent.length > 7) lettersRecent.shift();
       var targetLetter = LETTER_WORDS[targetKey].letter;
       var otherLetters = shuffle(ALPHABET.filter(function (l) { return l !== targetLetter; })).slice(0, 2);
       var choices = shuffle(otherLetters.concat([targetLetter]));
