@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petit Malin – liste des jeux</title>
+<style>
+  :root {
+    --bg: #f4f1ea;
+    --surface: #ffffff;
+    --ink: #1f2a3c;
+    --ink-soft: #55607a;
+    --line: #e2dccd;
+    --accent: #3d63c9;
+    --accent-ink: #ffffff;
+    --ex: #1f8a63;
+    --ex-bg: #dff3ea;
+    --jeu: #b3541a;
+    --jeu-bg: #fde8d6;
+    --lvl-bg: #e8ecf8;
+    --lvl-ink: #2f4a9e;
+    --tile: #f4efe3;
+    --shadow: 0 1px 2px rgba(31, 42, 60, 0.06), 0 6px 16px -10px rgba(31, 42, 60, 0.25);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151a26;
+      --surface: #1e2535;
+      --ink: #eef1f8;
+      --ink-soft: #a5afc6;
+      --line: #313a52;
+      --accent: #8aa6f5;
+      --accent-ink: #12182a;
+      --ex: #6fd6ac;
+      --ex-bg: #1d3a31;
+      --jeu: #ffb27a;
+      --jeu-bg: #43291a;
+      --lvl-bg: #2a3556;
+      --lvl-ink: #b9c8fa;
+      --tile: #2a3247;
+      --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Trebuchet MS", "Segoe UI", ui-rounded, system-ui, sans-serif;
+    line-height: 1.45;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px 56px; }
+
+  header.top { padding: 28px 0 10px; }
+  h1 { margin: 0; font-size: clamp(1.6rem, 5vw, 2.3rem); letter-spacing: -0.01em; text-wrap: balance; }
+  .sub { margin: 6px 0 0; color: var(--ink-soft); max-width: 62ch; }
+
+  .controls {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--bg);
+    padding: 12px 0 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .search {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface);
+    border: 2px solid var(--line);
+    border-radius: 14px;
+    padding: 0 14px;
+    box-shadow: var(--shadow);
+  }
+  .search:focus-within { border-color: var(--accent); }
+  .search svg { flex: none; width: 20px; height: 20px; stroke: var(--ink-soft); }
+  .search input {
+    flex: 1; min-width: 0;
+    border: 0; outline: 0; background: transparent;
+    color: var(--ink);
+    font: inherit; font-size: 1.05rem;
+    padding: 13px 0;
+  }
+  .search input::placeholder { color: var(--ink-soft); }
+  .search button {
+    border: 0; background: transparent; color: var(--ink-soft);
+    font-size: 1.3rem; cursor: pointer; padding: 4px 6px; border-radius: 8px;
+  }
+  .search button[hidden] { display: none; }
+
+  .filters { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-top: 10px; }
+  .frow { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .flabel { flex: none; width: 92px; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); }
+  .chips { display: flex; flex: 1; min-width: 0; gap: 6px; overflow-x: auto; padding: 2px 0 4px; scrollbar-width: thin; }
+  .chip {
+    flex: none;
+    border: 1.5px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit; font-size: 0.9rem; font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .chip:hover { border-color: var(--accent); }
+  .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .chip:focus-visible, .search button:focus-visible, .reset:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .status { display: flex; justify-content: space-between; align-items: center; margin: 14px 0 4px; color: var(--ink-soft); font-size: 0.95rem; }
+  .reset { border: 0; background: transparent; color: var(--accent); font: inherit; font-weight: 700; cursor: pointer; padding: 4px 6px; border-radius: 8px; }
+  .reset[hidden] { display: none; }
+
+  section.cat { margin-top: 22px; }
+  section.cat h2 {
+    margin: 0 0 10px;
+    font-size: 1.15rem;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  section.cat h2 .n { font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px;
+    display: grid; grid-template-columns: 52px 1fr; gap: 12px;
+    box-shadow: var(--shadow);
+  }
+  .tile {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: var(--tile);
+    display: grid; place-items: center;
+    font-size: 1.7rem; line-height: 1;
+  }
+  .tile.txt { font-size: 1.15rem; font-weight: 800; color: var(--ink-soft); }
+  .card h3 { margin: 0; font-size: 1.05rem; line-height: 1.25; text-wrap: balance; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 8px; }
+  .tag { font-size: 0.76rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+  .tag.lvl { background: var(--lvl-bg); color: var(--lvl-ink); }
+  .tag.ex { background: var(--ex-bg); color: var(--ex); }
+  .tag.jeu { background: var(--jeu-bg); color: var(--jeu); }
+  .card p { margin: 0; color: var(--ink-soft); font-size: 0.93rem; }
+  mark { background: #ffe58a; color: #1f2a3c; border-radius: 3px; padding: 0 1px; }
+
+  .empty { text-align: center; padding: 48px 12px; color: var(--ink-soft); }
+  .empty strong { display: block; color: var(--ink); font-size: 1.1rem; margin-bottom: 4px; }
+
+  footer { margin-top: 36px; color: var(--ink-soft); font-size: 0.85rem; max-width: 70ch; }
+
+  @media (min-width: 561px) {
+    .chips { flex-wrap: wrap; overflow: visible; }
+  }
+  @media (max-width: 560px) {
+    .frow { flex-direction: column; align-items: stretch; gap: 2px; }
+    .flabel { width: auto; }
+    .grid { grid-template-columns: 1fr; }
+  }
+  @media print {
+    .controls { position: static; }
+    .filters, .search { display: none; }
+    .card { box-shadow: none; break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Petit Malin – liste des jeux</h1>
+    <p class="sub">Toutes les activités de l'appli, classées par catégorie, avec leur niveau scolaire. Les étiquettes « Exercice » et « Jeu » sont une proposition de classement.</p>
+  </header>
+
+  <div class="controls">
+    <label class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Rechercher un jeu, une catégorie, un niveau…" autocomplete="off" aria-label="Rechercher">
+      <button id="clear" type="button" aria-label="Effacer la recherche" hidden>✕</button>
+    </label>
+    <div class="filters">
+      <div class="frow"><span class="flabel">Niveau</span><div class="chips" id="fLevel" role="group" aria-label="Filtrer par niveau"></div></div>
+      <div class="frow"><span class="flabel">Classement</span><div class="chips" id="fType" role="group" aria-label="Filtrer par type"></div></div>
+      <div class="frow"><span class="flabel">Catégorie</span><div class="chips" id="fCat" role="group" aria-label="Filtrer par catégorie"></div></div>
+    </div>
+  </div>
+
+  <div class="status"><span id="count"></span><button class="reset" id="reset" type="button" hidden>Tout réinitialiser</button></div>
+  <main id="list"></main>
+
+  <footer>
+    Niveaux : PS, MS, GS (maternelle), CP, CE1, CE2. Un jeu marqué « Dès 3 ans » ou « Tous niveaux » apparaît quel que soit le niveau choisi. Un exercice grimpe de niveau (de 1 à 5) au fil des étoiles gagnées.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var DATA = [{"e": "➕", "n": "Calculs à 2 termes", "c": "Calcul Malin", "l": "GS-CE1", "r": [2, 4], "t": "Exercice", "d": "Additions, soustractions, multiplications, divisions ou mélanges : un calcul à deux nombres, trois réponses au choix. 5 niveaux de difficulté."}, {"e": "🧮", "n": "Calculs à 3 termes", "c": "Calcul Malin", "l": "CE1-CE2", "r": [4, 5], "t": "Exercice", "d": "Mêmes opérations, mais avec trois nombres dans le calcul."}, {"e": "⚖️", "n": "Mes premières équations", "c": "Calcul Malin", "l": "GS-CE1", "r": [2, 4], "t": "Exercice", "d": "Retrouve le nombre caché X dans une opération (par exemple 3 + X = 7)."}, {"e": "🍎", "n": "Compte les objets", "c": "Calcul Malin", "l": "PS-MS", "r": [0, 1], "t": "Exercice", "d": "Des pommes, ballons ou chats s'affichent : compte-les et choisis le bon nombre."}, {"e": "🍌", "n": "Somme de fruits", "c": "Calcul Malin", "l": "GS-CE1", "r": [2, 4], "t": "Exercice", "d": "Chaque fruit a sa valeur, toujours affichée (🍎 = 2, 🍌 = 3…). Additionne tous les fruits montrés."}, {"e": "⚖️", "n": "Plus grand ou plus petit ?", "c": "Calcul Malin", "l": "MS-GS", "r": [1, 2], "t": "Exercice", "d": "Trois nombres sont proposés : touche le plus grand (ou le plus petit)."}, {"e": "🔢", "n": "Complète la suite", "c": "Calcul Malin", "l": "GS-CE1", "r": [2, 4], "t": "Exercice", "d": "Une suite de quatre nombres avec un trou (+1, +2, +5…) : trouve le nombre manquant."}, {"e": "🔢", "n": "Mon premier sudoku (chiffres)", "c": "Calcul Malin", "l": "CP-CE1", "r": [3, 4], "t": "Jeu", "d": "Grille 4×4 : place chaque chiffre une seule fois par ligne, par colonne et par carré, puis appuie sur « Valider »."}, {"e": "🎨", "n": "Les couleurs", "c": "Anglais Malin", "l": "MS-GS", "r": [1, 2], "t": "Exercice", "d": "Un mot anglais s'affiche (red, blue…), avec écoute : touche la bonne couleur."}, {"e": "🐶", "n": "Les animaux", "c": "Anglais Malin", "l": "MS-CP", "r": [1, 3], "t": "Exercice", "d": "Le nom d'un animal en anglais s'affiche : retrouve le bon dessin."}, {"e": "✋", "n": "Le corps humain", "c": "Anglais Malin", "l": "MS-CP", "r": [1, 3], "t": "Exercice", "d": "Le nom d'une partie du corps en anglais : retrouve laquelle c'est."}, {"e": "🔢", "n": "Les chiffres", "c": "Anglais Malin", "l": "MS-CP", "r": [1, 3], "t": "Exercice", "d": "Un nombre écrit en anglais (one, two…) : retrouve le bon chiffre."}, {"e": "🍎", "n": "La nourriture", "c": "Anglais Malin", "l": "MS-CP", "r": [1, 3], "t": "Exercice", "d": "Un aliment en anglais (apple, bread…) : retrouve le bon dessin."}, {"e": "📖", "n": "Mes premières lectures", "c": "Lecture Malin", "l": "GS-CP", "r": [2, 3], "t": "Exercice", "d": "Un mot s'affiche (écoutable) : retrouve le dessin qui lui correspond."}, {"e": "🔤", "n": "Les premières lettres", "c": "Lecture Malin", "l": "GS-CP", "r": [2, 3], "t": "Exercice", "d": "Un dessin s'affiche (maison, ballon…) : trouve la première lettre de son nom. 50 dessins différents, aucun ne revient d'un niveau à l'autre."}, {"e": "🧩", "n": "Le jeu des syllabes", "c": "Lecture Malin", "l": "CP", "r": [3, 3], "t": "Exercice", "d": "Un dessin s'affiche : trouve la première syllabe de son nom (MAI pour maison)."}, {"e": "🎵", "n": "Les mots qui riment", "c": "Lecture Malin", "l": "MS-GS", "r": [1, 2], "t": "Exercice", "d": "Un mot s'affiche : trouve, parmi trois mots, celui qui rime avec lui."}, {"e": "🔍", "n": "Trouve le mot", "c": "Lecture Malin", "l": "CP-CE1", "r": [3, 4], "t": "Exercice", "d": "Un jour de la semaine est annoncé : retrouve-le parmi les mots de la grille (de plus en plus de mots à chaque niveau)."}, {"e": "Aa", "n": "Majuscule ou minuscule ?", "c": "Lecture Malin", "l": "PS-MS", "r": [0, 1], "t": "Exercice", "d": "Une lettre s'affiche en majuscule (ou minuscule) : retrouve la même lettre dans l'autre écriture."}, {"e": "👂", "n": "Trouve le bon son", "c": "Lecture Malin", "l": "CP-CE1", "r": [3, 4], "t": "Exercice", "d": "Un son complexe s'affiche (OU, AN, EAU…) : écoute deux sons et retrouve le bon."}, {"e": "🐱", "n": "Reforme le mot", "c": "Écriture Malin", "l": "MS-CP", "r": [1, 3], "t": "Exercice", "d": "Les lettres du mot d'un dessin sont mélangées : remets-les dans l'ordre."}, {"e": "🔡", "n": "Compose le mot (simple)", "c": "Écriture Malin", "l": "CP-CE1", "r": [3, 4], "t": "Exercice", "d": "Écris le mot du dessin en piochant les bonnes lettres parmi des lettres intruses. Une mauvaise lettre est refusée tout de suite."}, {"e": "🔡", "n": "Compose le mot (libre)", "c": "Écriture Malin", "l": "CE1-CE2", "r": [4, 5], "t": "Exercice", "d": "Même principe, mais toute lettre peut être posée : le mot est vérifié à la fin, une fois tout rempli."}, {"e": "🧩", "n": "La lettre manquante", "c": "Écriture Malin", "l": "GS-CP", "r": [2, 3], "t": "Exercice", "d": "Il manque une lettre dans le mot du dessin : trouve laquelle."}, {"e": "✏️", "n": "Trace la lettre", "c": "Écriture Malin", "l": "PS-MS", "r": [0, 1], "t": "Exercice", "d": "Suis le tracé pointillé avec le doigt pour écrire la lettre."}, {"e": "🏰", "n": "Remets les syllabes", "c": "Écriture Malin", "l": "CP-CE1", "r": [3, 4], "t": "Exercice", "d": "Les syllabes d'un mot sont mélangées : remets-les dans l'ordre (2 puis 3 syllabes)."}, {"e": "🔤", "n": "Trouve le bon article", "c": "Écriture Malin", "l": "MS-GS", "r": [1, 2], "t": "Exercice", "d": "« Le » ou « la » devant un nom commun : choisis le bon."}, {"e": "🖍️", "n": "Coloriage magique", "c": "Peinture Malin", "l": "PS-MS", "r": [0, 1], "t": "Jeu", "d": "Touche chaque zone du dessin pour la colorier de la bonne couleur."}, {"e": "🖼️", "n": "Peins comme le modèle", "c": "Peinture Malin", "l": "MS-GS", "r": [1, 2], "t": "Jeu", "d": "Un modèle coloré est montré : colorie ton dessin avec les mêmes couleurs."}, {"e": "✏️", "n": "Dessin libre", "c": "Peinture Malin", "l": "Dès 3 ans", "r": [0, 5], "t": "Jeu", "d": "Dessine librement avec le doigt, avec la couleur de ton choix."}, {"e": "🔢", "n": "Coloriage par numéros", "c": "Peinture Malin", "l": "MS-CP", "r": [1, 3], "t": "Jeu", "d": "Chaque couleur a un numéro : touche un numéro, puis les zones qui le portent."}, {"e": "🎹", "n": "Musique libre", "c": "Musique Malin", "l": "Dès 3 ans", "r": [0, 5], "t": "Jeu", "d": "Un clavier avec de vrais instruments pour jouer ses propres mélodies."}, {"e": "🎧", "n": "Quel instrument ?", "c": "Musique Malin", "l": "MS-CP", "r": [1, 3], "t": "Exercice", "d": "Écoute un son et trouve quel instrument le joue."}, {"e": "🔁", "n": "Répète le rythme", "c": "Musique Malin", "l": "GS-CE1", "r": [2, 4], "t": "Exercice", "d": "Quatre pastilles colorées jouent une suite de notes : rejoue-la à l'identique (de plus en plus longue)."}, {"e": "📈", "n": "Aigu ou grave ?", "c": "Musique Malin", "l": "MS-GS", "r": [1, 2], "t": "Exercice", "d": "Écoute trois sons et trouve le plus aigu (ou le plus grave), puis valide."}, {"e": "🐾", "n": "Quel est cet animal ?", "c": "Animaux Malin", "l": "PS-MS", "r": [0, 1], "t": "Exercice", "d": "Un animal est montré : retrouve son nom."}, {"e": "🐣", "n": "Maman et son petit", "c": "Animaux Malin", "l": "MS-GS", "r": [1, 2], "t": "Exercice", "d": "Un animal adulte s'affiche : trouve le nom de son petit (la vache et le veau…)."}, {"e": "🏡", "n": "Où habite cet animal ?", "c": "Animaux Malin", "l": "GS-CP", "r": [2, 3], "t": "Exercice", "d": "Trouve le lieu de vie de l'animal (ferme, forêt, mer…)."}, {"e": "🥕", "n": "Que mange cet animal ?", "c": "Animaux Malin", "l": "GS-CP", "r": [2, 3], "t": "Exercice", "d": "Trouve ce que mange l'animal montré."}, {"e": "🔊", "n": "Le cri de l'animal", "c": "Animaux Malin", "l": "PS-MS", "r": [0, 1], "t": "Exercice", "d": "Le cri d'un animal est écrit (OUAF…) : retrouve l'animal qui le pousse."}, {"e": "🃏", "n": "Paires cachées", "c": "Mémoire Malin", "l": "PS-GS", "r": [0, 2], "t": "Jeu", "d": "Retourne les cartes deux par deux pour retrouver toutes les paires. Plus de paires à chaque niveau."}, {"e": "🌍", "n": "Paires cachées (drapeaux)", "c": "Mémoire Malin", "l": "PS-GS", "r": [0, 2], "t": "Jeu", "d": "Le même jeu de paires, avec des drapeaux de pays."}, {"e": "🇫🇷", "n": "Devine le drapeau", "c": "Mémoire Malin", "l": "MS-GS", "r": [1, 2], "t": "Exercice", "d": "Un drapeau s'affiche : retrouve le pays correspondant."}, {"e": "❓", "n": "Qu'est-ce qui a disparu ?", "c": "Mémoire Malin", "l": "MS-GS", "r": [1, 2], "t": "Exercice", "d": "Une rangée de symboles s'affiche, puis l'un d'eux disparaît : retrouve lequel."}, {"e": "🔢", "n": "Retiens l'ordre", "c": "Mémoire Malin", "l": "GS-CP", "r": [2, 3], "t": "Exercice", "d": "Des symboles s'allument dans un ordre précis, puis sont mélangés : touche-les dans le même ordre."}, {"e": "🔍", "n": "Qu'est-ce qui a changé ?", "c": "Mémoire Malin", "l": "GS-CE1", "r": [2, 4], "t": "Exercice", "d": "Deux rangées de symboles se ressemblent, mais un seul a changé : retrouve-le."}, {"e": "🎨", "n": "Suite lumineuse", "c": "Mémoire Malin", "l": "CP-CE1", "r": [3, 4], "t": "Jeu", "d": "Quatre pastilles de couleur s'allument : refais la même suite, sans le son (façon Simon)."}, {"e": "🖍️", "n": "Trace la forme", "c": "Formes Malin", "l": "PS-MS", "r": [0, 1], "t": "Exercice", "d": "Suis le pointillé avec le doigt pour tracer la forme."}, {"e": "🔷", "n": "Quelle forme ?", "c": "Formes Malin", "l": "MS-GS", "r": [1, 2], "t": "Exercice", "d": "Une forme s'affiche : retrouve-la parmi les propositions."}, {"e": "🪣", "n": "Remplis la forme", "c": "Formes Malin", "l": "PS-MS", "r": [0, 1], "t": "Exercice", "d": "Colorie l'intérieur de la forme avec le doigt."}, {"e": "🔍", "n": "Trouve l'intrus", "c": "Formes Malin", "l": "GS-CP", "r": [2, 3], "t": "Exercice", "d": "Une grille de formes (4 à 12) : touche celle qui est différente des autres."}, {"e": "🧩", "n": "Complète le puzzle", "c": "Formes Malin", "l": "CP-CE1", "r": [3, 4], "t": "Exercice", "d": "Une forme pleine à gauche, son contour en pointillés à droite : choisis la pièce qui complète la paire."}, {"e": "🔵", "n": "Mon premier sudoku (formes)", "c": "Formes Malin", "l": "GS-CP", "r": [2, 3], "t": "Jeu", "d": "Grille 4×4 avec quatre formes : chaque forme une seule fois par ligne, par colonne et par carré, puis « Valider »."}, {"e": "❌", "n": "Morpion", "c": "Jeux de société", "l": "1-2 joueurs", "r": [0, 5], "t": "Jeu", "d": "Aligne trois symboles. À deux sur le même appareil, ou seul contre l'ordinateur (facile, moyen, fort)."}, {"e": "🔴", "n": "Puissance 4", "c": "Jeux de société", "l": "1-2 joueurs", "r": [0, 5], "t": "Jeu", "d": "Fais tomber tes jetons pour en aligner quatre. À deux, ou seul contre l'ordinateur (facile, moyen, fort)."}, {"e": "⚫️", "n": "Dames simplifiées", "c": "Jeux de société", "l": "1-2 joueurs", "r": [0, 5], "t": "Jeu", "d": "Plateau 6×6, 6 pions par joueur, une prise par tour. À deux, ou seul contre l'ordinateur (facile, moyen, fort)."}, {"e": "🚢", "n": "Bataille navale", "c": "Jeux de société", "l": "2 joueurs", "r": [0, 5], "t": "Jeu", "d": "Grille 6×6 et 3 bateaux placés au hasard. Les joueurs tirent à tour de rôle ; un écran évite de voir la grille de l'autre."}, {"e": "🁫", "n": "Domino", "c": "Jeux de société", "l": "2 joueurs", "r": [0, 5], "t": "Jeu", "d": "Domino classique double-six (28 tuiles) : pose, pioche ou passe."}, {"e": "🟤", "n": "Solitaire", "c": "Jeux de société", "l": "1 joueur", "r": [0, 5], "t": "Jeu", "d": "Solitaire à billes : saute par-dessus une bille pour la retirer, jusqu'à n'en laisser qu'une."}, {"e": "⚽", "n": "Tir aux buts", "c": "Jeux de société", "l": "1 joueur", "r": [0, 5], "t": "Jeu", "d": "Cinq penaltys : choisis où tirer, le gardien plonge."}, {"e": "🧱", "n": "Casse-briques", "c": "Jeux de société", "l": "1 joueur", "r": [0, 5], "t": "Jeu", "d": "Déplace la raquette pour faire rebondir la balle et casser toutes les briques, avec 3 vies."}, {"e": "🧩", "n": "Tetris", "c": "Jeux de société", "l": "1 joueur", "r": [0, 5], "t": "Jeu", "d": "Empile les pièces qui tombent pour compléter des lignes. Boutons ou gestes ; la chute accélère avec le niveau."}, {"e": "🎃", "n": "Tranche les citrouilles", "c": "Jeux de société", "l": "1 joueur", "r": [0, 5], "t": "Jeu", "d": "Des citrouilles montent de bas en haut : tranche-les d'un geste de balayage. 20 en 30 secondes, en facile ou difficile."}, {"e": "🔀", "n": "Trouve le contraire", "c": "Jeux de société", "l": "MS-GS", "r": [1, 2], "t": "Exercice", "d": "Un mot illustré s'affiche (écoutable) : choisis son contraire (grand → petit)."}, {"e": "🦊", "n": "Guide le renard", "c": "Codeur Malin", "l": "MS-GS", "r": [1, 2], "t": "Exercice", "d": "Assemble des flèches pour guider le renard jusqu'à sa friandise ; aux niveaux élevés, jusqu'à trois friandises à ramasser."}, {"e": "🔁", "n": "Répète avec moi", "c": "Codeur Malin", "l": "GS-CP", "r": [2, 3], "t": "Exercice", "d": "Construis un petit motif de flèches et choisis combien de fois le répéter pour atteindre la friandise."}, {"e": "🐛", "n": "Trouve le bug", "c": "Codeur Malin", "l": "CP-CE1", "r": [3, 4], "t": "Exercice", "d": "Un programme contient une ou deux erreurs : touche le bloc fautif et remplace-le par le bon."}, {"e": "🔀", "n": "Si... alors...", "c": "Codeur Malin", "l": "CP-CE1", "r": [3, 4], "t": "Exercice", "d": "Choisis ce que le renard doit faire sur chaque case (pièce, flaque, caillou, fleur…) puis lance-le."}, {"e": "🤖", "n": "Construis le robot", "c": "Codeur Malin", "l": "MS-CE1", "r": [1, 4], "t": "Jeu", "d": "Bac à sable : assemble des blocs et regarde le renard bouger, sans niveau ni objectif."}, {"e": "🦊", "n": "Attrape le renard", "c": "Jeu caché", "l": "Tous niveaux", "r": [0, 5], "t": "Jeu", "d": "Jeu caché : appuie trois fois vite sur le renard de l'accueil. Attrape 20 renards en 30 secondes, en facile ou difficile."}];
+  var CATS = ["Calcul Malin", "Anglais Malin", "Lecture Malin", "Écriture Malin", "Peinture Malin", "Musique Malin", "Animaux Malin", "Mémoire Malin", "Formes Malin", "Jeux de société", "Codeur Malin", "Jeu caché"];
+  var LEVELS = ["PS", "MS", "GS", "CP", "CE1", "CE2"];
+  var TYPES = [["", "Tous"], ["Exercice", "Exercices"], ["Jeu", "Jeux"]];
+  var state = { q: "", level: -1, type: "", cat: "" };
+
+  function norm(s) {
+    return String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  }
+  var index = DATA.map(function (it) {
+    return norm([it.n, it.d, it.c, it.l, it.t].join(" "));
+  });
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function makeChips(host, options, key, current) {
+    options.forEach(function (o) {
+      var b = el("button", "chip", o.label);
+      b.type = "button";
+      b.setAttribute("aria-pressed", String(o.value === current));
+      b.addEventListener("click", function () { state[key] = o.value; syncChips(); render(); });
+      b.dataset.value = String(o.value);
+      host.appendChild(b);
+    });
+  }
+  function syncChips() {
+    [["fLevel", "level"], ["fType", "type"], ["fCat", "cat"]].forEach(function (p) {
+      Array.prototype.forEach.call(document.getElementById(p[0]).children, function (b) {
+        b.setAttribute("aria-pressed", String(b.dataset.value === String(state[p[1]])));
+      });
+    });
+  }
+
+  makeChips(document.getElementById("fLevel"),
+    [{ label: "Tous", value: -1 }].concat(LEVELS.map(function (l, i) { return { label: l, value: i }; })), "level", -1);
+  makeChips(document.getElementById("fType"),
+    TYPES.map(function (t) { return { label: t[1], value: t[0] }; }), "type", "");
+  makeChips(document.getElementById("fCat"),
+    [{ label: "Toutes", value: "" }].concat(CATS.map(function (c) { return { label: c, value: c }; })), "cat", "");
+
+  // Surligne les mots recherchés dans le texte (sans tenir compte des accents).
+  function highlight(text, terms) {
+    var frag = document.createDocumentFragment();
+    if (!terms.length) { frag.appendChild(document.createTextNode(text)); return frag; }
+    var n = norm(text);
+    if (n.length !== text.length) { frag.appendChild(document.createTextNode(text)); return frag; }
+    var marks = new Array(text.length).fill(false);
+    terms.forEach(function (t) {
+      var from = 0, at;
+      while ((at = n.indexOf(t, from)) !== -1) {
+        for (var k = at; k < at + t.length; k++) marks[k] = true;
+        from = at + t.length;
+      }
+    });
+    var i = 0;
+    while (i < text.length) {
+      var j = i;
+      while (j < text.length && marks[j] === marks[i]) j++;
+      var chunk = text.slice(i, j);
+      if (marks[i]) { var m = document.createElement("mark"); m.textContent = chunk; frag.appendChild(m); }
+      else frag.appendChild(document.createTextNode(chunk));
+      i = j;
+    }
+    return frag;
+  }
+
+  function card(it, terms) {
+    var c = el("article", "card");
+    var tile = el("div", "tile" + (/^[A-Za-z]/.test(it.e) ? " txt" : ""), it.e);
+    tile.setAttribute("aria-hidden", "true");
+    var body = el("div");
+    var h = el("h3");
+    h.appendChild(highlight(it.n, terms));
+    var tags = el("div", "tags");
+    tags.appendChild(el("span", "tag lvl", it.l));
+    tags.appendChild(el("span", "tag " + (it.t === "Jeu" ? "jeu" : "ex"), it.t));
+    var p = el("p");
+    p.appendChild(highlight(it.d, terms));
+    body.appendChild(h); body.appendChild(tags); body.appendChild(p);
+    c.appendChild(tile); c.appendChild(body);
+    return c;
+  }
+
+  function render() {
+    var terms = norm(state.q).split(/\s+/).filter(Boolean);
+    var shown = [];
+    DATA.forEach(function (it, i) {
+      if (state.cat && it.c !== state.cat) return;
+      if (state.type && it.t !== state.type) return;
+      if (state.level >= 0 && (state.level < it.r[0] || state.level > it.r[1])) return;
+      for (var k = 0; k < terms.length; k++) if (index[i].indexOf(terms[k]) === -1) return;
+      shown.push(it);
+    });
+
+    var host = document.getElementById("list");
+    host.textContent = "";
+    CATS.forEach(function (cat) {
+      var group = shown.filter(function (it) { return it.c === cat; });
+      if (!group.length) return;
+      var s = el("section", "cat");
+      var h = el("h2", null, cat);
+      h.appendChild(el("span", "n", group.length + (group.length > 1 ? " activités" : " activité")));
+      var g = el("div", "grid");
+      group.forEach(function (it) { g.appendChild(card(it, terms)); });
+      s.appendChild(h); s.appendChild(g);
+      host.appendChild(s);
+    });
+    if (!shown.length) {
+      var e = el("div", "empty");
+      e.appendChild(el("strong", null, "Aucun résultat"));
+      e.appendChild(document.createTextNode("Essaie un autre mot, ou retire un filtre."));
+      host.appendChild(e);
+    }
+
+    document.getElementById("count").textContent =
+      shown.length + " activité" + (shown.length > 1 ? "s" : "") + " sur " + DATA.length;
+    var filtered = !!(state.q || state.cat || state.type || state.level >= 0);
+    document.getElementById("reset").hidden = !filtered;
+    document.getElementById("clear").hidden = !state.q;
+  }
+
+  var input = document.getElementById("q");
+  input.addEventListener("input", function () { state.q = input.value; render(); });
+  document.getElementById("clear").addEventListener("click", function () { input.value = ""; state.q = ""; render(); input.focus(); });
+  document.getElementById("reset").addEventListener("click", function () {
+    input.value = ""; state = { q: "", level: -1, type: "", cat: "" }; syncChips(); render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
