@@ -3623,6 +3623,101 @@
     .pk-trail { animation: none; opacity: 0; }
   }
 
+
+  /* ---------- "Chiffres romains" ---------- */
+  .mode-flat[data-mode="romanread"] { background: linear-gradient(135deg, #c9a6f2, #8a63b8); }
+  .mode-flat[data-mode="romanwrite"] { background: linear-gradient(135deg, #8fd3f4, #4a90d9); }
+  .mode-flat[data-mode="romancalc"] { background: linear-gradient(135deg, #ffd27a, #f2994a); }
+  .mode-flat[data-mode="romanclock"] { background: linear-gradient(135deg, #8ed6ac, #2a9d6f); }
+  .mode-flat[data-mode="pairesromains"] { background: linear-gradient(135deg, #f7a8d8, #e879c2); }
+
+  .roman-big {
+    display: inline-block;
+    max-width: 92vw;
+    font-size: clamp(3.4rem, 17vw, 6rem);
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: 0.04em;
+    color: var(--white);
+    -webkit-text-stroke: clamp(2px, 0.6vw, 5px) var(--ink);
+    paint-order: stroke fill;
+    text-shadow: 0 6px 0 rgba(31, 42, 60, 0.28);
+  }
+
+  .roman-write-prob {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(0.5rem, 2vh, 1rem);
+  }
+
+  .roman-built {
+    min-width: 8.5rem;
+    min-height: 1.5em;
+    padding: 0.15em 0.6em;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--ink);
+    font-size: clamp(1.8rem, 9vw, 3rem);
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-align: center;
+    box-shadow: inset 0 3px 8px rgba(31, 42, 60, 0.18);
+  }
+
+  .roman-built.is-empty { color: rgba(31, 42, 60, 0.35); letter-spacing: 0; }
+
+  .answers.roman-write { align-items: center; justify-content: center; }
+  .answers.roman-write .answer-btn { flex: 0 0 auto; min-height: 3.4rem; width: min(100%, 16rem); font-size: clamp(1.2rem, 5.5vw, 1.7rem); }
+
+  .roman-tiles-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(0.4rem, 2vw, 0.8rem);
+  }
+
+  .roman-tile {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 900;
+    font-size: clamp(1.5rem, 7vw, 2.2rem);
+    width: clamp(3.4rem, 16vw, 4.8rem);
+    height: clamp(3.4rem, 16vw, 4.8rem);
+    border-radius: 1rem;
+    color: var(--ink);
+    background: var(--white);
+    border-bottom: 5px solid rgba(31, 42, 60, 0.2);
+    box-shadow: 0 8px 16px -10px rgba(31, 42, 60, 0.5);
+    touch-action: manipulation;
+  }
+
+  .roman-tile:active { transform: translateY(2px); }
+  .roman-tile.is-erase { background: #ffd9d9; }
+  .roman-tile:disabled { opacity: 0.5; cursor: default; }
+
+  .roman-clock-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+  .roman-clock {
+    display: block;
+    width: min(72vw, 34vh, 17rem);
+    height: auto;
+    filter: drop-shadow(0 10px 10px rgba(31, 42, 60, 0.3));
+  }
+  .roman-clock-caption {
+    font-size: clamp(1.1rem, 5vw, 1.5rem);
+    font-weight: 800;
+    color: var(--white);
+    text-shadow: 0 3px 0 rgba(31, 42, 60, 0.3);
+  }
+
+  .memory-card-front.memory-card-text {
+    font-family: inherit;
+    font-weight: 900;
+    color: var(--ink);
+  }
+
   /* ---------- menu picto + écran de choix du jeu ---------- */
 
   .menu-overlay {
@@ -4718,6 +4813,17 @@
           </span>
           <span class="app-icon-label">Calcul Malin</span>
         </button>
+        <button class="category-card category-card-app" type="button" data-category="romains">
+          <span class="app-icon-tile">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <rect x="4" y="4" width="112" height="112" rx="30" fill="#fff8ee" />
+              <rect x="14" y="26" width="92" height="68" rx="16" fill="#8a63b8" />
+              <text x="60" y="73" font-family="Grandstander, ui-rounded, sans-serif" font-weight="900" font-size="38" fill="#fff8ee" text-anchor="middle">XII</text>
+              <rect x="30" y="82" width="60" height="6" rx="3" fill="#ffb648" />
+            </svg>
+          </span>
+          <span class="app-icon-label">Chiffres romains</span>
+        </button>
         <button class="category-card category-card-app" type="button" data-category="lire">
           <span class="app-icon-tile">
             <svg viewBox="0 0 120 120" aria-hidden="true">
@@ -5358,6 +5464,44 @@
           <span class="icon emoji">🔀</span>
           <span>Trouve le contraire</span>
           <span class="level-badge">MS-GS</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="menu-panel" id="menuRomains" hidden>
+      <div class="menu-header">
+        <button class="menu-back" id="romainsBackBtn" type="button" aria-label="Retour">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 4 L7 12 L15 20" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </button>
+        <h1 class="menu-title">Chiffres romains</h1>
+      </div>
+      <div class="category-grid">
+        <button class="mode-card mode-flat" type="button" data-mode="romanread">
+          <span class="icon emoji">🏛️</span>
+          <span>Lis le chiffre romain</span>
+          <span class="level-badge">CE1-CE2</span>
+        </button>
+        <button class="mode-card mode-flat" type="button" data-mode="romanwrite">
+          <span class="icon emoji">✍️</span>
+          <span>Écris en chiffres romains</span>
+          <span class="level-badge">CE2</span>
+        </button>
+        <button class="mode-card mode-flat" type="button" data-mode="romancalc">
+          <span class="icon emoji">➕</span>
+          <span>Calcul romain</span>
+          <span class="level-badge">CE2</span>
+        </button>
+        <button class="mode-card mode-flat" type="button" data-mode="romanclock">
+          <span class="icon emoji">🕰️</span>
+          <span>L'horloge romaine</span>
+          <span class="level-badge">CE1-CE2</span>
+        </button>
+        <button class="mode-card mode-flat" type="button" data-mode="pairesromains">
+          <span class="icon emoji">🃏</span>
+          <span>Paires romaines</span>
+          <span class="level-badge">CE1-CE2</span>
         </button>
       </div>
     </div>
@@ -6332,6 +6476,71 @@
       maxValue: [3, 4, 5, 6, 7],
       maxCount: [2, 3, 3, 3, 3]
     };
+
+    // ---------- Chiffres romains ----------
+    // 5 jeux (menu "Chiffres romains") : lire, écrire (tuiles), calculer,
+    // lire l'heure sur une horloge romaine, paires nombre/chiffre romain.
+    // Les niveaux montent ensemble : jusqu'à V, X, XX, L (50), puis C (100).
+    var ROMAN_TABLE = [[1000, "M"], [900, "CM"], [500, "D"], [400, "CD"], [100, "C"], [90, "XC"], [50, "L"], [40, "XL"], [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
+    var ROMAN_LEVELS = {
+      max: [5, 10, 20, 50, 100],
+      tiles: [["I", "V"], ["I", "V", "X"], ["I", "V", "X"], ["I", "V", "X", "L"], ["I", "V", "X", "L", "C"]]
+    };
+    // Calcul romain : [opérations, plus grand nombre manipulé]
+    var ROMAN_CALC_LEVELS = [
+      { ops: ["add"], max: 10 },
+      { ops: ["add"], max: 20 },
+      { ops: ["add", "sub"], max: 20 },
+      { ops: ["add", "sub"], max: 50 },
+      { ops: ["add", "sub"], max: 100 }
+    ];
+    // Horloge romaine : minutes possibles par niveau.
+    var ROMAN_CLOCK_MINUTES = [
+      [0],
+      [0, 30],
+      [0, 15, 30, 45],
+      [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55],
+      [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
+    ];
+    var ROMAN_HOURS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+    var ROMAN_BUILT_MAX = 12;
+
+    function toRoman(n) {
+      var out = "";
+      for (var i = 0; i < ROMAN_TABLE.length; i++) {
+        while (n >= ROMAN_TABLE[i][0]) { out += ROMAN_TABLE[i][1]; n -= ROMAN_TABLE[i][0]; }
+      }
+      return out;
+    }
+
+    // Erreur typique : additionner les lettres sans tenir compte du "plus
+    // petit devant" (IV lu comme 6, IX comme 11, XL comme 60...).
+    function romanMisread(n) {
+      var vals = { I: 1, V: 5, X: 10, L: 50, C: 100 };
+      var total = 0;
+      toRoman(n).split("").forEach(function (ch) { total += vals[ch]; });
+      return total;
+    }
+
+    function romanClockLabel(h, m) {
+      return h + " h" + (m ? " " + (m < 10 ? "0" + m : m) : "");
+    }
+
+    // 2 mauvaises réponses autour de "answer" (>= 1), sans doublon.
+    function romanNumberChoices(answer, deltas, extras) {
+      var picked = [answer];
+      var cands = shuffle((extras || []).concat(shuffle(deltas.map(function (d) { return answer + d; }))));
+      cands.forEach(function (c) {
+        if (picked.length < 3 && c >= 1 && picked.indexOf(c) === -1) picked.push(c);
+      });
+      var fill = 1;
+      while (picked.length < 3) {
+        if (picked.indexOf(answer + fill) === -1) picked.push(answer + fill);
+        fill++;
+      }
+      return shuffle(picked);
+    }
+
 
     // "Plus grand ou plus petit ?" : les 3 nombres tirés vont de 0 à
     // maxNum, un intervalle qui grandit avec le niveau.
@@ -7329,6 +7538,80 @@
       return { kind: "fruitsum", items: items, fruits: fruits, answer: answer, choices: shuffle(choices) };
     }
 
+    function generateRomanReadProblem(levelIdx) {
+      var max = ROMAN_LEVELS.max[levelIdx];
+      var n = randInt(1, max);
+      var extras = [];
+      var mis = romanMisread(n);
+      if (mis !== n) extras.push(mis);
+      return {
+        kind: "romanread",
+        n: n,
+        roman: toRoman(n),
+        answer: n,
+        choices: romanNumberChoices(n, [-2, -1, 1, 2, 5, -5, 10, -10], extras)
+      };
+    }
+
+    function generateRomanWriteProblem(levelIdx) {
+      var n = randInt(1, ROMAN_LEVELS.max[levelIdx]);
+      return {
+        kind: "romanwrite",
+        n: n,
+        answer: toRoman(n),
+        tiles: ROMAN_LEVELS.tiles[levelIdx],
+        built: "",
+        choices: []
+      };
+    }
+
+    function generateRomanCalcProblem(levelIdx) {
+      var cfg = ROMAN_CALC_LEVELS[levelIdx];
+      var op = cfg.ops[randInt(0, cfg.ops.length - 1)];
+      var a, b, result;
+      if (op === "add") {
+        a = randInt(1, cfg.max - 1);
+        b = randInt(1, cfg.max - a);
+        result = a + b;
+      } else {
+        a = randInt(2, cfg.max);
+        b = randInt(1, a - 1);
+        result = a - b;
+      }
+      return {
+        kind: "romancalc",
+        op: op,
+        a: a,
+        b: b,
+        answer: result,
+        choices: romanNumberChoices(result, [-1, 1, -2, 2, -5, 5, -10, 10], [])
+      };
+    }
+
+    function generateRomanClockProblem(levelIdx) {
+      var minutes = ROMAN_CLOCK_MINUTES[levelIdx];
+      var h = randInt(1, 12);
+      var m = minutes[randInt(0, minutes.length - 1)];
+      var answer = romanClockLabel(h, m);
+      var wrap = function (x) { return ((x - 1 + 12) % 12) + 1; };
+      var cands = [romanClockLabel(wrap(h + 1), m), romanClockLabel(wrap(h - 1), m)];
+      if (minutes.length > 1) {
+        minutes.forEach(function (mm) { if (mm !== m) cands.push(romanClockLabel(h, mm)); });
+      } else {
+        cands.push(romanClockLabel(wrap(h + 2), m), romanClockLabel(wrap(h - 2), m));
+      }
+      if (m && m % 5 === 0 && m / 5 >= 1) cands.push(romanClockLabel(m / 5, (h * 5) % 60));
+      var picked = [answer];
+      shuffle(cands).forEach(function (c) { if (picked.length < 3 && picked.indexOf(c) === -1) picked.push(c); });
+      var fill = 3;
+      while (picked.length < 3) {
+        var extra = romanClockLabel(wrap(h + fill), m);
+        if (picked.indexOf(extra) === -1) picked.push(extra);
+        fill++;
+      }
+      return { kind: "romanclock", h: h, m: m, answer: answer, choices: shuffle(picked) };
+    }
+
     // "Plus grand ou plus petit ?" : 3 nombres distincts affichés comme
     // réponses possibles, il faut trouver le plus grand (ou le plus petit,
     // tiré au hasard) des trois.
@@ -8145,6 +8428,12 @@
       if (p1.kind === "count" || p2.kind === "count") {
         return p1.kind === "count" && p2.kind === "count" && p1.count === p2.count && p1.emoji === p2.emoji;
       }
+      if (/^roman/.test(p1.kind) || /^roman/.test(p2.kind)) {
+        if (p1.kind !== p2.kind) return false;
+        if (p1.kind === "romancalc") return p1.a === p2.a && p1.b === p2.b && p1.op === p2.op;
+        if (p1.kind === "romanclock") return p1.h === p2.h && p1.m === p2.m;
+        return p1.n === p2.n;
+      }
       if (p1.kind === "fruitsum" || p2.kind === "fruitsum") {
         return p1.kind === "fruitsum" && p2.kind === "fruitsum" &&
           JSON.stringify(p1.items) === JSON.stringify(p2.items);
@@ -8272,6 +8561,10 @@
       if (state.mode === "fruitsum") {
         return generateFruitSumProblem(levelIdx);
       }
+      if (state.mode === "romanread") return generateRomanReadProblem(levelIdx);
+      if (state.mode === "romanwrite") return generateRomanWriteProblem(levelIdx);
+      if (state.mode === "romancalc") return generateRomanCalcProblem(levelIdx);
+      if (state.mode === "romanclock") return generateRomanClockProblem(levelIdx);
       if (state.mode === "sequence") {
         return generateSequenceProblem(levelIdx);
       }
@@ -8415,6 +8708,8 @@
       menuFormes: document.getElementById("menuFormes"),
       menuJeux: document.getElementById("menuJeux"),
       menuCode: document.getElementById("menuCode"),
+      menuRomains: document.getElementById("menuRomains"),
+      romainsBackBtn: document.getElementById("romainsBackBtn"),
       codeBackBtn: document.getElementById("codeBackBtn"),
       codeseqCard: document.getElementById("codeseqCard"),
       codeloopCard: document.getElementById("codeloopCard"),
@@ -9366,6 +9661,43 @@
       }
     }
 
+    function updateRomanBuilt() {
+      var el = els.problem.querySelector(".roman-built");
+      if (!el || !state.problem) return;
+      var built = state.problem.built || "";
+      el.textContent = built || "?";
+      el.classList.toggle("is-empty", !built);
+    }
+
+    // Cadran romain : chiffres I à XII, petite aiguille (heures) sombre et
+    // épaisse, grande aiguille (minutes) rouge et fine.
+    function romanClockSvg(h, m) {
+      var parts = ['<svg class="roman-clock" viewBox="0 0 200 200" role="img" aria-label="Horloge à chiffres romains">',
+        '<circle cx="100" cy="100" r="95" fill="#fff8ee" stroke="#1f2a3c" stroke-width="6"/>'];
+      for (var i = 0; i < 60; i++) {
+        var a = i * Math.PI / 30;
+        var r1 = i % 5 === 0 ? 85 : 88;
+        parts.push('<line x1="' + (100 + r1 * Math.sin(a)).toFixed(1) + '" y1="' + (100 - r1 * Math.cos(a)).toFixed(1) +
+          '" x2="' + (100 + 92 * Math.sin(a)).toFixed(1) + '" y2="' + (100 - 92 * Math.cos(a)).toFixed(1) +
+          '" stroke="#1f2a3c" stroke-width="' + (i % 5 === 0 ? 3 : 1.2) + '" stroke-linecap="round"/>');
+      }
+      for (var k = 1; k <= 12; k++) {
+        var ang = k * Math.PI / 6;
+        var label = ROMAN_HOURS[k - 1];
+        parts.push('<text x="' + (100 + 67 * Math.sin(ang)).toFixed(1) + '" y="' + (100 - 67 * Math.cos(ang)).toFixed(1) +
+          '" text-anchor="middle" dominant-baseline="central" font-family="inherit" font-weight="800" font-size="' +
+          (label.length >= 3 ? 14 : 17) + '" fill="#1f2a3c">' + label + '</text>');
+      }
+      var ha = ((h % 12) * 30 + m * 0.5) * Math.PI / 180;
+      var ma = m * 6 * Math.PI / 180;
+      parts.push('<line x1="100" y1="100" x2="' + (100 + 42 * Math.sin(ha)).toFixed(1) + '" y2="' + (100 - 42 * Math.cos(ha)).toFixed(1) +
+        '" stroke="#1f2a3c" stroke-width="8" stroke-linecap="round"/>');
+      parts.push('<line x1="100" y1="100" x2="' + (100 + 62 * Math.sin(ma)).toFixed(1) + '" y2="' + (100 - 62 * Math.cos(ma)).toFixed(1) +
+        '" stroke="#e63946" stroke-width="5" stroke-linecap="round"/>');
+      parts.push('<circle cx="100" cy="100" r="6" fill="#1f2a3c"/></svg>');
+      return parts.join("");
+    }
+
     function renderProblem() {
       var p = state.problem;
       els.problem.innerHTML = "";
@@ -9663,6 +9995,70 @@
           objectsWrap.appendChild(objEl);
         }
         els.problem.appendChild(objectsWrap);
+        els.problem.classList.remove("pop");
+        void els.problem.offsetWidth;
+        els.problem.classList.add("pop");
+        return;
+      }
+
+      if (p.kind === "romanread" || p.kind === "romanwrite") {
+        els.problem.removeAttribute("data-terms");
+        var rrBig = document.createElement("span");
+        rrBig.className = "roman-big";
+        if (p.kind === "romanread") {
+          rrBig.textContent = p.roman;
+          rrBig.setAttribute("aria-label", "Chiffre romain " + p.roman);
+          els.problem.appendChild(rrBig);
+        } else {
+          rrBig.textContent = String(p.n);
+          var rwWrap = document.createElement("div");
+          rwWrap.className = "roman-write-prob";
+          var rwBuilt = document.createElement("div");
+          rwBuilt.className = "roman-built";
+          rwBuilt.setAttribute("aria-live", "polite");
+          rwWrap.appendChild(rrBig);
+          rwWrap.appendChild(rwBuilt);
+          els.problem.appendChild(rwWrap);
+          updateRomanBuilt();
+        }
+        els.problem.classList.remove("pop");
+        void els.problem.offsetWidth;
+        els.problem.classList.add("pop");
+        return;
+      }
+
+      if (p.kind === "romancalc") {
+        els.problem.setAttribute("data-terms", "2");
+        [
+          { cls: "num", text: toRoman(p.a) },
+          { cls: "op", text: OP_SYMBOL[p.op], op: p.op },
+          { cls: "num", text: toRoman(p.b) },
+          { cls: "eq", text: "=" },
+          { cls: "q", text: "?" }
+        ].forEach(function (slot) {
+          var el = document.createElement("span");
+          el.className = slot.cls;
+          if (slot.op) { el.setAttribute("data-op", slot.op); el.setAttribute("aria-label", OP_ARIA_LABEL[slot.op]); }
+          el.textContent = slot.text;
+          els.problem.appendChild(el);
+        });
+        fitProblemRow();
+        els.problem.classList.remove("pop");
+        void els.problem.offsetWidth;
+        els.problem.classList.add("pop");
+        return;
+      }
+
+      if (p.kind === "romanclock") {
+        els.problem.removeAttribute("data-terms");
+        var clockWrap = document.createElement("div");
+        clockWrap.className = "roman-clock-wrap";
+        clockWrap.innerHTML = romanClockSvg(p.h, p.m);
+        var clockCap = document.createElement("div");
+        clockCap.className = "roman-clock-caption";
+        clockCap.textContent = "Quelle heure est-il ?";
+        clockWrap.appendChild(clockCap);
+        els.problem.appendChild(clockWrap);
         els.problem.classList.remove("pop");
         void els.problem.offsetWidth;
         els.problem.classList.add("pop");
@@ -9976,6 +10372,7 @@
       els.answers.classList.remove("answers-grid-3");
       els.answers.classList.remove("answers-row");
       els.answers.classList.remove("pitch-answers");
+      els.answers.classList.remove("roman-write");
       els.answers.classList.remove("wordgrid-grid");
       els.answers.classList.remove("intrus-grid");
       els.answers.classList.remove("intrus-count-4", "intrus-count-6", "intrus-count-9", "intrus-count-12");
@@ -10364,12 +10761,55 @@
         return;
       }
 
+      if (state.problem.kind === "romanwrite") {
+        els.answers.classList.add("roman-write");
+        var tilesRow = document.createElement("div");
+        tilesRow.className = "roman-tiles-row";
+        state.problem.tiles.forEach(function (letter) {
+          var tile = document.createElement("button");
+          tile.type = "button";
+          tile.className = "roman-tile";
+          tile.textContent = letter;
+          tile.setAttribute("aria-label", "Ajouter " + letter);
+          tile.addEventListener("click", function () {
+            if (state.locked || state.problem.built.length >= ROMAN_BUILT_MAX) return;
+            state.problem.built += letter;
+            updateRomanBuilt();
+          });
+          tilesRow.appendChild(tile);
+        });
+        var erase = document.createElement("button");
+        erase.type = "button";
+        erase.className = "roman-tile is-erase";
+        erase.textContent = "⌫";
+        erase.setAttribute("aria-label", "Effacer la dernière lettre");
+        erase.addEventListener("click", function () {
+          if (state.locked) return;
+          state.problem.built = state.problem.built.slice(0, -1);
+          updateRomanBuilt();
+        });
+        tilesRow.appendChild(erase);
+        els.answers.appendChild(tilesRow);
+        var validate = document.createElement("button");
+        validate.type = "button";
+        validate.className = "answer-btn candy-teal";
+        validate.textContent = "Valider ✓";
+        validate.setAttribute("aria-label", "Valider mon chiffre romain");
+        validate.addEventListener("click", function () {
+          if (state.locked || !state.problem.built) return;
+          validate.setAttribute("data-value", state.problem.built);
+          onAnswer(state.problem.built, validate);
+        });
+        els.answers.appendChild(validate);
+        return;
+      }
+
       var palette = shuffle(CANDY_COLORS.slice());
       state.problem.choices.forEach(function (value, idx) {
         var btn = document.createElement("button");
         btn.type = "button";
         btn.className = "answer-btn " + palette[idx % palette.length];
-        btn.textContent = String(value);
+        btn.textContent = state.problem.kind === "romancalc" ? toRoman(value) : String(value);
         btn.setAttribute("data-value", value);
         btn.setAttribute("aria-label", "Répondre " + value);
         btn.addEventListener("click", function () { onAnswer(value, btn); });
@@ -10515,7 +10955,7 @@
     // "Paires cachées" et "Paires cachées (drapeaux)" partagent le même
     // plateau : seul le pool de symboles pioché change.
     function isMemoryMode(mode) {
-      return mode === "paires" || mode === "pairesdrapeaux";
+      return mode === "paires" || mode === "pairesdrapeaux" || mode === "pairesromains";
     }
 
     function currentPaintTemplate() {
@@ -11311,8 +11751,11 @@
         var back = document.createElement("span");
         back.className = "memory-card-face memory-card-back";
         var front = document.createElement("span");
-        front.className = "memory-card-face memory-card-front emoji";
+        front.className = "memory-card-face memory-card-front " + (card.text ? "memory-card-text" : "emoji");
         front.textContent = card.symbol;
+        if (card.text) {
+          front.style.fontSize = card.symbol.length <= 3 ? "clamp(1.4rem, 7vw, 2.4rem)" : card.symbol.length <= 5 ? "clamp(1.1rem, 5.4vw, 1.8rem)" : "clamp(0.85rem, 4vw, 1.3rem)";
+        }
         inner.appendChild(back);
         inner.appendChild(front);
         btn.appendChild(inner);
@@ -11324,11 +11767,26 @@
     function startMemoryProblem() {
       var levelIdx = Math.min(Math.max(state.level, MIN_LEVEL), MAX_LEVEL) - 1;
       var pairsCount = MEMORY_LEVELS.pairs[levelIdx];
-      var pool = state.mode === "pairesdrapeaux" ? FLAG_SYMBOL_POOL : MEMORY_SYMBOL_POOL;
-      var chosenSymbols = shuffle(pool.slice()).slice(0, pairsCount);
-      var cards = shuffle(chosenSymbols.concat(chosenSymbols)).map(function (symbol) {
-        return { symbol: symbol, matched: false };
-      });
+      var cards;
+      if (state.mode === "pairesromains") {
+        // Chaque nombre donne 2 cartes différentes (le chiffre romain et le
+        // nombre) qui partagent la même clé "key".
+        var romanMax = ROMAN_LEVELS.max[levelIdx];
+        var numbers = [];
+        for (var rn = 1; rn <= romanMax; rn++) numbers.push(rn);
+        cards = [];
+        shuffle(numbers).slice(0, pairsCount).forEach(function (n) {
+          cards.push({ symbol: toRoman(n), key: n, text: true, matched: false });
+          cards.push({ symbol: String(n), key: n, text: true, matched: false });
+        });
+        shuffle(cards);
+      } else {
+        var pool = state.mode === "pairesdrapeaux" ? FLAG_SYMBOL_POOL : MEMORY_SYMBOL_POOL;
+        var chosenSymbols = shuffle(pool.slice()).slice(0, pairsCount);
+        cards = shuffle(chosenSymbols.concat(chosenSymbols)).map(function (symbol) {
+          return { symbol: symbol, key: symbol, matched: false };
+        });
+      }
       state.memoryCards = cards;
       state.memoryFlipped = [];
       state.memoryLocked = false;
@@ -11350,7 +11808,7 @@
       state.memoryLocked = true;
       var i1 = state.memoryFlipped[0];
       var i2 = state.memoryFlipped[1];
-      var isMatch = state.memoryCards[i1].symbol === state.memoryCards[i2].symbol;
+      var isMatch = state.memoryCards[i1].key === state.memoryCards[i2].key;
 
       if (isMatch) {
         state.memoryCards[i1].matched = true;
@@ -15199,6 +15657,7 @@
     }
 
     function categoryOfMode(mode) {
+      if (mode === "romanread" || mode === "romanwrite" || mode === "romancalc" || mode === "romanclock" || mode === "pairesromains") return "romains";
       if (mode === "add" || mode === "sub" || mode === "mul" || mode === "div" || MIX_MODES[mode]) return "2";
       if (MODE_TO_OP_3[mode] || MIX_MODES_3[mode]) return "3";
       if (mode === "count" || mode === "compare" || mode === "sequence" || mode === "sudokuchiffre" || mode === "equations" || mode === "fruitsum") return "calc";
@@ -15230,6 +15689,7 @@
       els.menuFormes.hidden = screen !== "formes";
       els.menuJeux.hidden = screen !== "jeux";
       els.menuCode.hidden = screen !== "code";
+      els.menuRomains.hidden = screen !== "romains";
       if (screen === "lire") fitCasseCardLabel();
     }
 
@@ -15248,7 +15708,8 @@
       ecriture: "home",
       formes: "home",
       jeux: "home",
-      code: "home"
+      code: "home",
+      romains: "home"
     };
 
     function currentMenuScreen() {
@@ -15265,6 +15726,7 @@
       if (!els.menuFormes.hidden) return "formes";
       if (!els.menuJeux.hidden) return "jeux";
       if (!els.menuCode.hidden) return "code";
+      if (!els.menuRomains.hidden) return "romains";
       return "home";
     }
 
@@ -15730,6 +16192,7 @@
     els.formesBackBtn.addEventListener("click", function () { showMenuScreen("home"); });
     els.jeuxBackBtn.addEventListener("click", function () { showMenuScreen("home"); });
     els.codeBackBtn.addEventListener("click", function () { showMenuScreen("home"); });
+    els.romainsBackBtn.addEventListener("click", function () { showMenuScreen("home"); });
 
     els.levelNum.addEventListener("click", function () {
       if (!state.mode) return;
